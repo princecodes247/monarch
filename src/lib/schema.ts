@@ -1,90 +1,15 @@
-import { Collection } from "mongodb";
-import { Database } from "./adapter";
-
-import { getTypeFromString } from "./utils";
+import type { Collection } from "mongodb";
+import { Database } from "./core";
+import { transformCollectionName } from "./utils";
+import type { MonarchSchemaType } from "./schema-type";
 
 export interface SchemaDefinition {
-	[K: string]: MonarchType<any>;
+	[K: string]: MonarchSchemaType<any>;
 }
 
 export type CreatedSchema<T extends SchemaDefinition> = {
-	[K in keyof T]: ReturnType<T[K]["getDefault"]>;
+	[K in keyof T]: ReturnType<T[K]["getDefault"]> | null;
 };
-
-interface MonarchTypeDef<T> {
-	type: any;
-}
-
-enum MonarchTypeKind {
-	MonarchString = "string",
-	MonarchNumber = "number",
-}
-
-abstract class MonarchType<K> {
-	protected readonly _def!: MonarchTypeDef<K>;
-	protected readonly _typeName!: MonarchTypeKind;
-	protected _default!: K | undefined;
-	protected _required!: boolean;
-
-	constructor(def: MonarchTypeDef<K>) {
-		this._def = def;
-	}
-
-	getDefinition(): MonarchTypeDef<K> {
-		return this._def;
-	}
-
-	getInnerType() {
-		return this._typeName;
-	}
-
-	getType() {
-		return this._typeName;
-	}
-
-	get isRequired(): boolean {
-		return !!this._required;
-	}
-
-	required(value = true): this {
-		this._required = value;
-		return this;
-	}
-	getDefault() {
-		return this._default;
-	}
-	default(value: K): this {
-		this._default = value;
-		return this;
-	}
-}
-
-class MonarchString extends MonarchType<string> {
-	protected readonly _typeName = MonarchTypeKind.MonarchString;
-	protected _default = "";
-
-	static create(): MonarchString {
-		return new MonarchString({
-			type: MonarchTypeKind.MonarchString,
-		});
-	}
-}
-
-class MonarchNumber extends MonarchType<number> {
-	protected readonly _typeName = MonarchTypeKind.MonarchNumber;
-	protected _default = 0;
-
-	static create(): MonarchNumber {
-		return new MonarchNumber({
-			type: MonarchTypeKind.MonarchNumber,
-		});
-	}
-}
-
-const string = MonarchString.create;
-const number = MonarchNumber.create;
-
-export { string, number };
 
 class Schema<T extends SchemaDefinition> {
 	private readonly collection: Collection<any>;
@@ -92,18 +17,32 @@ class Schema<T extends SchemaDefinition> {
 		private readonly collectionName: string,
 		private readonly schemaDefinition: T,
 	) {
-		this.collection = Database.getInstance().getCollection(this.collectionName);
+		const transformedCollectionName = transformCollectionName(
+			this.collectionName,
+		);
+		this.collection = Database.getInstance().getCollection(
+			transformedCollectionName,
+		);
 	}
-	private _parseData(data: CreatedSchema<T>): Partial<CreatedSchema<T>> | null {
+	private _parseInputData(
+		data: CreatedSchema<T>,
+	): Partial<CreatedSchema<T>> | null {
 		const parsedData: Partial<CreatedSchema<T>> = {};
 		for (const key in this.schemaDefinition) {
 			const field = this.schemaDefinition[key];
 			const value = data[key];
-
+			console.log({ field, isReq: field.isRequired, value });
 			// Check if the field is required
 			if (field.isRequired && value === undefined) {
 				throw new Error(`Field '${key}' is required.`);
 			}
+
+			// Check if the field is nullable
+			if (field.isNullable && value === null) {
+				parsedData[key] = null;
+				continue;
+			}
+			// throw new Error(`Field '${key}' cannot be null.`);
 
 			// Validate field types
 			if (value !== undefined) {
@@ -122,7 +61,7 @@ class Schema<T extends SchemaDefinition> {
 	async insert(
 		data: CreatedSchema<T>,
 	): Promise<Partial<CreatedSchema<T>> | null> {
-		const validatedData = this._parseData(data);
+		const validatedData = this._parseInputData(data);
 		if (!validatedData) {
 			throw new Error("Validation failed");
 		}
@@ -135,7 +74,7 @@ class Schema<T extends SchemaDefinition> {
 		};
 	}
 
-	static create<K extends SchemaDefinition>(
+	static createSchema<K extends SchemaDefinition>(
 		collectionName: string,
 		schemaDefinition: K,
 		options?: any,
@@ -144,6 +83,6 @@ class Schema<T extends SchemaDefinition> {
 	}
 }
 
-const createSchema = Schema.create;
+const createSchema = Schema.createSchema;
 
 export { createSchema };

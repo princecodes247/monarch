@@ -1,6 +1,6 @@
 import { Collection, MongoClient, ObjectId } from "mongodb";
 import type { CreatedSchema, SchemaDefinition } from "./old-schema";
-import { Database } from "../adapter";
+import { Database } from "../core";
 
 interface MongoType {
 	_id: ObjectId;

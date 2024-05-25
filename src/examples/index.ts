@@ -3,17 +3,17 @@ import { createSchema, monarch, number, string } from "../lib";
 monarch.connect();
 
 const UserSchema = createSchema("users", {
-	name: string(),
-	email: string(),
-	age: number().default(0),
+	name: string().nullable(),
+	email: string().optional(),
+	age: number().optional().default(10),
 });
 
 async function testStuff() {
 	// Create a new user
+	// @ts-ignore
 	const newUser = await UserSchema.insert({
-		email: "80",
-		age: 90,
-		name: "kp",
+		// email: "80",
+		name: null,
 	});
 	console.log("Created user:", newUser);
 }
