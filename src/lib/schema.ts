@@ -31,29 +31,8 @@ class Schema<T extends SchemaDefinition> {
 		for (const key in this.schemaDefinition) {
 			const field = this.schemaDefinition[key];
 			const value = data[key];
-			console.log({ field, isReq: field.isRequired, value });
-			// Check if the field is required
-			if (field.isRequired && value === undefined) {
-				throw new Error(`Field '${key}' is required.`);
-			}
 
-			// Check if the field is nullable
-			if (field.isNullable && value === null) {
-				parsedData[key] = null;
-				continue;
-			}
-			// throw new Error(`Field '${key}' cannot be null.`);
-
-			// Validate field types
-			if (value !== undefined) {
-				const expectedType = field.getInnerType();
-				if ((typeof value).toString() !== expectedType) {
-					throw new Error(`Field '${key}' must be of type '${expectedType}'.`);
-				}
-			}
-
-			// Set default value if not provided
-			parsedData[key] = value !== undefined ? value : field.getDefault();
+			field.parse(value);
 		}
 		return parsedData;
 	}
@@ -67,9 +46,9 @@ class Schema<T extends SchemaDefinition> {
 		}
 		console.log({ validatedData });
 		// return null;
-		const result = await this.collection.insertOne(validatedData);
+		// const result = await this.collection.insertOne(validatedData);
 		return {
-			_id: result.insertedId,
+			// _id: result.insertedId,
 			...validatedData,
 		};
 	}
