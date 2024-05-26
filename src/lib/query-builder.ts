@@ -33,6 +33,10 @@ export class BaseQuery<T extends Document> {
 		this.options.limit = limit;
 		return this;
 	}
+	skip(skip: number): this {
+		this.options.skip = skip;
+		return this;
+	}
 }
 
 // Define a query class for find operations
