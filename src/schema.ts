@@ -40,7 +40,7 @@ class Schema<T extends SchemaDefinition> {
 
   async insert(
     data: CreatedSchema<T>
-  ): Promise<Partial<CreatedSchema<T>> | null> {
+  ): Promise<({ _id: ObjectId } & Partial<CreatedSchema<T>>) | null> {
     const validatedData = this._parseInputData(data);
     if (!validatedData) {
       throw new Error("Validation failed");
