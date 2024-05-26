@@ -1,90 +1,91 @@
 import { ObjectId, type Collection } from "mongodb";
 import { Database } from "./core";
-import { transformCollectionName } from "./utils";
-import type { Infer, MonarchSchemaType, MonarchType } from "./schema-type";
 import {
-	BaseQuery,
-	DeleteOneQuery,
-	FindOneQuery,
-	FindQuery,
-	UpdateOneQuery,
+  DeleteOneQuery,
+  FindOneQuery,
+  FindQuery,
+  UpdateOneQuery,
 } from "./query-builder";
+import type { Infer, MonarchType } from "./schema-type";
+import { transformCollectionName } from "./utils";
 
 export interface SchemaDefinition {
-	[K: string]: MonarchType;
+  [K: string]: MonarchType;
 }
 
 export type CreatedSchema<T extends SchemaDefinition> = {
-	[K in keyof T]: Infer<T[K]> | null;
+  [K in keyof T]: Infer<T[K]> | null;
 };
 
 class Schema<T extends SchemaDefinition> {
-	private readonly collection: Collection<any>;
-	constructor(
-		private readonly collectionName: string,
-		private readonly schemaDefinition: T,
-	) {
-		const transformedCollectionName = transformCollectionName(
-			this.collectionName,
-		);
-		this.collection = Database.getInstance().getCollection(
-			transformedCollectionName,
-		);
-	}
-	private _parseInputData(
-		data: CreatedSchema<T>,
-	): Partial<CreatedSchema<T>> | null {
-		const parsedData: Partial<CreatedSchema<T>> = {};
-		for (const key in this.schemaDefinition) {
-			const field = this.schemaDefinition[key];
-			const value = data[key];
+  private readonly collection: Collection<any>;
+  constructor(
+    private readonly collectionName: string,
+    private readonly schemaDefinition: T
+  ) {
+    const transformedCollectionName = transformCollectionName(
+      this.collectionName
+    );
+    this.collection = Database.getInstance().getCollection(
+      transformedCollectionName
+    );
+  }
+  private _parseInputData(
+    data: CreatedSchema<T>
+  ): Partial<CreatedSchema<T>> | null {
+    const parsedData: Partial<CreatedSchema<T>> = {};
+    for (const key in this.schemaDefinition) {
+      const field = this.schemaDefinition[key];
+      const value = data[key];
 
-			field.parse(value);
-		}
-		return parsedData;
-	}
+      parsedData[key] = field.parse(value) as Infer<
+        T[Extract<keyof T, string>]
+      >;
+    }
+    return parsedData;
+  }
 
-	async insert(
-		data: CreatedSchema<T>,
-	): Promise<Partial<CreatedSchema<T>> | null> {
-		const validatedData = this._parseInputData(data);
-		if (!validatedData) {
-			throw new Error("Validation failed");
-		}
-		console.log({ validatedData });
-		// return null;
-		// const result = await this.collection.insertOne(validatedData);
-		return {
-			// _id: result.insertedId,
-			...validatedData,
-		};
-	}
+  async insert(
+    data: CreatedSchema<T>
+  ): Promise<Partial<CreatedSchema<T>> | null> {
+    const validatedData = this._parseInputData(data);
+    if (!validatedData) {
+      throw new Error("Validation failed");
+    }
+    console.log({ validatedData });
+    // return null;
+    // const result = await this.collection.insertOne(validatedData);
+    return {
+      // _id: result.insertedId,
+      ...validatedData,
+    };
+  }
 
-	static createSchema<K extends SchemaDefinition>(
-		collectionName: string,
-		schemaDefinition: K,
-		options?: any,
-	): Schema<K> {
-		return new Schema(collectionName, schemaDefinition);
-	}
+  static createSchema<K extends SchemaDefinition>(
+    collectionName: string,
+    schemaDefinition: K,
+    options?: any
+  ): Schema<K> {
+    return new Schema(collectionName, schemaDefinition);
+  }
 
-	find(): FindQuery<CreatedSchema<T>> {
-		return new FindQuery(this.collection);
-	}
+  find(): FindQuery<CreatedSchema<T>> {
+    return new FindQuery(this.collection);
+  }
 
-	findOne(id: string): FindOneQuery<CreatedSchema<T>> {
-		return new FindOneQuery(this.collection).where({ _id: new ObjectId(id) });
-	}
+  findOne(id: string): FindOneQuery<CreatedSchema<T>> {
+    return new FindOneQuery(this.collection).where({ _id: new ObjectId(id) });
+  }
 
-	updateOne(id: string, update: any): UpdateOneQuery<CreatedSchema<T>> {
-		return new UpdateOneQuery(this.collection, update).where({
-			_id: new ObjectId(id),
-		});
-	}
+  updateOne(id: string, update: any): UpdateOneQuery<CreatedSchema<T>> {
+    return new UpdateOneQuery(this.collection, update).where({
+      _id: new ObjectId(id),
+    });
+  }
 
-	deleteOne(id: string): DeleteOneQuery<CreatedSchema<T>> {
-		return new DeleteOneQuery(this.collection).where({ _id: new ObjectId(id) });
-	}
+  deleteOne(id: string): DeleteOneQuery<CreatedSchema<T>> {
+    return new DeleteOneQuery(this.collection).where({ _id: new ObjectId(id) });
+  }
 }
 
 const createSchema = Schema.createSchema;

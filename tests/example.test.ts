@@ -20,7 +20,7 @@ describe("Monarch API", () => {
     });
 
     expect(newUser).not.toBe(null);
-    expect(newUser).not.toStrictEqual({
+    expect(newUser).toStrictEqual({
       email: "anon@gmail.com",
       name: "anon",
       age: 0,
@@ -35,7 +35,7 @@ describe("Monarch API", () => {
       .limit(1)
       .exec();
 
-    expect(users.length).toBeGreaterThan(1);
+    expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];
     expect(existingUser).toStrictEqual({
