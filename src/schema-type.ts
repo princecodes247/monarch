@@ -11,7 +11,6 @@ enum MonarchSchemaTypeKind {
 
 export abstract class MonarchSchemaType<K> extends MonarchTransformations<K> {
   protected _def!: MonarchSchemaTypeDef<K>;
-  protected _type!: MonarchSchemaTypeKind;
   protected _default: K | null | undefined = undefined;
   protected _required = true;
   protected _nullable = false;
@@ -84,16 +83,12 @@ export abstract class MonarchSchemaType<K> extends MonarchTransformations<K> {
 }
 
 class MonarchString extends MonarchSchemaType<string> {
-  protected readonly _type = MonarchSchemaTypeKind.MonarchString;
-
-  constructor(def: MonarchSchemaTypeDef<string>) {
-    super(def);
+  constructor() {
+    super({ type: MonarchSchemaTypeKind.MonarchString });
     this.addTransformation((value: string) => String(value));
   }
   static create(): MonarchString {
-    return new MonarchString({
-      type: MonarchSchemaTypeKind.MonarchString,
-    });
+    return new MonarchString();
   }
 
   parse(value: unknown): string {
@@ -115,12 +110,12 @@ class MonarchString extends MonarchSchemaType<string> {
 }
 
 class MonarchNumber extends MonarchSchemaType<number> {
-  protected readonly _type = MonarchSchemaTypeKind.MonarchNumber;
+  constructor() {
+    super({ type: MonarchSchemaTypeKind.MonarchNumber });
+  }
 
   static create(): MonarchNumber {
-    return new MonarchNumber({
-      type: MonarchSchemaTypeKind.MonarchNumber,
-    });
+    return new MonarchNumber();
   }
 
   parse(value: unknown): number {

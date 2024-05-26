@@ -1,4 +1,4 @@
-import { ObjectId, type Collection } from "mongodb";
+import { type Collection, ObjectId } from "mongodb";
 import { Database } from "./core";
 import {
   DeleteOneQuery,
@@ -6,16 +6,9 @@ import {
   FindQuery,
   UpdateOneQuery,
 } from "./query-builder";
-import type { Infer, MonarchType } from "./schema-type";
+import type { Infer } from "./schema-type";
+import type { CreatedSchema, SchemaDefinition } from "./types";
 import { transformCollectionName } from "./utils";
-
-export interface SchemaDefinition {
-  [K: string]: MonarchType;
-}
-
-export type CreatedSchema<T extends SchemaDefinition> = {
-  [K in keyof T]: Infer<T[K]> | null;
-};
 
 class Schema<T extends SchemaDefinition> {
   private readonly collection: Collection<any>;
