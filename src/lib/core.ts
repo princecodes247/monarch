@@ -25,9 +25,9 @@ class Database {
 		this.schemaNames.add(name);
 	}
 
-	async connect(): Promise<void> {
+	async connect(connectionUri: string): Promise<void> {
 		if (!this.client) {
-			this.client = new MongoClient("mongodb://localhost:27017/test-monarch");
+			this.client = new MongoClient(connectionUri);
 			await this.client.connect();
 		}
 	}
