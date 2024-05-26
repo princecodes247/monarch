@@ -1,12 +1,15 @@
 import { MonarchTransformations } from "./value-transformation";
 
-interface MonarchSchemaTypeDef<T> {
-  type: any;
-}
-
 enum MonarchSchemaTypeKind {
   MonarchString = "string",
   MonarchNumber = "number",
+  MonarchDate = "date",
+  MonarchObjectID = "objectId",
+  MonarchBoolean = "boolean",
+}
+
+interface MonarchSchemaTypeDef<T> {
+  type: MonarchSchemaTypeKind;
 }
 
 export abstract class MonarchSchemaType<K> extends MonarchTransformations<K> {
@@ -125,14 +128,71 @@ class MonarchNumber extends MonarchSchemaType<number> {
   }
 }
 
-export type MonarchType = MonarchString | MonarchNumber;
+class MonarchDate extends MonarchSchemaType<Date> {
+  constructor() {
+    super({ type: MonarchSchemaTypeKind.MonarchDate });
+  }
+
+  static create(): MonarchDate {
+    return new MonarchDate();
+  }
+
+  parse(value: unknown): Date {
+    if (!(value instanceof Date) && this._required) {
+      throw new Error(`Field '${value}' is required and must be a Date`);
+    }
+    return value as Date;
+  }
+}
+
+// class MonarchObjectID extends MonarchSchemaType<ObjectID> {
+//   constructor() {
+//       super({ type: MonarchSchemaTypeKind.MonarchObjectID });
+//   }
+
+//   parse(value: unknown): ObjectID {
+//       if (!(value instanceof ObjectID) && this._required) {
+//           throw new Error(`Field '${value}' is required and must be an ObjectID`);
+//       }
+//       return value as ObjectID;
+//   }
+// }
+
+class MonarchBoolean extends MonarchSchemaType<boolean> {
+  constructor() {
+    super({ type: MonarchSchemaTypeKind.MonarchBoolean });
+  }
+
+  static create(): MonarchBoolean {
+    return new MonarchBoolean();
+  }
+
+  parse(value: unknown): boolean {
+    if (typeof value !== "boolean" && this._required)
+      throw new Error("Not a boolean");
+    return Boolean(value);
+  }
+}
+
+export type MonarchType =
+  | MonarchBoolean
+  | MonarchDate
+  | MonarchString
+  | MonarchNumber;
+
 export type Infer<T extends MonarchType> = T extends MonarchString
   ? string
+  : T extends MonarchBoolean
+  ? Partial<boolean>
+  : T extends MonarchDate
+  ? Date
   : T extends MonarchNumber
   ? number
   : "invalid type";
 
 const string = MonarchString.create;
 const number = MonarchNumber.create;
+const boolean = MonarchBoolean.create;
+const date = MonarchDate.create;
 
-export { number, string };
+export { boolean, date, number, string };

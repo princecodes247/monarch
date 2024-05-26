@@ -1,41 +1,35 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { createSchema, monarch, number, string } from "../src";
+import { createSchema, date, monarch } from "../src";
 
-describe("Monarch API", () => {
+describe("test for date", () => {
   beforeAll(() => {
     monarch.connect("mongodb://localhost:27017/monarch-test");
   });
 
   it("inserts and finds", async () => {
     const UserSchema = createSchema("users", {
-      name: string().nullable(),
-      email: string().optional().lowercase(),
-      age: number().optional().default(10),
+      currentDate: date(),
     });
-
+    const markedDate = new Date();
     const newUser = await UserSchema.insert({
-      email: "anon@gmail.com",
-      name: "anon",
-      age: 0,
+      currentDate: markedDate,
     });
     expect(newUser).not.toBe(null);
     expect(newUser).toStrictEqual(
       expect.objectContaining({
-        email: "anon@gmail.com",
-        name: "anon",
-        age: 0,
+        currentDate: markedDate,
       })
     );
 
-    const users = await UserSchema.find().where({}).exec();
+    const users = await UserSchema.find()
+      .where({ currentDate: markedDate })
+      .exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
-        email: "anon@gmail.com",
-        name: "anon",
-        age: 0,
+        currentDate: markedDate,
       })
     );
   });
