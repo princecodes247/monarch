@@ -133,6 +133,13 @@ class MonarchNumber extends MonarchSchemaType<number> {
 	}
 }
 
+export type MonarchType = MonarchString | MonarchNumber;
+export type Infer<T extends MonarchType> = T extends MonarchString
+	? string
+	: T extends MonarchNumber
+		? number
+		: "invalid type";
+
 const string = MonarchString.create;
 const number = MonarchNumber.create;
 

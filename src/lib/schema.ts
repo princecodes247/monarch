@@ -1,14 +1,21 @@
-import type { Collection } from "mongodb";
+import { ObjectId, type Collection } from "mongodb";
 import { Database } from "./core";
 import { transformCollectionName } from "./utils";
-import type { MonarchSchemaType } from "./schema-type";
+import type { Infer, MonarchSchemaType, MonarchType } from "./schema-type";
+import {
+	BaseQuery,
+	DeleteOneQuery,
+	FindOneQuery,
+	FindQuery,
+	UpdateOneQuery,
+} from "./query-builder";
 
 export interface SchemaDefinition {
-	[K: string]: MonarchSchemaType<any>;
+	[K: string]: MonarchType;
 }
 
 export type CreatedSchema<T extends SchemaDefinition> = {
-	[K in keyof T]: ReturnType<T[K]["getDefault"]> | null;
+	[K in keyof T]: Infer<T[K]> | null;
 };
 
 class Schema<T extends SchemaDefinition> {
@@ -59,6 +66,24 @@ class Schema<T extends SchemaDefinition> {
 		options?: any,
 	): Schema<K> {
 		return new Schema(collectionName, schemaDefinition);
+	}
+
+	find(): FindQuery<CreatedSchema<T>> {
+		return new FindQuery(this.collection);
+	}
+
+	findOne(id: string): FindOneQuery<CreatedSchema<T>> {
+		return new FindOneQuery(this.collection).where({ _id: new ObjectId(id) });
+	}
+
+	updateOne(id: string, update: any): UpdateOneQuery<CreatedSchema<T>> {
+		return new UpdateOneQuery(this.collection, update).where({
+			_id: new ObjectId(id),
+		});
+	}
+
+	deleteOne(id: string): DeleteOneQuery<CreatedSchema<T>> {
+		return new DeleteOneQuery(this.collection).where({ _id: new ObjectId(id) });
 	}
 }
 

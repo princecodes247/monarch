@@ -10,12 +10,23 @@ const UserSchema = createSchema("users", {
 
 async function testStuff() {
 	// Create a new user
-	const newUser = await UserSchema.insert({
-		email: "GHOGHO",
-		name: "null",
-		age: 0,
-	});
-	console.log("Created user:", newUser);
+	// const newUser = await UserSchema.insert({
+	// 	email: "GHOGHO",
+	// 	name: "null",
+	// 	age: 0,
+	// });
+	// console.log("Created user:", newUser);
+
+	const users = await UserSchema.find()
+		.where({ age: { $lte: 18 } })
+		.select({
+			age: 1,
+			_id: 0,
+		})
+		.limit(1)
+		.exec();
+
+	console.log({ users });
 }
 
 testStuff();
