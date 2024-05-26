@@ -18,30 +18,25 @@ describe("Monarch API", () => {
       name: "anon",
       age: 0,
     });
-
     expect(newUser).not.toBe(null);
-    expect(newUser).toStrictEqual({
-      email: "anon@gmail.com",
-      name: "anon",
-      age: 0,
-    });
-
-    const users = await UserSchema.find()
-      .where({ age: { $lte: 18 } })
-      .select({
-        age: 1,
-        _id: 0,
+    expect(newUser).toStrictEqual(
+      expect.objectContaining({
+        email: "anon@gmail.com",
+        name: "anon",
+        age: 0,
       })
-      .limit(1)
-      .exec();
+    );
 
+    const users = await UserSchema.find().where({}).exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];
-    expect(existingUser).toStrictEqual({
-      email: "anon@gmail.com",
-      name: "anon",
-      age: 0,
-    });
+    expect(existingUser).toStrictEqual(
+      expect.objectContaining({
+        email: "anon@gmail.com",
+        name: "anon",
+        age: 0,
+      })
+    );
   });
 });

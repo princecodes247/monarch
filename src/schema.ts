@@ -54,9 +54,10 @@ class Schema<T extends SchemaDefinition> {
     }
     console.log({ validatedData });
     // return null;
-    // const result = await this.collection.insertOne(validatedData);
+    const result = await this.collection.insertOne(validatedData);
+    console.log({ result });
     return {
-      // _id: result.insertedId,
+      _id: result.insertedId,
       ...validatedData,
     };
   }
