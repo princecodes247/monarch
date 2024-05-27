@@ -1,9 +1,12 @@
+import { MongoClient } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
-import { createSchema, date, monarch } from "../src";
+import { createDatabase, createSchema, date } from "../src";
+
+const client = new MongoClient("mongodb://localhost:27017/monarch-test");
 
 describe("test for date", () => {
-  beforeAll(() => {
-    monarch.connect("mongodb://localhost:27017/monarch-test");
+  beforeAll(async () => {
+    await client.connect();
   });
 
   it("inserts and finds", async () => {
@@ -11,9 +14,15 @@ describe("test for date", () => {
       currentDate: date(),
     });
     const markedDate = new Date();
-    const newUser = await UserSchema.insert({
-      currentDate: markedDate,
+    const { db } = createDatabase(client, {
+      users: UserSchema,
     });
+
+    const newUser = await db.users
+      .insert({
+        currentDate: markedDate,
+      })
+      .exec();
     expect(newUser).not.toBe(null);
     expect(newUser).toStrictEqual(
       expect.objectContaining({
@@ -21,7 +30,8 @@ describe("test for date", () => {
       })
     );
 
-    const users = await UserSchema.find()
+    const users = await db.users
+      .find()
       .where({ currentDate: markedDate })
       .exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
