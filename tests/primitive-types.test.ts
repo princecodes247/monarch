@@ -2,7 +2,12 @@ import { MongoClient } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
 import { boolean, createDatabase, createSchema, number, string } from "../src";
 
-const client = new MongoClient("mongodb://localhost:27017/monarch-test");
+import { MongoMemoryServer } from "mongodb-memory-server";
+
+const mongod = await MongoMemoryServer.create();
+
+const uri = mongod.getUri();
+const client = new MongoClient(uri);
 
 describe("test for boolean, number and string", () => {
   beforeAll(async () => {
