@@ -6,14 +6,20 @@ class MonarchString extends MonarchType<string> {
   public lowercase() {
     return new MonarchString({
       validate: this._parser.validate,
-      transform: (input) => input.toLowerCase(),
+      transform: (input) => {
+        const val = this._parser.validate(input);
+        return val.toLowerCase();
+      },
     });
   }
 
   public uppercase() {
     return new MonarchString({
       validate: this._parser.validate,
-      transform: (input) => input.toUpperCase(),
+      transform: (input) => {
+        const val = this._parser.validate(input);
+        return val.toUpperCase();
+      },
     });
   }
 }

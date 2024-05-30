@@ -24,7 +24,7 @@ describe("test for transformations", () => {
 
     const newUser = await collections.users
       .insert({
-        name: "so",
+        name: "PRINCE",
       })
       .exec();
     expect(newUser).not.toBe(null);
