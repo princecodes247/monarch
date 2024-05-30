@@ -1,18 +1,27 @@
+import { MongoClient } from "mongodb";
 import { beforeAll, describe, expect, it } from "vitest";
-import { createSchema, monarch, string } from "../src";
+import { createDatabase, createSchema, string } from "../src";
 
+const client = new MongoClient("mongodb://localhost:27017/monarch-test");
 describe("test for transformations", () => {
-  beforeAll(() => {
-    monarch.connect("mongodb://localhost:27017/monarch-test");
+  beforeAll(async () => {
+    await client.connect();
   });
 
   it("returns value in lowercase", async () => {
     const UserSchema = createSchema("users", {
       name: string().lowercase(),
     });
-    const newUser = await UserSchema.insert({
-      name: "PRINCE",
+
+    const { db } = createDatabase(client, {
+      users: UserSchema,
     });
+
+    const newUser = await db.users
+      .insert({
+        name: "so",
+      })
+      .exec();
     expect(newUser).not.toBe(null);
     expect(newUser).toStrictEqual(
       expect.objectContaining({
@@ -20,7 +29,7 @@ describe("test for transformations", () => {
       })
     );
 
-    const users = await UserSchema.find().where({ _id: newUser?._id }).exec();
+    const users = await db.users.find().where({ _id: newUser?._id }).exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];
@@ -35,9 +44,16 @@ describe("test for transformations", () => {
     const UserSchema = createSchema("userUpper", {
       name: string().uppercase(),
     });
-    const newUser = await UserSchema.insert({
-      name: "EriiC",
+
+    const { db } = createDatabase(client, {
+      users: UserSchema,
     });
+
+    const newUser = await db.users
+      .insert({
+        name: "EriiC",
+      })
+      .exec();
     expect(newUser).not.toBe(null);
     expect(newUser).toStrictEqual(
       expect.objectContaining({
@@ -45,7 +61,7 @@ describe("test for transformations", () => {
       })
     );
 
-    const users = await UserSchema.find().where({ _id: newUser?._id }).exec();
+    const users = await db.users.find().where({ _id: newUser?._id }).exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];
@@ -60,9 +76,14 @@ describe("test for transformations", () => {
     const UserSchema = createSchema("userWithGo", {
       name: string().addTransformation((value) => `${value}-go`),
     });
-    const newUser = await UserSchema.insert({
-      name: "mon",
+    const { db } = createDatabase(client, {
+      users: UserSchema,
     });
+    const newUser = await db.users
+      .insert({
+        name: "mon",
+      })
+      .exec();
     expect(newUser).not.toBe(null);
     expect(newUser).toStrictEqual(
       expect.objectContaining({
@@ -70,7 +91,7 @@ describe("test for transformations", () => {
       })
     );
 
-    const users = await UserSchema.find().where({ _id: newUser?._id }).exec();
+    const users = await db.users.find().where({}).exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];

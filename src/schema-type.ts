@@ -183,7 +183,7 @@ export type MonarchType =
 export type Infer<T extends MonarchType> = T extends MonarchString
   ? string
   : T extends MonarchBoolean
-  ? Partial<boolean>
+  ? boolean
   : T extends MonarchDate
   ? Date
   : T extends MonarchNumber
