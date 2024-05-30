@@ -11,7 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "mongodb": "^6.6.2"
+    "mongodb": "^6.6.2",
+    "mongodb-memory-server": "^9.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",

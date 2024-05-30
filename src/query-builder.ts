@@ -77,7 +77,7 @@ export class InsertQuery<T extends SchemaDefinition> extends BaseQuery<T> {
   }> {
     const value: OptionalUnlessRequiredId<any> = this.document;
     const result = await this._collection.insertOne(value);
-    return { _id: result.insertedId };
+    return { _id: result.insertedId, ...value };
   }
 }
 

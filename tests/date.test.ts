@@ -1,8 +1,12 @@
 import { MongoClient } from "mongodb";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createDatabase, createSchema, date } from "../src";
 
-const client = new MongoClient("mongodb://localhost:27017/monarch-test");
+const mongod = await MongoMemoryServer.create();
+
+const uri = mongod.getUri();
+const client = new MongoClient(uri);
 
 describe("test for date", () => {
   beforeAll(async () => {
