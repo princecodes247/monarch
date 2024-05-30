@@ -18,11 +18,11 @@ describe("test for transformations", () => {
       name: string().lowercase(),
     });
 
-    const { db } = createDatabase(client, {
+    const { collections } = createDatabase(client, {
       users: UserSchema,
     });
 
-    const newUser = await db.users
+    const newUser = await collections.users
       .insert({
         name: "so",
       })
@@ -34,7 +34,10 @@ describe("test for transformations", () => {
       })
     );
 
-    const users = await db.users.find().where({ _id: newUser?._id }).exec();
+    const users = await collections.users
+      .find()
+      .where({ _id: newUser?._id })
+      .exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];
@@ -50,11 +53,11 @@ describe("test for transformations", () => {
       name: string().uppercase(),
     });
 
-    const { db } = createDatabase(client, {
+    const { collections } = createDatabase(client, {
       users: UserSchema,
     });
 
-    const newUser = await db.users
+    const newUser = await collections.users
       .insert({
         name: "EriiC",
       })
@@ -66,7 +69,10 @@ describe("test for transformations", () => {
       })
     );
 
-    const users = await db.users.find().where({ _id: newUser?._id }).exec();
+    const users = await collections.users
+      .find()
+      .where({ _id: newUser?._id })
+      .exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];
@@ -79,12 +85,12 @@ describe("test for transformations", () => {
 
   it("returns value with '-go' at the end", async () => {
     const UserSchema = createSchema("userWithGo", {
-      name: string().addTransformation((value) => `${value}-go`),
+      name: string().transform((value) => `${value}-go`),
     });
-    const { db } = createDatabase(client, {
+    const { collections } = createDatabase(client, {
       users: UserSchema,
     });
-    const newUser = await db.users
+    const newUser = await collections.users
       .insert({
         name: "mon",
       })
@@ -96,7 +102,7 @@ describe("test for transformations", () => {
       })
     );
 
-    const users = await db.users.find().where({}).exec();
+    const users = await collections.users.find().where({}).exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];

@@ -18,11 +18,12 @@ describe("test for date", () => {
       currentDate: date(),
     });
     const markedDate = new Date();
-    const { db } = createDatabase(client, {
+    const { db, collections } = createDatabase(client, {
       users: UserSchema,
     });
 
-    const newUser = await db.users
+    // collections query builder
+    const newUser = await collections.users
       .insert({
         currentDate: markedDate,
       })
@@ -34,7 +35,8 @@ describe("test for date", () => {
       })
     );
 
-    const users = await db.users
+    // db query builder
+    const users = await db(UserSchema)
       .find()
       .where({ currentDate: markedDate })
       .exec();
