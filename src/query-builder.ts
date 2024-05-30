@@ -1,33 +1,75 @@
-import type {
+import {
   Collection,
   DeleteResult,
-  Document,
   Filter,
-  InferIdType,
+  FindOptions,
+  MongoClient,
   OptionalUnlessRequiredId,
+  UpdateFilter,
   UpdateResult,
   WithId,
 } from "mongodb";
-import type { CreatedSchema, SchemaDefinition } from "./types";
+import {
+  InferSchemaInput,
+  InferSchemaOutput,
+  Schema,
+  parseSchema,
+} from "./schema";
+
+export class QueryBuilder<T extends Schema<any, any>> {
+  private _collection: Collection<InferSchemaOutput<T>>;
+
+  constructor(private _client: MongoClient, private _schema: T) {
+    this._collection = this._client
+      .db()
+      .collection<InferSchemaOutput<T>>(this._schema.name);
+  }
+
+  insert(values: OptionalUnlessRequiredId<InferSchemaInput<T>>) {
+    const parsed = parseSchema(
+      this._schema,
+      values
+    ) as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
+    return new InsertQuery(this._collection, parsed);
+  }
+
+  find() {
+    return new FindQuery(this._collection);
+  }
+
+  findOne() {
+    return new FindOneQuery(this._collection);
+  }
+
+  updateOne(values: UpdateFilter<InferSchemaOutput<T>>) {
+    return new UpdateOneQuery(this._collection, values);
+  }
+
+  deleteOne() {
+    return new DeleteOneQuery(this._collection);
+  }
+}
 
 export type Projection<T> = {
   [K in keyof T]?: 1 | 0;
 };
 
 // Define a base query class
-export class BaseQuery<T extends SchemaDefinition> {
-  protected filters: Filter<T> = {};
-  protected projection: Projection<T> = {};
-  protected options: any = {};
+export class Query<T extends Schema<any, any>> {
+  protected filters: Filter<InferSchemaOutput<T>> = {};
+  protected projection: Projection<InferSchemaOutput<T>> = {};
+  protected options: FindOptions = {};
 
-  constructor(protected readonly _collection: Collection<T>) {}
+  constructor(
+    protected readonly _collection: Collection<InferSchemaOutput<T>>
+  ) {}
 
-  where(filter: Filter<T>): this {
+  where(filter: Filter<InferSchemaOutput<T>>): this {
     Object.assign(this.filters, filter);
     return this;
   }
 
-  select(projection: Projection<WithId<T>>): this {
+  select(projection: Projection<WithId<InferSchemaOutput<T>>>): this {
     Object.assign(this.projection, projection);
     return this;
   }
@@ -36,6 +78,7 @@ export class BaseQuery<T extends SchemaDefinition> {
     this.options.limit = limit;
     return this;
   }
+
   skip(skip: number): this {
     this.options.skip = skip;
     return this;
@@ -43,8 +86,8 @@ export class BaseQuery<T extends SchemaDefinition> {
 }
 
 // Define a query class for find operations
-export class FindQuery<T extends Document> extends BaseQuery<T> {
-  async exec(): Promise<WithId<T>[]> {
+export class FindQuery<T extends Schema<any, any>> extends Query<T> {
+  async exec(): Promise<WithId<InferSchemaOutput<T>>[]> {
     return this._collection
       .find(this.filters, {
         ...this.options,
@@ -55,8 +98,8 @@ export class FindQuery<T extends Document> extends BaseQuery<T> {
 }
 
 // Define a query class for findOne operations
-export class FindOneQuery<T extends Document> extends BaseQuery<T> {
-  exec(): Promise<WithId<T> | null> {
+export class FindOneQuery<T extends Schema<any, any>> extends Query<T> {
+  async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
     return this._collection.findOne(this.filters, {
       projection: this.projection,
     });
@@ -64,36 +107,33 @@ export class FindOneQuery<T extends Document> extends BaseQuery<T> {
 }
 
 // Define a query class for insert operations
-export class InsertQuery<T extends SchemaDefinition> extends BaseQuery<T> {
+export class InsertQuery<T extends Schema<any, any>> extends Query<T> {
   constructor(
-    collection: Collection<T>,
-    private readonly document: CreatedSchema<T>
+    _collection: Collection<InferSchemaOutput<T>>,
+    private values: OptionalUnlessRequiredId<InferSchemaOutput<T>>
   ) {
-    super(collection);
+    super(_collection);
   }
 
-  async exec(): Promise<{
-    _id: InferIdType<T>;
-  }> {
-    const value: OptionalUnlessRequiredId<any> = this.document;
-    const result = await this._collection.insertOne(value);
-    return { _id: result.insertedId, ...value };
+  async exec() {
+    const result = await this._collection.insertOne(this.values);
+    return { _id: result.insertedId, ...this.values };
   }
 }
 
 // Define a query class for updateOne operations
-export class UpdateOneQuery<T extends Document> extends BaseQuery<T> {
+export class UpdateOneQuery<T extends Schema<any, any>> extends Query<T> {
   constructor(
-    collection: Collection<T>,
-    private readonly update: UpdateOneQuery<T>
+    _collection: Collection<InferSchemaOutput<T>>,
+    private values: UpdateFilter<InferSchemaOutput<T>>
   ) {
-    super(collection);
+    super(_collection);
   }
 
   async exec(): Promise<boolean> {
     const result: UpdateResult = await this._collection.updateOne(
       this.filters,
-      this.update,
+      this.values,
       this.options
     );
     return !!result.modifiedCount;
@@ -101,30 +141,9 @@ export class UpdateOneQuery<T extends Document> extends BaseQuery<T> {
 }
 
 // Define a query class for deleteOne operations
-export class DeleteOneQuery<T extends Document> extends BaseQuery<T> {
-  async exec(): Promise<boolean> {
-    const result: DeleteResult = await this._collection.deleteOne(
-      this.filters,
-      this.options
-    );
-    return !!result.deletedCount;
-  }
-}
-
-export class QueryBuilder<T extends SchemaDefinition> {
-  private readonly _collection: Collection<any>;
-  private _schema: T;
-
-  constructor(collection: Collection, schema: T) {
-    this._collection = collection;
-    this._schema = schema;
-  }
-
-  insert(document: CreatedSchema<T>): InsertQuery<T> {
-    return new InsertQuery(this._collection, document);
-  }
-
-  find(): FindQuery<CreatedSchema<T>> {
-    return new FindQuery<CreatedSchema<T>>(this._collection);
+export class DeleteOneQuery<T extends Schema<any, any>> extends Query<T> {
+  async exec(): Promise<DeleteResult> {
+    const result = await this._collection.deleteOne(this.filters, this.options);
+    return result;
   }
 }

@@ -17,19 +17,19 @@ describe("test for boolean, number and string", () => {
   it("inserts and finds", async () => {
     const UserSchema = createSchema("users", {
       name: string().nullable(),
-      email: string().optional().lowercase(),
+      email: string().lowercase().optional(),
       age: number().optional().default(10),
       isVerified: boolean(),
     });
 
-    const { db } = createDatabase(client, {
+    const { collections } = createDatabase(client, {
       users: UserSchema,
     });
 
-    const newUser = await db.users
+    const newUser = await collections.users
       .insert({
-        email: "anon@gmail.com",
         name: "anon",
+        email: "anon@gmail.com",
         age: 0,
         isVerified: true,
       })
@@ -38,20 +38,20 @@ describe("test for boolean, number and string", () => {
     expect(newUser).toStrictEqual(
       expect.objectContaining({
         email: "anon@gmail.com",
-        name: "anon",
         age: 0,
+        name: "anon",
         isVerified: true,
       })
     );
 
-    const users = await db.users.find().where({}).exec();
+    const users = await collections.users.find().where({}).exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
-        email: "anon@gmail.com",
         name: "anon",
+        email: "anon@gmail.com",
         age: 0,
         isVerified: true,
       })
