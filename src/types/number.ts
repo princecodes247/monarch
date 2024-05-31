@@ -1,5 +1,5 @@
-import { MonarchType, noopParser } from "./type";
+import { MonarchType } from "./type";
 
-export const number = () => new MonarchNumber(noopParser());
+export const number = () => new MonarchNumber((input) => input);
 
-class MonarchNumber extends MonarchType<number> {}
+export class MonarchNumber extends MonarchType<number> {}

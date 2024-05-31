@@ -1,25 +1,21 @@
-import { MonarchType, noopParser } from "./type";
+import { MongoParseError } from "mongodb";
+import { MonarchType, applyParser } from "./type";
 
-export const date = () => new MonarchDate(noopParser());
+export const date = () => new MonarchDate((input) => input);
 
-class MonarchDate extends MonarchType<Date> {}
-
-export const dateString = () => {
-  return new MonarchDateString({
-    validate: (input) => input,
-    transform: (input) => input.toISOString(),
-  });
-};
-
-class MonarchDateString extends MonarchType<Date, string> {
+class MonarchDate extends MonarchType<Date> {
   public after(date: Date) {
-    return new MonarchDateString({
-      validate: (input) => {
-        const val = this._parser.validate(input);
-        if (val < date) throw new Error(`date must be after ${date}`);
-        return val;
-      },
-      transform: this._parser.transform,
-    });
+    return new MonarchDate(
+      applyParser(this._parser, (input) => {
+        if (input > date) return input;
+        throw new MongoParseError(`date must be after ${date}`);
+      })
+    );
   }
 }
+
+export const dateString = () => {
+  return new MonarchDateString((input) => input.toISOString());
+};
+
+class MonarchDateString extends MonarchType<Date, string> {}

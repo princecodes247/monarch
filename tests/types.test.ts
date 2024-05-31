@@ -1,20 +1,28 @@
 import { describe, expect, it, test, vi } from "vitest";
+import { string } from "../src";
 import { createSchema, parseSchema } from "../src/schema";
-import { noopParser, type } from "../src/types/type";
+import { type } from "../src/types/type";
 
-const genericString = () => type(noopParser<string>());
-const genericNumberString = () =>
-  type<number, `${number}`>({
-    validate: (input) => input,
-    transform: (input) => `${input}`,
-  });
+const numberString = () => type<number, `${number}`>((input) => `${input}`);
 
 describe("Types", () => {
+  it("validate and transform order", () => {
+    const schema = createSchema("test", {
+      name: string()
+        .uppercase() // should have made everything uppercase
+        .validate(
+          (input) => input.toUpperCase() === input,
+          "String is not in all caps"
+        ),
+    });
+    expect(() => parseSchema(schema, { name: "somename" })).not.toThrowError();
+  });
+
   it("validates and transforms input", () => {
     const schema = createSchema("users", {
-      name: genericString(),
-      upperName: genericString().transform((input) => input.toUpperCase()),
-      age: genericNumberString(),
+      name: string(),
+      upperName: string().transform((input) => input.toUpperCase()),
+      age: numberString(),
     });
 
     const output = parseSchema(schema, {
@@ -25,39 +33,57 @@ describe("Types", () => {
     expect(output).toStrictEqual({ name: "tom", upperName: "TOM", age: "0" });
   });
 
-  test("optional, nullable and default", () => {
-    // transform is ommited when value is null
+  test("nullable", () => {
+    // transform is skipped when value is null
     const schema1 = createSchema("users", {
-      age: genericNumberString().nullable(),
+      age: numberString().nullable(),
     });
     const output1 = parseSchema(schema1, { age: null });
     expect(output1).toStrictEqual({ age: null });
 
-    // transform is applied when value is passed
+    // transform is applied when value is not null
     const schema2 = createSchema("users", {
-      age: genericNumberString().nullable(),
+      age: numberString().nullable(),
     });
     const output2 = parseSchema(schema2, { age: 0 });
     expect(output2).toStrictEqual({ age: "0" });
+  });
 
-    // default value is used when ommited
-    const defaultFnTrap1 = vi.fn(() => 11);
-    const schema3 = createSchema("users", {
-      age: genericNumberString().default(10),
-      ageLazy: genericNumberString().default(defaultFnTrap1),
+  test("optional", () => {
+    // transform is skipped when value is undefined
+    const schema1 = createSchema("users", {
+      age: numberString().optional(),
     });
-    const output3 = parseSchema(schema3, {});
-    expect(output3).toStrictEqual({ age: "10", ageLazy: "11" });
+    const output1 = parseSchema(schema1, {});
+    expect(output1).toStrictEqual({ age: undefined });
+
+    // transform is applied when value is not undefined
+    const schema2 = createSchema("users", {
+      age: numberString().optional(),
+    });
+    const output2 = parseSchema(schema2, { age: 0 });
+    expect(output2).toStrictEqual({ age: "0" });
+  });
+
+  test("default", () => {
+    // default value is used when value is ommited
+    const defaultFnTrap1 = vi.fn(() => 11);
+    const schema1 = createSchema("users", {
+      age: numberString().default(10),
+      ageLazy: numberString().default(defaultFnTrap1),
+    });
+    const output1 = parseSchema(schema1, {});
+    expect(output1).toStrictEqual({ age: "10", ageLazy: "11" });
     expect(defaultFnTrap1).toHaveBeenCalledTimes(1);
 
-    // default value is ignored when value is passed
+    // default value is ignored when value is not null or undefined
     const defaultFnTrap2 = vi.fn(() => 11);
-    const schema4 = createSchema("users", {
-      age: genericNumberString().default(10),
-      ageLazy: genericNumberString().default(defaultFnTrap2),
+    const schema2 = createSchema("users", {
+      age: numberString().default(10),
+      ageLazy: numberString().default(defaultFnTrap2),
     });
-    const output4 = parseSchema(schema4, { age: 1, ageLazy: 2 });
-    expect(output4).toStrictEqual({ age: "1", ageLazy: "2" });
+    const output2 = parseSchema(schema2, { age: 1, ageLazy: 2 });
+    expect(output2).toStrictEqual({ age: "1", ageLazy: "2" });
     expect(defaultFnTrap2).toHaveBeenCalledTimes(0);
   });
 });

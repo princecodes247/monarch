@@ -1,5 +1,5 @@
-import { MonarchType, noopParser } from "./type";
+import { MonarchType } from "./type";
 
-export const boolean = () => new MonarchBoolean(noopParser());
+export const boolean = () => new MonarchBoolean((input) => input);
 
 class MonarchBoolean extends MonarchType<boolean> {}

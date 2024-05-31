@@ -55,8 +55,7 @@ export function parseSchema<T extends Schema<any, any>>(
     keyof T["types"],
     MonarchType<any>
   ][]) {
-    const validatedValue = type._parser.validate(input[key]);
-    validated[key] = type._parser.transform(validatedValue);
+    validated[key] = type._parser(input[key]);
   }
 
   return validated;

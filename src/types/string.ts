@@ -1,25 +1,19 @@
-import { MonarchType, noopParser } from "./type";
+import { MonarchType, applyParser } from "./type";
 
-export const string = () => new MonarchString(noopParser());
+export const string = () => new MonarchString((input) => input);
 
 class MonarchString extends MonarchType<string> {
   public lowercase() {
-    return new MonarchString({
-      validate: this._parser.validate,
-      transform: (input) => {
-        const val = this._parser.validate(input);
-        return val.toLowerCase();
-      },
-    });
+    return new MonarchString(
+      applyParser(this._parser, (input) => input.toLowerCase())
+    );
   }
 
   public uppercase() {
-    return new MonarchString({
-      validate: this._parser.validate,
-      transform: (input) => {
-        const val = this._parser.validate(input);
-        return val.toUpperCase();
-      },
-    });
+    return new MonarchString(
+      applyParser(this._parser, (input) => input.toUpperCase())
+    );
   }
 }
+
+const type = string();
