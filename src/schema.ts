@@ -1,10 +1,4 @@
-import {
-  InferTypeInput,
-  InferTypeOutput,
-  MonarchDefaulted,
-  MonarchOptional,
-  MonarchType,
-} from "./types/type";
+import { InferTypeInput, InferTypeOutput, MonarchType } from "./types/type";
 
 export type Schema<
   TName extends string,
@@ -25,18 +19,13 @@ export function createSchema<
 }
 
 type Pretty<T> = { [K in keyof T]: T[K] } & {};
-type IsOptionalType<T extends MonarchType<any>> = T extends MonarchOptional<any>
-  ? true
-  : T extends MonarchDefaulted<any>
-  ? true
-  : false;
 export type InferSchemaInput<T extends Schema<any, any>> = Pretty<
   {
-    [K in keyof T["types"] as IsOptionalType<T["types"][K]> extends true
+    [K in keyof T["types"] as undefined extends InferTypeInput<T["types"][K]>
       ? never
       : K]: InferTypeInput<T["types"][K]>; // required keys
   } & {
-    [K in keyof T["types"] as IsOptionalType<T["types"][K]> extends true
+    [K in keyof T["types"] as undefined extends InferTypeInput<T["types"][K]>
       ? K
       : never]?: InferTypeInput<T["types"][K]>; // optional keys
   }

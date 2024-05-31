@@ -15,5 +15,3 @@ class MonarchString extends MonarchType<string> {
     );
   }
 }
-
-const type = string();

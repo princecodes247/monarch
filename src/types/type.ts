@@ -39,6 +39,10 @@ export class MonarchType<TInput, TOutput = TInput> {
     );
   }
 
+  public pipe<T extends MonarchType<TOutput, any>>(type: T) {
+    return new MonarchPipe(this, type);
+  }
+
   /**
    * Transform input.
    *
@@ -67,6 +71,18 @@ export class MonarchType<TInput, TOutput = TInput> {
   }
 }
 
+export class MonarchPipe<
+  TPipeIn extends MonarchType<any>,
+  TPipeOut extends MonarchType<InferTypeOutput<TPipeIn>, any>
+> extends MonarchType<InferTypeInput<TPipeIn>, InferTypeOutput<TPipeOut>> {
+  constructor(pipeIn: TPipeIn, pipeOut: TPipeOut) {
+    super((input) => {
+      const parsedInput = pipeIn._parser(input);
+      return pipeOut._parser(parsedInput);
+    });
+  }
+}
+
 export class MonarchNullable<T extends MonarchType<any>> extends MonarchType<
   InferTypeInput<T> | null,
   InferTypeOutput<T> | null
@@ -92,7 +108,7 @@ export class MonarchOptional<T extends MonarchType<any>> extends MonarchType<
 }
 
 export class MonarchDefaulted<T extends MonarchType<any>> extends MonarchType<
-  InferTypeInput<T>,
+  InferTypeInput<T> | undefined,
   InferTypeOutput<T>
 > {
   constructor(
@@ -100,7 +116,7 @@ export class MonarchDefaulted<T extends MonarchType<any>> extends MonarchType<
     defaultInput: InferTypeInput<T> | (() => InferTypeInput<T>)
   ) {
     super((input) => {
-      if (input === null || input === undefined) {
+      if (input === undefined) {
         const defaultValue = MonarchDefaulted.isDefaultFunction(defaultInput)
           ? defaultInput()
           : defaultInput;

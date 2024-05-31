@@ -1,23 +1,11 @@
 import { describe, expect, it, test, vi } from "vitest";
-import { string } from "../src";
+import { number, string } from "../src";
 import { createSchema, parseSchema } from "../src/schema";
 import { type } from "../src/types/type";
 
 const numberString = () => type<number, `${number}`>((input) => `${input}`);
 
 describe("Types", () => {
-  it("validate and transform order", () => {
-    const schema = createSchema("test", {
-      name: string()
-        .uppercase() // should have made everything uppercase
-        .validate(
-          (input) => input.toUpperCase() === input,
-          "String is not in all caps"
-        ),
-    });
-    expect(() => parseSchema(schema, { name: "somename" })).not.toThrowError();
-  });
-
   it("validates and transforms input", () => {
     const schema = createSchema("users", {
       name: string(),
@@ -31,6 +19,18 @@ describe("Types", () => {
       age: 0,
     });
     expect(output).toStrictEqual({ name: "tom", upperName: "TOM", age: "0" });
+  });
+
+  it("validate and transform order", () => {
+    const schema = createSchema("test", {
+      name: string()
+        .uppercase() // should have made everything uppercase
+        .validate(
+          (input) => input.toUpperCase() === input,
+          "String is not in all caps"
+        ),
+    });
+    expect(() => parseSchema(schema, { name: "somename" })).not.toThrowError();
   });
 
   test("nullable", () => {
@@ -85,5 +85,89 @@ describe("Types", () => {
     const output2 = parseSchema(schema2, { age: 1, ageLazy: 2 });
     expect(output2).toStrictEqual({ age: "1", ageLazy: "2" });
     expect(defaultFnTrap2).toHaveBeenCalledTimes(0);
+  });
+
+  test("pipe", () => {
+    const outerValidateFnTrap = vi.fn(() => true);
+    const innerValidateFnTrap = vi.fn(() => true);
+
+    const schema1 = createSchema("test", {
+      count: string()
+        .validate(outerValidateFnTrap, "invalid count string")
+        .transform(parseInt)
+        .pipe(
+          number()
+            .validate(innerValidateFnTrap, "invalid count number")
+            .transform((num) => num * 1000)
+            .transform((str) => `count-${str}`)
+        ),
+    });
+    const output1 = parseSchema(schema1, { count: "1" });
+    expect(output1).toStrictEqual({ count: "count-1000" });
+    expect(outerValidateFnTrap).toHaveBeenCalledTimes(1);
+    expect(innerValidateFnTrap).toHaveBeenCalledTimes(1);
+    outerValidateFnTrap.mockClear();
+    innerValidateFnTrap.mockClear();
+
+    // outer default (before)
+    const schema2 = createSchema("test", {
+      count: string()
+        .validate(outerValidateFnTrap, "invalid count string")
+        .transform(parseInt)
+        .default("2")
+        .pipe(
+          number()
+            .validate(innerValidateFnTrap, "invalid count number")
+            .transform((num) => num * 1000)
+            .transform((str) => `count-${str}`)
+        ),
+    });
+    const output2 = parseSchema(schema2, {});
+    expect(output2).toStrictEqual({ count: "count-2000" });
+    expect(outerValidateFnTrap).toHaveBeenCalledTimes(1);
+    expect(innerValidateFnTrap).toHaveBeenCalledTimes(1);
+    outerValidateFnTrap.mockClear();
+    innerValidateFnTrap.mockClear();
+
+    // outer default (after)
+    const schema3 = createSchema("test", {
+      count: string()
+        .validate(outerValidateFnTrap, "invalid count string")
+        .transform(parseInt)
+        .pipe(
+          number()
+            .validate(innerValidateFnTrap, "invalid count number")
+            .transform((num) => num * 1000)
+            .transform((str) => `count-${str}`)
+        )
+        .default("3"),
+    });
+    const output3 = parseSchema(schema3, {});
+    expect(output3).toStrictEqual({ count: "count-3000" });
+    expect(outerValidateFnTrap).toHaveBeenCalledTimes(1);
+    expect(innerValidateFnTrap).toHaveBeenCalledTimes(1);
+    outerValidateFnTrap.mockClear();
+    innerValidateFnTrap.mockClear();
+
+    // inner default
+    const schema4 = createSchema("test", {
+      count: string()
+        .validate(outerValidateFnTrap, "invalid count string")
+        .transform(parseInt)
+        .optional()
+        .pipe(
+          number()
+            .validate(innerValidateFnTrap, "invalid count number")
+            .transform((num) => num * 1000)
+            .transform((str) => `count-${str}`)
+            .default(4)
+        ),
+    });
+    const output4 = parseSchema(schema4, {});
+    expect(output4).toStrictEqual({ count: "count-4000" });
+    expect(outerValidateFnTrap).toHaveBeenCalledTimes(0);
+    expect(innerValidateFnTrap).toHaveBeenCalledTimes(1);
+    outerValidateFnTrap.mockClear();
+    innerValidateFnTrap.mockClear();
   });
 });
