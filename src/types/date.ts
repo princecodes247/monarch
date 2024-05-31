@@ -1,4 +1,4 @@
-import { MongoParseError } from "mongodb";
+import { MonarchParseError } from "../errors";
 import { MonarchType, applyParser } from "./type";
 
 export const date = () => new MonarchDate((input) => input);
@@ -8,7 +8,7 @@ class MonarchDate extends MonarchType<Date> {
     return new MonarchDate(
       applyParser(this._parser, (input) => {
         if (input > date) return input;
-        throw new MongoParseError(`date must be after ${date}`);
+        throw new MonarchParseError(`date must be after ${date}`);
       })
     );
   }
