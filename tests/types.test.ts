@@ -1,5 +1,5 @@
 import { describe, expect, it, test, vi } from "vitest";
-import { boolean, number, object, string } from "../src";
+import { boolean, number, object, record, string } from "../src";
 import { createSchema, parseSchema } from "../src/schema";
 import { type } from "../src/types/type";
 
@@ -187,21 +187,35 @@ describe("Types", () => {
     expect(() =>
       // @ts-expect-error
       parseSchema(schema, { permissions: { canUpdate: "yes" } })
-    ).toThrowError(
-      "object field 'canUpdate' expected 'boolean' received 'string'"
-    );
-    // fields are validates in the order they are registered in the object type
+    ).toThrowError("field 'canUpdate' expected 'boolean' received 'string'");
+    // fields are validates in the order they are registered in type
     expect(() =>
       // @ts-expect-error
       parseSchema(schema, { permissions: { role: false } })
-    ).toThrowError(
-      "object field 'canUpdate' expected 'boolean' received 'undefined'"
-    );
+    ).toThrowError("field 'canUpdate' expected 'boolean' received 'undefined'");
     const res = parseSchema(schema, {
       permissions: { canUpdate: true, role: "moderator" },
     });
     expect(res).toStrictEqual({
       permissions: { canUpdate: true, canDelete: false, role: "moderator" },
     });
+  });
+
+  test("record", () => {
+    const schema = createSchema("test", {
+      grades: record(number()),
+    });
+
+    // @ts-expect-error
+    expect(() => parseSchema(schema, {})).toThrowError(
+      "expected 'object' received 'undefined'"
+    );
+    expect(() => parseSchema(schema, { grades: {} })).not.toThrowError();
+    expect(() =>
+      // @ts-expect-error
+      parseSchema(schema, { grades: { math: "50" } })
+    ).toThrowError("field 'math' expected 'number' received 'string'");
+    const res = parseSchema(schema, { grades: { math: 50 } });
+    expect(res).toStrictEqual({ grades: { math: 50 } });
   });
 });

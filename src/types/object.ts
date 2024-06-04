@@ -16,9 +16,7 @@ export const object = <T extends Record<string, MonarchType<any>>>(
           parsed[key] = value._parser(input[key as keyof typeof input]);
         } catch (error) {
           if (error instanceof MonarchParseError) {
-            throw new MonarchParseError(
-              `object field '${key}' ${error.message}'`
-            );
+            throw new MonarchParseError(`field '${key}' ${error.message}'`);
           }
           throw error;
         }
