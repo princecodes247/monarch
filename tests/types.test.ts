@@ -1,5 +1,14 @@
 import { describe, expect, it, test, vi } from "vitest";
-import { array, boolean, number, object, record, string, tuple } from "../src";
+import {
+  array,
+  boolean,
+  literal,
+  number,
+  object,
+  record,
+  string,
+  tuple,
+} from "../src";
 import { createSchema, parseSchema } from "../src/schema";
 import { type } from "../src/types/type";
 
@@ -265,5 +274,19 @@ describe("Types", () => {
     );
     const res = parseSchema(schema, { items: [0, 1] });
     expect(res).toStrictEqual({ items: [0, 1] });
+  });
+
+  test("literal", () => {
+    const schema = createSchema("test", {
+      role: literal("admin", "moderator"),
+    });
+
+    expect(() => parseSchema(schema, { role: "moderator" })).not.toThrowError();
+    // @ts-expect-error
+    expect(() => parseSchema(schema, { role: "user" })).toThrowError(
+      "unknown value 'user', literal may only specify known values"
+    );
+    const res = parseSchema(schema, { role: "admin" });
+    expect(res).toStrictEqual({ role: "admin" });
   });
 });

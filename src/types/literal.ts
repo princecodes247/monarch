@@ -1,22 +1,18 @@
-import { MonarchError } from "../errors";
+import { MonarchParseError } from "../errors";
 import { MonarchType } from "./type";
 
-export const literal = <T extends (string | number)[]>(...values: T) =>
-  new MonarchLiteral(values);
-
-class MonarchLiteral<T extends (string | number)[]> extends MonarchType<
-  T[number]
-> {
-  constructor(values: T) {
+export const literal = <T extends (string | number | boolean)[]>(
+  ...values: T
+) => {
+  return new MonarchLiteral<T[number]>((input) => {
     const _values = new Set(values);
-    super({
-      validate: (input: T[number]) => {
-        if (_values.has(input)) {
-          return input;
-        }
-        throw new MonarchError(`Invalid enum value: ${input}`);
-      },
-      transform: (input: T[number]) => input,
-    });
-  }
-}
+    if (_values.has(input)) return input;
+    throw new MonarchParseError(
+      `unknown value '${input}', literal may only specify known values`
+    );
+  });
+};
+
+class MonarchLiteral<
+  T extends string | number | boolean
+> extends MonarchType<T> {}
