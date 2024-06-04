@@ -1,10 +1,8 @@
+import { MonarchType } from "./types/type";
 import {
-  InferTypeInput,
-  InferTypeOutput,
-  MonarchDefaulted,
-  MonarchOptional,
-  MonarchType,
-} from "./types/type";
+  InferTypeObjectInput,
+  InferTypeObjectOutput,
+} from "./types/type-helpers";
 
 export type Schema<
   TName extends string,
@@ -24,26 +22,11 @@ export function createSchema<
   };
 }
 
-type Pretty<T> = { [K in keyof T]: T[K] } & {};
-type IsOptionalType<T extends MonarchType<any>> = T extends MonarchOptional<any>
-  ? true
-  : T extends MonarchDefaulted<any>
-  ? true
-  : false;
-export type InferSchemaInput<T extends Schema<any, any>> = Pretty<
-  {
-    [K in keyof T["types"] as IsOptionalType<T["types"][K]> extends true
-      ? never
-      : K]: InferTypeInput<T["types"][K]>; // required keys
-  } & {
-    [K in keyof T["types"] as IsOptionalType<T["types"][K]> extends true
-      ? K
-      : never]?: InferTypeInput<T["types"][K]>; // optional keys
-  }
+export type InferSchemaInput<T extends Schema<any, any>> = InferTypeObjectInput<
+  T["types"]
 >;
-export type InferSchemaOutput<T extends Schema<any, any>> = Pretty<{
-  [K in keyof T["types"]]: InferTypeOutput<T["types"][K]>;
-}>;
+export type InferSchemaOutput<T extends Schema<any, any>> =
+  InferTypeObjectOutput<T["types"]>;
 
 export function parseSchema<T extends Schema<any, any>>(
   schema: T,
@@ -55,8 +38,7 @@ export function parseSchema<T extends Schema<any, any>>(
     keyof T["types"],
     MonarchType<any>
   ][]) {
-    const validatedValue = type._parser.validate(input[key]);
-    validated[key] = type._parser.transform(validatedValue);
+    validated[key] = type._parser(input[key]);
   }
 
   return validated;

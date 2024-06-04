@@ -1,5 +1,13 @@
-import { MonarchType, noopParser } from "./type";
+import { MonarchParseError } from "../errors";
+import { MonarchType } from "./type";
 
-export const boolean = () => new MonarchBoolean(noopParser());
+export const boolean = () => {
+  return new MonarchBoolean((input) => {
+    if (typeof input === "boolean") return input;
+    throw new MonarchParseError(
+      `expected 'boolean' received '${typeof input}'`
+    );
+  });
+};
 
 class MonarchBoolean extends MonarchType<boolean> {}
