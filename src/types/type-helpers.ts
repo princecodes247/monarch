@@ -23,3 +23,14 @@ export type InferTypeObjectOutput<T extends Record<string, MonarchType<any>>> =
   Pretty<{
     [K in keyof T]: InferTypeOutput<T[K]>;
   }>;
+
+export type InferTypeTupleInput<
+  T extends [MonarchType<any>, ...MonarchType<T>[]]
+> = {
+  [K in keyof T]: InferTypeInput<T[K]>;
+};
+export type InferTypeTupleOutput<
+  T extends [MonarchType<any>, ...MonarchType<T>[]]
+> = {
+  [K in keyof T]: InferTypeOutput<T[K]>;
+};
