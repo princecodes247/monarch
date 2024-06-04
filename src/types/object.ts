@@ -8,12 +8,12 @@ export const object = <T extends Record<string, MonarchType<any>>>(
   return new MonarchObject<T>((input) => {
     if (typeof input === "object" && input !== null) {
       const parsed = {} as InferTypeObjectOutput<T>;
-      for (const [key, value] of Object.entries(types) as [
+      for (const [key, type] of Object.entries(types) as [
         keyof T & string,
         T[keyof T]
       ][]) {
         try {
-          parsed[key] = value._parser(input[key as keyof typeof input]);
+          parsed[key] = type._parser(input[key as keyof typeof input]);
         } catch (error) {
           if (error instanceof MonarchParseError) {
             throw new MonarchParseError(`field '${key}' ${error.message}'`);

@@ -1,5 +1,5 @@
 import { describe, expect, it, test, vi } from "vitest";
-import { boolean, number, object, record, string, tuple } from "../src";
+import { array, boolean, number, object, record, string, tuple } from "../src";
 import { createSchema, parseSchema } from "../src/schema";
 import { type } from "../src/types/type";
 
@@ -238,5 +238,23 @@ describe("Types", () => {
     expect(() => parseSchema(schema, { items: [1, "1", 2] })).toThrowError(
       "expected array with 2 elements received 3 elements"
     );
+  });
+
+  test("array", () => {
+    const schema = createSchema("test", {
+      items: array(number()),
+    });
+
+    // @ts-expect-error
+    expect(() => parseSchema(schema, {})).toThrowError(
+      "expected 'array' received 'undefined'"
+    );
+    expect(() => parseSchema(schema, { items: [] })).not.toThrowError();
+    // @ts-expect-error
+    expect(() => parseSchema(schema, { items: [0, "1"] })).toThrowError(
+      "element at index '1' expected 'number' received 'string'"
+    );
+    const res = parseSchema(schema, { items: [0, 1] });
+    expect(res).toStrictEqual({ items: [0, 1] });
   });
 });
