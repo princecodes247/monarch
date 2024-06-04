@@ -193,6 +193,15 @@ describe("Types", () => {
       // @ts-expect-error
       parseSchema(schema, { permissions: { role: false } })
     ).toThrowError("field 'canUpdate' expected 'boolean' received 'undefined'");
+    // unknwon fields are rejected
+    expect(() =>
+      parseSchema(schema, {
+        // @ts-expect-error
+        permissions: { canUpdate: true, role: "admin", canCreate: true },
+      })
+    ).toThrowError(
+      "unknown field 'canCreate', object may only specify known fields"
+    );
     const res = parseSchema(schema, {
       permissions: { canUpdate: true, role: "moderator" },
     });

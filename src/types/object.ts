@@ -7,6 +7,13 @@ export const object = <T extends Record<string, MonarchType<any>>>(
 ) => {
   return new MonarchObject<T>((input) => {
     if (typeof input === "object" && input !== null) {
+      for (const key of Object.keys(input)) {
+        if (!(key in types)) {
+          throw new MonarchParseError(
+            `unknown field '${key}', object may only specify known fields`
+          );
+        }
+      }
       const parsed = {} as InferTypeObjectOutput<T>;
       for (const [key, type] of Object.entries(types) as [
         keyof T & string,
