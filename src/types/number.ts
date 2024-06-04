@@ -1,5 +1,11 @@
+import { MonarchParseError } from "../errors";
 import { MonarchType } from "./type";
 
-export const number = () => new MonarchNumber((input) => input);
+export const number = () => {
+  return new MonarchNumber((input) => {
+    if (typeof input === "number") return input;
+    throw new MonarchParseError(`expected 'number' received '${typeof input}'`);
+  });
+};
 
-export class MonarchNumber extends MonarchType<number> {}
+class MonarchNumber extends MonarchType<number> {}

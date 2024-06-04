@@ -1,7 +1,12 @@
 import { MonarchParseError } from "../errors";
 import { MonarchType, applyParser } from "./type";
 
-export const date = () => new MonarchDate((input) => input);
+export const date = () => {
+  return new MonarchDate((input) => {
+    if (input instanceof Date) return input;
+    throw new MonarchParseError(`expected 'Date' received '${typeof input}'`);
+  });
+};
 
 class MonarchDate extends MonarchType<Date> {
   public after(date: Date) {
@@ -15,7 +20,10 @@ class MonarchDate extends MonarchType<Date> {
 }
 
 export const dateString = () => {
-  return new MonarchDateString((input) => input.toISOString());
+  return new MonarchDateString((input) => {
+    if (input instanceof Date) return input.toISOString();
+    throw new MonarchParseError(`expected 'Date' received '${typeof input}'`);
+  });
 };
 
 class MonarchDateString extends MonarchType<Date, string> {}

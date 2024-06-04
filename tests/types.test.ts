@@ -1,5 +1,5 @@
 import { describe, expect, it, test, vi } from "vitest";
-import { number, string } from "../src";
+import { boolean, number, object, string } from "../src";
 import { createSchema, parseSchema } from "../src/schema";
 import { type } from "../src/types/type";
 
@@ -169,5 +169,39 @@ describe("Types", () => {
     expect(innerValidateFnTrap).toHaveBeenCalledTimes(1);
     outerValidateFnTrap.mockClear();
     innerValidateFnTrap.mockClear();
+  });
+
+  test("object", () => {
+    const schema = createSchema("test", {
+      permissions: object({
+        canUpdate: boolean(),
+        canDelete: boolean().default(false),
+        role: string(),
+      }),
+    });
+
+    // @ts-expect-error
+    expect(() => parseSchema(schema, {})).toThrowError(
+      "expected 'object' received 'undefined'"
+    );
+    expect(() =>
+      // @ts-expect-error
+      parseSchema(schema, { permissions: { canUpdate: "yes" } })
+    ).toThrowError(
+      "object field 'canUpdate' expected 'boolean' received 'string'"
+    );
+    // fields are validates in the order they are registered in the object type
+    expect(() =>
+      // @ts-expect-error
+      parseSchema(schema, { permissions: { role: false } })
+    ).toThrowError(
+      "object field 'canUpdate' expected 'boolean' received 'undefined'"
+    );
+    const res = parseSchema(schema, {
+      permissions: { canUpdate: true, role: "moderator" },
+    });
+    expect(res).toStrictEqual({
+      permissions: { canUpdate: true, canDelete: false, role: "moderator" },
+    });
   });
 });

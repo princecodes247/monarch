@@ -1,4 +1,8 @@
-import { InferTypeInput, InferTypeOutput, MonarchType } from "./types/type";
+import { MonarchType } from "./types/type";
+import {
+  InferTypeObjectInput,
+  InferTypeObjectOutput,
+} from "./types/type-helpers";
 
 export type Schema<
   TName extends string,
@@ -18,21 +22,11 @@ export function createSchema<
   };
 }
 
-type Pretty<T> = { [K in keyof T]: T[K] } & {};
-export type InferSchemaInput<T extends Schema<any, any>> = Pretty<
-  {
-    [K in keyof T["types"] as undefined extends InferTypeInput<T["types"][K]>
-      ? never
-      : K]: InferTypeInput<T["types"][K]>; // required keys
-  } & {
-    [K in keyof T["types"] as undefined extends InferTypeInput<T["types"][K]>
-      ? K
-      : never]?: InferTypeInput<T["types"][K]>; // optional keys
-  }
+export type InferSchemaInput<T extends Schema<any, any>> = InferTypeObjectInput<
+  T["types"]
 >;
-export type InferSchemaOutput<T extends Schema<any, any>> = Pretty<{
-  [K in keyof T["types"]]: InferTypeOutput<T["types"][K]>;
-}>;
+export type InferSchemaOutput<T extends Schema<any, any>> =
+  InferTypeObjectOutput<T["types"]>;
 
 export function parseSchema<T extends Schema<any, any>>(
   schema: T,

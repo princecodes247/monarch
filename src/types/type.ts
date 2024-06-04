@@ -1,4 +1,5 @@
 import { MonarchParseError } from "../errors";
+import { InferTypeInput, InferTypeOutput } from "./type-helpers";
 
 export type Parser<Input, Output> = (input: Input) => Output;
 
@@ -11,11 +12,6 @@ export function applyParser<Input, InterOutput, Output>(
 
 export const type = <TInput, TOutput>(parser: Parser<TInput, TOutput>) =>
   new MonarchType(parser);
-
-export type InferTypeInput<T> = T extends MonarchType<infer U, any> ? U : never;
-export type InferTypeOutput<T> = T extends MonarchType<any, infer U>
-  ? U
-  : never;
 
 export class MonarchType<TInput, TOutput = TInput> {
   constructor(public _parser: Parser<TInput, TOutput>) {}
