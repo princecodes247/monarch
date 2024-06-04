@@ -7,6 +7,7 @@ import {
   object,
   record,
   string,
+  taggedUnion,
   tuple,
 } from "../src";
 import { createSchema, parseSchema } from "../src/schema";
@@ -228,6 +229,7 @@ describe("Types", () => {
     expect(() => parseSchema(schema, {})).toThrowError(
       "expected 'object' received 'undefined'"
     );
+    // empty object is ok
     expect(() => parseSchema(schema, { grades: {} })).not.toThrowError();
     expect(() =>
       // @ts-expect-error
@@ -267,6 +269,7 @@ describe("Types", () => {
     expect(() => parseSchema(schema, {})).toThrowError(
       "expected 'array' received 'undefined'"
     );
+    // empty array is ok
     expect(() => parseSchema(schema, { items: [] })).not.toThrowError();
     // @ts-expect-error
     expect(() => parseSchema(schema, { items: [0, "1"] })).toThrowError(
@@ -281,12 +284,78 @@ describe("Types", () => {
       role: literal("admin", "moderator"),
     });
 
-    expect(() => parseSchema(schema, { role: "moderator" })).not.toThrowError();
+    // @ts-expect-error
+    expect(() => parseSchema(schema, {})).toThrowError(
+      "unknown value 'undefined', literal may only specify known values"
+    );
     // @ts-expect-error
     expect(() => parseSchema(schema, { role: "user" })).toThrowError(
       "unknown value 'user', literal may only specify known values"
     );
     const res = parseSchema(schema, { role: "admin" });
     expect(res).toStrictEqual({ role: "admin" });
+  });
+
+  test("taggedUnion", () => {
+    const schema = createSchema("test", {
+      color: taggedUnion({
+        rgba: object({ r: number(), g: number(), b: number(), a: string() }),
+        hex: string(),
+        hsl: tuple([string(), string(), string()]).transform(
+          ([f, s, t]) => f + s + t
+        ),
+      }),
+    });
+
+    // @ts-expect-error
+    expect(() => parseSchema(schema, {})).toThrowError(
+      "expected 'object' received 'undefined'"
+    );
+    // @ts-expect-error
+    expect(() => parseSchema(schema, { color: {} })).toThrowError(
+      "missing field"
+    );
+    // @ts-expect-error
+    expect(() => parseSchema(schema, { color: { tag: "hex" } })).toThrowError(
+      "missing field 'value' in tagged union"
+    );
+    expect(() =>
+      // @ts-expect-error
+      parseSchema(schema, { color: { value: "#fff" } })
+    ).toThrowError("missing field 'tag' in tagged union");
+    expect(() =>
+      parseSchema(schema, {
+        // @ts-expect-error
+        color: { tag: "hex", value: "#fff", extra: "user" },
+      })
+    ).toThrowError(
+      "unknown field 'extra', tagged union may only specify 'tag' and 'value' fields"
+    );
+    expect(() =>
+      // @ts-expect-error
+      parseSchema(schema, { color: { tag: "hwb", value: "#fff" } })
+    ).toThrowError("unknown tag 'hwb'");
+    expect(() =>
+      // @ts-expect-error
+      parseSchema(schema, { color: { tag: "hsl", value: "#fff" } })
+    ).toThrowError("invalid value for tag 'hsl'");
+    const res1 = parseSchema(schema, {
+      color: { tag: "rgba", value: { r: 0, g: 0, b: 0, a: "100%" } },
+    });
+    expect(res1).toStrictEqual({
+      color: { tag: "rgba", value: { r: 0, g: 0, b: 0, a: "100%" } },
+    });
+    const res2 = parseSchema(schema, {
+      color: { tag: "hex", value: "#fff" },
+    });
+    expect(res2).toStrictEqual({
+      color: { tag: "hex", value: "#fff" },
+    });
+    const res3 = parseSchema(schema, {
+      color: { tag: "hsl", value: ["0", "0", "0"] },
+    });
+    expect(res3).toStrictEqual({
+      color: { tag: "hsl", value: "000" },
+    });
   });
 });
