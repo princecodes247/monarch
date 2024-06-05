@@ -12,7 +12,6 @@ export const tuple = <T extends [MonarchType<any>, ...MonarchType<any>[]]>(
           `expected array with ${types.length} elements received ${input.length} elements`
         );
       }
-
       const parsed = [] as InferTypeTupleOutput<T>;
       for (const [index, type] of types.entries()) {
         try {

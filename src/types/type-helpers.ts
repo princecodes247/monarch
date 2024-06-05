@@ -34,3 +34,14 @@ export type InferTypeTupleOutput<
 > = {
   [K in keyof T]: InferTypeOutput<T[K]>;
 };
+
+export type InferTypeTaggedUnionInput<
+  T extends Record<string, MonarchType<any>>
+> = {
+  [K in keyof T]: { tag: K; value: InferTypeInput<T[K]> };
+}[keyof T];
+export type InferTypeTaggedUnionOutput<
+  T extends Record<string, MonarchType<any>>
+> = {
+  [K in keyof T]: { tag: K; value: InferTypeOutput<T[K]> };
+}[keyof T];
