@@ -1,7 +1,7 @@
-import { MongoClient } from "mongodb";
+import type { MongoClient } from "mongodb";
 import { MonarchError } from "./errors";
-import { QueryBuilder } from "./query-builder";
-import { Schema } from "./schema";
+import { QueryBuilder } from "./queries/query-builder";
+import type { Schema } from "./schema";
 
 type DbQueryBuilder = <T extends Schema<any, any>>(
   schema: T

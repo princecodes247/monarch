@@ -1,4 +1,4 @@
-import {
+import type {
   Collection,
   DeleteResult,
   Filter,
@@ -9,12 +9,9 @@ import {
   UpdateResult,
   WithId,
 } from "mongodb";
-import {
-  InferSchemaInput,
-  InferSchemaOutput,
-  Schema,
-  parseSchema,
-} from "./schema";
+import type { InferSchemaInput, InferSchemaOutput, Schema } from "../schema";
+import { parseSchema } from "../schema";
+import { PipelineStage } from "./pipeline-stage";
 
 export class QueryBuilder<T extends Schema<any, any>> {
   private _collection: Collection<InferSchemaOutput<T>>;
@@ -47,6 +44,10 @@ export class QueryBuilder<T extends Schema<any, any>> {
 
   deleteOne() {
     return new DeleteOneQuery(this._collection);
+  }
+
+  aggregate(): AggregationPipeline<T> {
+    return new AggregationPipeline(this._collection);
   }
 }
 
@@ -145,5 +146,23 @@ export class DeleteOneQuery<T extends Schema<any, any>> extends Query<T> {
   async exec(): Promise<DeleteResult> {
     const result = await this._collection.deleteOne(this.filters, this.options);
     return result;
+  }
+}
+
+// Define a class to represent an aggregation pipeline
+export class AggregationPipeline<T extends Schema<any, any>> {
+  private pipeline: PipelineStage[] = [];
+
+  constructor(private readonly _collection: Collection<InferSchemaOutput<T>>) {}
+
+  // Method to add a stage to the aggregation pipeline
+  addStage(stage: PipelineStage): this {
+    this.pipeline.push(stage);
+    return this;
+  }
+
+  // Method to execute the aggregation pipeline
+  async exec(): Promise<any[]> {
+    return this._collection.aggregate(this.pipeline).toArray();
   }
 }

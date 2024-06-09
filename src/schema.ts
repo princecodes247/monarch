@@ -1,5 +1,5 @@
-import { MonarchType } from "./types/type";
-import {
+import type { MonarchType } from "./types/type";
+import type {
   InferTypeObjectInput,
   InferTypeObjectOutput,
 } from "./types/type-helpers";

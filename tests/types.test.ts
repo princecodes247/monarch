@@ -186,7 +186,7 @@ describe("Types", () => {
       permissions: object({
         canUpdate: boolean(),
         canDelete: boolean().default(false),
-        role: string(),
+        role: literal("admin", "customer"),
       }),
     });
 
