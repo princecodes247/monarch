@@ -23,13 +23,11 @@ describe("test for date", () => {
     });
 
     collections.users.aggregate().addStage({
-      $addFields: {
-        test: {
-          sdfo: "sd",
-          $sum: { $multiply: ["$qty", 3] },
-        },
+      $match: {
+        name: "",
       },
-      $count: "cnt",
     });
+
+    collections.users.find().where({});
   });
 });

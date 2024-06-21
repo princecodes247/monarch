@@ -9,7 +9,7 @@ import type {
   WindowOperator,
 } from "./expressions";
 
-export type PipelineStage =
+export type PipelineStage<T> =
   | AddFields
   | Bucket
   | BucketAuto
@@ -24,9 +24,9 @@ export type PipelineStage =
   | IndexStats
   | Limit
   | ListSessions
-  | Lookup
-  | Match
-  | Merge
+  | Lookup<T>
+  | Match<T>
+  | Merge<T>
   | Out
   | PlanCacheStats
   | Project
@@ -41,7 +41,7 @@ export type PipelineStage =
   | Skip
   | Sort
   | SortByCount
-  | UnionWith
+  | UnionWith<T>
   | Unset
   | Unwind
   | VectorSearch;
@@ -139,9 +139,9 @@ export interface Facet {
   $facet: Record<string, FacetPipelineStage[]>;
 }
 
-export type FacetPipelineStage = Exclude<
-  PipelineStage,
-  CollStats | Facet | GeoNear | IndexStats | Out | Merge | PlanCacheStats
+export type FacetPipelineStage<T = any> = Exclude<
+  PipelineStage<T>,
+  CollStats | Facet | GeoNear | IndexStats | Out | Merge<T> | PlanCacheStats
 >;
 
 export interface GeoNear {
@@ -200,24 +200,24 @@ export interface ListSessions {
     | { allUsers?: true };
 }
 
-export interface Lookup {
+export interface Lookup<T> {
   /** [`$lookup` reference](https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/) */
   $lookup: {
     from: string;
     as: string;
-    localField?: string;
+    localField?: keyof T;
     foreignField?: string;
     let?: Record<string, Expression>;
-    pipeline?: Exclude<PipelineStage, Merge | Out>[];
+    pipeline?: Exclude<PipelineStage<T>, Merge<T> | Out>[];
   };
 }
 
-export interface Match {
+export interface Match<T> {
   /** [`$match` reference](https://www.mongodb.com/docs/manual/reference/operator/aggregation/match/) */
-  $match: FilterQuery<any>;
+  $match: FilterQuery<T>;
 }
 
-export interface Merge {
+export interface Merge<T> {
   /** [`$merge` reference](https://www.mongodb.com/docs/manual/reference/operator/aggregation/merge/) */
   $merge: {
     into: string | { db: string; coll: string };
@@ -229,7 +229,7 @@ export interface Merge {
       | "merge"
       | "fail"
       | Extract<
-          PipelineStage,
+          PipelineStage<T>,
           AddFields | Set | Project | Unset | ReplaceRoot | ReplaceWith
         >[];
     whenNotMatched?: "insert" | "discard" | "fail";
@@ -351,13 +351,13 @@ export interface SortByCount {
   $sortByCount: Expression;
 }
 
-export interface UnionWith {
+export interface UnionWith<T> {
   /** [`$unionWith` reference](https://www.mongodb.com/docs/manual/reference/operator/aggregation/unionWith/) */
   $unionWith:
     | string
     | {
         coll: string;
-        pipeline?: Exclude<PipelineStage, Out | Merge>[];
+        pipeline?: Exclude<PipelineStage<T>, Out | Merge<T>>[];
       };
 }
 

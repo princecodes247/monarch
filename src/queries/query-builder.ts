@@ -151,12 +151,16 @@ export class DeleteOneQuery<T extends Schema<any, any>> extends Query<T> {
 
 // Define a class to represent an aggregation pipeline
 export class AggregationPipeline<T extends Schema<any, any>> {
-  private pipeline: PipelineStage[] = [];
+  private pipeline: PipelineStage<
+    OptionalUnlessRequiredId<InferSchemaOutput<T>>
+  >[] = [];
 
   constructor(private readonly _collection: Collection<InferSchemaOutput<T>>) {}
 
   // Method to add a stage to the aggregation pipeline
-  addStage(stage: PipelineStage): this {
+  addStage(
+    stage: PipelineStage<OptionalUnlessRequiredId<InferSchemaOutput<T>>>
+  ): this {
     this.pipeline.push(stage);
     return this;
   }

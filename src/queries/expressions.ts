@@ -1,6 +1,6 @@
 export interface NativeDate extends Date {}
 
-export type Condition<T> = T | QuerySelector<T | any> | any;
+export type Condition<T> = T | RootQuerySelector<T>;
 
 type RootQuerySelector<T> = {
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/and/#op._S_and */
