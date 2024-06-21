@@ -27,7 +27,28 @@ export class QueryBuilder<T extends Schema<any, any>> {
       this._schema,
       values
     ) as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
-    return new InsertQuery(this._collection, parsed);
+    return new InsertOneQuery(this._collection, parsed);
+  }
+  insertOne(values: OptionalUnlessRequiredId<InferSchemaInput<T>>) {
+    const parsed = parseSchema(
+      this._schema,
+      values
+    ) as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
+    return new InsertOneQuery(this._collection, parsed);
+  }
+
+  insertMany(values: OptionalUnlessRequiredId<InferSchemaInput<T>>[]) {
+    const parsed = [];
+
+    for (const value of values) {
+      parsed.push(
+        parseSchema(this._schema, value) as OptionalUnlessRequiredId<
+          InferSchemaOutput<T>
+        >
+      );
+    }
+
+    return new InsertManyQuery(this._collection, parsed);
   }
 
   find() {
@@ -108,7 +129,7 @@ export class FindOneQuery<T extends Schema<any, any>> extends Query<T> {
 }
 
 // Define a query class for insert operations
-export class InsertQuery<T extends Schema<any, any>> extends Query<T> {
+export class InsertOneQuery<T extends Schema<any, any>> extends Query<T> {
   constructor(
     _collection: Collection<InferSchemaOutput<T>>,
     private values: OptionalUnlessRequiredId<InferSchemaOutput<T>>
@@ -119,6 +140,40 @@ export class InsertQuery<T extends Schema<any, any>> extends Query<T> {
   async exec() {
     const result = await this._collection.insertOne(this.values);
     return { _id: result.insertedId, ...this.values };
+  }
+}
+
+// Define a query class for insert operations
+export class InsertManyQuery<T extends Schema<any, any>> extends Query<T> {
+  constructor(
+    _collection: Collection<InferSchemaOutput<T>>,
+    private values: OptionalUnlessRequiredId<InferSchemaOutput<T>>[]
+  ) {
+    super(_collection);
+  }
+
+  async exec() {
+    const result = await this._collection.insertMany(this.values);
+    return result;
+  }
+}
+
+// Define a query class for replaceOne operations
+export class ReplaceOneQuery<T extends Schema<any, any>> extends Query<T> {
+  constructor(
+    _collection: Collection<InferSchemaOutput<T>>,
+    private values: OptionalUnlessRequiredId<InferSchemaOutput<T>>
+  ) {
+    super(_collection);
+  }
+
+  async exec(): Promise<boolean> {
+    const result = await this._collection.replaceOne(
+      this.filters,
+      this.values,
+      this.options
+    );
+    return !!result.modifiedCount;
   }
 }
 
@@ -141,10 +196,40 @@ export class UpdateOneQuery<T extends Schema<any, any>> extends Query<T> {
   }
 }
 
+// Define a query class for updateMany operations
+export class UpdateManyQuery<T extends Schema<any, any>> extends Query<T> {
+  constructor(
+    _collection: Collection<InferSchemaOutput<T>>,
+    private values: UpdateFilter<InferSchemaOutput<T>>
+  ) {
+    super(_collection);
+  }
+
+  async exec(): Promise<boolean> {
+    const result: UpdateResult = await this._collection.updateMany(
+      this.filters,
+      this.values,
+      this.options
+    );
+    return !!result.modifiedCount;
+  }
+}
+
 // Define a query class for deleteOne operations
 export class DeleteOneQuery<T extends Schema<any, any>> extends Query<T> {
   async exec(): Promise<DeleteResult> {
     const result = await this._collection.deleteOne(this.filters, this.options);
+    return result;
+  }
+}
+
+// Define a query class for deleteMany operations
+export class DeleteManyQuery<T extends Schema<any, any>> extends Query<T> {
+  async exec(): Promise<DeleteResult> {
+    const result = await this._collection.deleteMany(
+      this.filters,
+      this.options
+    );
     return result;
   }
 }
