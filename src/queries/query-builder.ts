@@ -1,4 +1,5 @@
 import type {
+  AnyBulkWriteOperation,
   Collection,
   DeleteResult,
   Filter,
@@ -12,6 +13,19 @@ import type {
 import type { InferSchemaInput, InferSchemaOutput, Schema } from "../schema";
 import { parseSchema } from "../schema";
 import { PipelineStage } from "./pipeline-stage";
+
+type BulkWriteResult<T> = {
+  insertedCount: number;
+  matchedCount: number;
+  modifiedCount: number;
+  deletedCount: number;
+  upsertedCount: number;
+  insertedIds: { [key: number]: T };
+  upsertedIds: { [key: number]: T };
+};
+export type Projection<T> = {
+  [K in keyof T]?: 1 | 0;
+};
 
 export class QueryBuilder<T extends Schema<any, any>> {
   private _collection: Collection<InferSchemaOutput<T>>;
@@ -59,6 +73,22 @@ export class QueryBuilder<T extends Schema<any, any>> {
     return new FindOneQuery(this._collection);
   }
 
+  findOneAndDelete() {
+    return new FindOneAndDeleteQuery(this._collection);
+  }
+
+  findOneAndUpdate(values: UpdateFilter<InferSchemaOutput<T>>) {
+    return new FindOneAndUpdateQuery(this._collection, values);
+  }
+
+  findOneAndReplace(values: OptionalUnlessRequiredId<InferSchemaOutput<T>>) {
+    return new FindOneAndReplaceQuery(this._collection, values);
+  }
+
+  count() {
+    return new CountQuery(this._collection);
+  }
+
   updateOne(values: UpdateFilter<InferSchemaOutput<T>>) {
     return new UpdateOneQuery(this._collection, values);
   }
@@ -70,11 +100,28 @@ export class QueryBuilder<T extends Schema<any, any>> {
   aggregate(): AggregationPipeline<T> {
     return new AggregationPipeline(this._collection);
   }
-}
 
-export type Projection<T> = {
-  [K in keyof T]?: 1 | 0;
-};
+  bulkWrite(values: AnyBulkWriteOperation<InferSchemaOutput<T>>[]) {
+    return new BulkWriteQuery(this._collection, values);
+  }
+
+  // Indexing
+  createIndex(values: IndexDefinitionKey<InferSchemaOutput<T>>, options?: IndexDefinitionOptions<InferSchemaOutput<T>>) {
+    return new CreateIndexOperation(this._collection, values, options);
+  }
+
+  dropIndex(value: keyof InferSchemaOutput<T>) {
+    return new DropIndexOperation(this._collection, value);
+  }
+
+  dropIndexes(values: keyof InferSchemaOutput<T>[]) {
+    return new DropIndexesOperation(this._collection, values);
+  }
+
+  getIndexes() {
+    return new GetIndexesQuery(this._collection);
+  }
+}
 
 // Define a base query class
 export class Query<T extends Schema<any, any>> {
@@ -125,6 +172,45 @@ export class FindOneQuery<T extends Schema<any, any>> extends Query<T> {
     return this._collection.findOne(this.filters, {
       projection: this.projection,
     });
+  }
+}
+
+// Define a query class for count operations
+export class CountQuery<T extends Schema<any, any>> extends Query<T> {
+  async exec(): Promise<number> {
+    return this._collection.countDocuments(this.filters);
+  }
+}
+
+export class FindOneAndDeleteQuery<T extends Schema<any, any>> extends Query<T> {
+  async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
+    return this._collection.findOneAndDelete(this.filters);
+  }
+}
+
+export class FindOneAndUpdateQuery<T extends Schema<any, any>> extends Query<T> {
+  constructor(
+    _collection: Collection<InferSchemaOutput<T>>,
+    private values: UpdateFilter<InferSchemaOutput<T>>
+  ) {
+    super(_collection);
+  }
+
+  async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
+    return this._collection.findOneAndUpdate(this.filters, this.values);
+  }
+}
+
+export class FindOneAndReplaceQuery<T extends Schema<any, any>> extends Query<T> {
+  constructor(
+    _collection: Collection<InferSchemaOutput<T>>,
+    private values: OptionalUnlessRequiredId<InferSchemaOutput<T>>
+  ) {
+    super(_collection);
+  }
+
+  async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
+    return this._collection.findOneAndReplace(this.filters, this.values);
   }
 }
 
@@ -253,5 +339,69 @@ export class AggregationPipeline<T extends Schema<any, any>> {
   // Method to execute the aggregation pipeline
   async exec(): Promise<any[]> {
     return this._collection.aggregate(this.pipeline).toArray();
+  }
+}
+
+export class BulkWriteQuery<T extends Schema<any, any>> extends Query<T> {
+  constructor(
+    _collection: Collection<InferSchemaOutput<T>>,
+    private values: AnyBulkWriteOperation<InferSchemaOutput<T>>[]
+  ) {
+    super(_collection);
+  }
+  async exec(): Promise<BulkWriteResult<InferSchemaOutput<T>>> {
+    return this._collection.bulkWrite(this.values);
+  }
+}
+
+type IndexType = "2d" | "2dsphere" | "hashed" | "text";
+
+// Index operations
+type IndexDefinitionOptions<T> = {
+  key: { [K in keyof T]: 1 | -1 | IndexType};
+  name?: string;
+  unique?: boolean;
+  sparse?: boolean;
+  background?: boolean;
+  expireAfterSeconds?: number;
+  v?: number;
+  partialFilterExpression?: { [K in keyof T]?: 1 | 0 };
+};
+
+type IndexDefinitionKey<T> = { [K in keyof T]: 1 | -1 | IndexType};
+
+export class CreateIndexOperation<T extends Schema<any, any>> {
+  constructor(
+    protected readonly _collection: Collection<InferSchemaOutput<T>>,
+    private values: IndexDefinitionKey<InferSchemaOutput<T>>,
+    private options?: IndexDefinitionOptions<InferSchemaOutput<T>>
+  ) {
+    // super(_collection);
+  }
+  async exec() {
+    return this._collection.createIndex(this.values, this.options);
+  }
+}
+
+export class CreateIndexesOperation<T extends Schema<any, any>> {
+  constructor(
+    protected readonly _collection: Collection<InferSchemaOutput<T>>,
+    private values: IndexDefinitionKey<InferSchemaOutput<T>>[],
+    private options: IndexDefinitionOptions<InferSchemaOutput<T>>
+  ) {}
+
+  async exec() {
+    return this._collection.createIndexes(this.values, this.options);
+  }
+}
+
+export class DropIndexOperation<T extends Schema<any, any>> {
+  constructor(
+    protected readonly _collection: Collection<InferSchemaOutput<T>>,
+    private values: keyof InferSchemaOutput<T>
+  ) {}
+
+  async exec() {
+    return this._collection.dropIndex(this.values);
   }
 }

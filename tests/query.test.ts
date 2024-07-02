@@ -69,8 +69,9 @@ describe("test for date", () => {
       name: 1,
     });
 
-    collections.users.updateOne({
-      name: 1,
-    });
+    collections.users.updateOne().;
+
+    collections.users.createIndex({ name: 1 });
+    collections.users.dropIndex("name");
   });
 });
