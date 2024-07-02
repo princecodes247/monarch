@@ -38,7 +38,7 @@ type IndexDefinitionOptions<T> = {
   partialFilterExpression?: { [K in keyof T]?: 1 | 0 };
 };
 
-type IndexDefinitionKey<T> = { [K in keyof T]: 1 | -1 | IndexType};
+type IndexDefinitionKey<T> = { [K in keyof T]?: 1 | -1 | IndexType};
 
 
 export type Projection<T> = {
@@ -74,33 +74,17 @@ export class QueryBuilder<T extends Schema<any, any>> {
       .collection<InferSchemaOutput<T>>(this._schema.name);
   }
 
-  insert(values: OptionalUnlessRequiredId<InferSchemaInput<T>>) {
-    const parsed = parseSchema(
-      this._schema,
-      values
-    ) as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
-    return new InsertOneQuery(this._collection, parsed);
+  insert() {
+    return new InsertOneQuery(this._collection, this._schema);
   }
-  insertOne(values: OptionalUnlessRequiredId<InferSchemaInput<T>>) {
-    const parsed = parseSchema(
-      this._schema,
-      values
-    ) as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
-    return new InsertOneQuery(this._collection, parsed);
+  insertOne() {
+ 
+    return new InsertOneQuery(this._collection, this._schema);
   }
 
-  insertMany(values: OptionalUnlessRequiredId<InferSchemaInput<T>>[]) {
-    const parsed = [];
+  insertMany() {
 
-    for (const value of values) {
-      parsed.push(
-        parseSchema(this._schema, value) as OptionalUnlessRequiredId<
-          InferSchemaOutput<T>
-        >
-      );
-    }
-
-    return new InsertManyQuery(this._collection, parsed);
+    return new InsertManyQuery(this._collection, this._schema);
   }
 
   find() {
@@ -198,9 +182,13 @@ export class Query<T extends Schema<any, any>> {
     this.options.skip = skip;
     return this;
   }
+
+  async exec(): Promise<any> {
+    throw new Error("exec() method must be implemented in subclasses");
+  }
 }
 
-export class MutationQuery<T extends Schema<any, any>> extends Query<T> {
+export class MutationBaseQuery<T extends Schema<any, any>> extends Query<T> {
   protected values = {} as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
 
   constructor(
@@ -215,7 +203,40 @@ export class MutationQuery<T extends Schema<any, any>> extends Query<T> {
   }
 }
 
-// Define a query class for find operations
+export class InsertBaseQuery<T extends Schema<any, any>> extends Query<T> {
+  protected data = {} as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
+
+  constructor(
+    _collection: Collection<InferSchemaOutput<T>>,
+    private _schema: T
+  ) {
+    super(_collection);
+  }
+
+  values(data: OptionalUnlessRequiredId<InferSchemaInput<T>>): this {
+    this.data = parseSchema(this._schema, data) as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
+    return this;
+  }
+}
+
+export class InsertManyBaseQuery<T extends Schema<any, any>> extends Query<T> {
+  protected data = [] as OptionalUnlessRequiredId<InferSchemaOutput<T>>[];
+
+  constructor(
+    _collection: Collection<InferSchemaOutput<T>>,
+    private _schema: T
+  ) {
+    super(_collection);
+  }
+
+  values(data: OptionalUnlessRequiredId<InferSchemaInput<T>>[]): this {
+    this.data = data.map((value) => parseSchema(this._schema, value) as OptionalUnlessRequiredId<InferSchemaOutput<T>>);
+    return this;
+  }
+}
+
+
+// Define specific query classes
 export class FindQuery<T extends Schema<any, any>> extends Query<T> {
   async exec(): Promise<WithId<InferSchemaOutput<T>>[]> {
     return this._collection
@@ -227,7 +248,6 @@ export class FindQuery<T extends Schema<any, any>> extends Query<T> {
   }
 }
 
-// Define a query class for findOne operations
 export class FindOneQuery<T extends Schema<any, any>> extends Query<T> {
   async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
     return this._collection.findOne(this.filters, {
@@ -236,7 +256,6 @@ export class FindOneQuery<T extends Schema<any, any>> extends Query<T> {
   }
 }
 
-// Define a query class for count operations
 export class CountQuery<T extends Schema<any, any>> extends Query<T> {
   async exec(): Promise<number> {
     return this._collection.countDocuments(this.filters);
@@ -249,68 +268,33 @@ export class FindOneAndDeleteQuery<T extends Schema<any, any>> extends Query<T> 
   }
 }
 
-export class FindOneAndUpdateQuery<T extends Schema<any, any>> extends MutationQuery<T> {
-  constructor(
-    _collection: Collection<InferSchemaOutput<T>>,
-  ) {
-    super(_collection);
-  }
-
+export class FindOneAndUpdateQuery<T extends Schema<any, any>> extends MutationBaseQuery<T> {
   async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
     return this._collection.findOneAndUpdate(this.filters, this.values);
   }
 }
 
-export class FindOneAndReplaceQuery<T extends Schema<any, any>> extends MutationQuery<T> {
-  constructor(
-    _collection: Collection<InferSchemaOutput<T>>,
-  ) {
-    super(_collection);
-  }
-
+export class FindOneAndReplaceQuery<T extends Schema<any, any>> extends MutationBaseQuery<T> {
   async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
     return this._collection.findOneAndReplace(this.filters, this.values);
   }
 }
 
-// Define a query class for insert operations
-export class InsertOneQuery<T extends Schema<any, any>> extends Query<T> {
-  constructor(
-    _collection: Collection<InferSchemaOutput<T>>,
-    private values: OptionalUnlessRequiredId<InferSchemaOutput<T>>
-  ) {
-    super(_collection);
-  }
-
+export class InsertOneQuery<T extends Schema<any, any>> extends InsertBaseQuery<T> {
   async exec() {
-    const result = await this._collection.insertOne(this.values);
+    const result = await this._collection.insertOne(this.data);
     return { _id: result.insertedId, ...this.values };
   }
 }
 
-// Define a query class for insert operations
-export class InsertManyQuery<T extends Schema<any, any>> extends Query<T> {
-  constructor(
-    _collection: Collection<InferSchemaOutput<T>>,
-    private values: OptionalUnlessRequiredId<InferSchemaOutput<T>>[]
-  ) {
-    super(_collection);
-  }
-
+export class InsertManyQuery<T extends Schema<any, any>> extends InsertManyBaseQuery<T> {
   async exec() {
-    const result = await this._collection.insertMany(this.values);
+    const result = await this._collection.insertMany(this.data);
     return result;
   }
 }
 
-// Define a query class for replaceOne operations
-export class ReplaceOneQuery<T extends Schema<any, any>> extends MutationQuery<T> {
-  constructor(
-    _collection: Collection<InferSchemaOutput<T>>,
-  ) {
-    super(_collection);
-  }
-
+export class ReplaceOneQuery<T extends Schema<any, any>> extends MutationBaseQuery<T> {
   async exec(): Promise<boolean> {
     const result = await this._collection.replaceOne(
       this.filters,
@@ -321,15 +305,7 @@ export class ReplaceOneQuery<T extends Schema<any, any>> extends MutationQuery<T
   }
 }
 
-
-// Define a query class for updateOne operations
-export class UpdateOneQuery<T extends Schema<any, any>> extends MutationQuery<T> {
-  constructor(
-    _collection: Collection<InferSchemaOutput<T>>,
-  ) {
-    super(_collection);
-  }
-
+export class UpdateOneQuery<T extends Schema<any, any>> extends MutationBaseQuery<T> {
   async exec(): Promise<boolean> {
     const result: UpdateResult = await this._collection.updateOne(
       this.filters,
@@ -340,14 +316,7 @@ export class UpdateOneQuery<T extends Schema<any, any>> extends MutationQuery<T>
   }
 }
 
-// Define a query class for updateMany operations
-export class UpdateManyQuery<T extends Schema<any, any>> extends MutationQuery<T> {
-  constructor(
-    _collection: Collection<InferSchemaOutput<T>>,
-  ) {
-    super(_collection);
-  }
-
+export class UpdateManyQuery<T extends Schema<any, any>> extends MutationBaseQuery<T> {
   async exec(): Promise<boolean> {
     const result: UpdateResult = await this._collection.updateMany(
       this.filters,
@@ -358,7 +327,6 @@ export class UpdateManyQuery<T extends Schema<any, any>> extends MutationQuery<T
   }
 }
 
-// Define a query class for deleteOne operations
 export class DeleteOneQuery<T extends Schema<any, any>> extends Query<T> {
   async exec(): Promise<DeleteResult> {
     const result = await this._collection.deleteOne(this.filters, this.options);
@@ -366,7 +334,6 @@ export class DeleteOneQuery<T extends Schema<any, any>> extends Query<T> {
   }
 }
 
-// Define a query class for deleteMany operations
 export class DeleteManyQuery<T extends Schema<any, any>> extends Query<T> {
   async exec(): Promise<DeleteResult> {
     const result = await this._collection.deleteMany(
@@ -374,6 +341,18 @@ export class DeleteManyQuery<T extends Schema<any, any>> extends Query<T> {
       this.options
     );
     return result;
+  }
+}
+
+export class BulkWriteQuery<T extends Schema<any, any>> extends Query<T> {
+  constructor(
+    _collection: Collection<InferSchemaOutput<T>>,
+    private values: AnyBulkWriteOperation<InferSchemaOutput<T>>[]
+  ) {
+    super(_collection);
+  }
+  async exec(): Promise<BulkWriteResult<InferSchemaOutput<T>>> {
+    return this._collection.bulkWrite(this.values);
   }
 }
 
@@ -398,16 +377,3 @@ export class AggregationPipeline<T extends Schema<any, any>> {
     return this._collection.aggregate(this.pipeline).toArray();
   }
 }
-
-export class BulkWriteQuery<T extends Schema<any, any>> extends Query<T> {
-  constructor(
-    _collection: Collection<InferSchemaOutput<T>>,
-    private values: AnyBulkWriteOperation<InferSchemaOutput<T>>[]
-  ) {
-    super(_collection);
-  }
-  async exec(): Promise<BulkWriteResult<InferSchemaOutput<T>>> {
-    return this._collection.bulkWrite(this.values);
-  }
-}
-

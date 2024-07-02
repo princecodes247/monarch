@@ -62,12 +62,16 @@ describe("test for date", () => {
       ],
     });
 
-    collections.users.insertOne({
-      name: 1,
+    collections.users.insertOne().values({
+      name: "John",
+      abilities: {
+        speed: 10,
+      },
+      tags: ["smo"],
     });
-    collections.users.insertMany({
-      name: 1,
-    });
+    // collections.users.insertMany().values({
+    //   name: 1,
+    // });
 
     collections.users.updateOne().set({
       name: "",
@@ -80,6 +84,6 @@ describe("test for date", () => {
     });
 
     collections.users.createIndex({ name: 1 });
-    collections.users.dropIndex("");
+    collections.users.dropIndex("name");
   });
 });
