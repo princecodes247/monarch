@@ -6,7 +6,6 @@ import type {
   FindOptions,
   MongoClient,
   OptionalUnlessRequiredId,
-  UpdateFilter,
   UpdateResult,
   WithId,
 } from "mongodb";
@@ -45,6 +44,26 @@ type IndexDefinitionKey<T> = { [K in keyof T]: 1 | -1 | IndexType};
 export type Projection<T> = {
   [K in keyof T]?: 1 | 0;
 };
+export type UpdateFilter<T> = {
+  $currentDate?: { [K in keyof T]?: true | { $type: "date" | "timestamp" } };
+  $inc?: { [K in keyof T]?: number };
+  $min?: { [K in keyof T]?: T[K] };
+  $max?: { [K in keyof T]?: T[K] };
+  $mul?: { [K in keyof T]?: number };
+  $rename?: { [K in keyof T]?: string };
+  $set?: Partial<T>;
+  $setOnInsert?: Partial<T>;
+  $unset?: { [K in keyof T]?: "" | 1 | true };
+  $addToSet?: { [K in keyof T]?: T[K] | { $each: T[K][] } };
+  $pop?: { [K in keyof T]?: -1 | 1 };
+  $pull?: { [K in keyof T]?: T[K] | { [key: string]: any } };
+  $push?: { [K in keyof T]?: T[K] | { $each: T[K][]; $position?: number; $slice?: number; $sort?: 1 | -1 | { [key: string]: 1 | -1 } } };
+  $pullAll?: { [K in keyof T]?: T[K][] };
+} & {
+  // [K in keyof T]?: T[K] | { $each: T[K][] } | { $position?: number; $slice?: number; $sort?: 1 | -1 | { [key: string]: 1 | -1 } } | { $each: T[K][] } | UpdateFilter<T>;
+  [K in keyof T]?: T[K] | UpdateFilter<T[K]>;
+};
+
 
 export class QueryBuilder<T extends Schema<any, any>> {
   private _collection: Collection<InferSchemaOutput<T>>;
@@ -96,20 +115,24 @@ export class QueryBuilder<T extends Schema<any, any>> {
     return new FindOneAndDeleteQuery(this._collection);
   }
 
-  findOneAndUpdate(values: UpdateFilter<InferSchemaOutput<T>>) {
-    return new FindOneAndUpdateQuery(this._collection, values);
+  findOneAndUpdate() {
+    return new FindOneAndUpdateQuery(this._collection);
   }
 
-  findOneAndReplace(values: OptionalUnlessRequiredId<InferSchemaOutput<T>>) {
-    return new FindOneAndReplaceQuery(this._collection, values);
+  findOneAndReplace() {
+    return new FindOneAndReplaceQuery(this._collection);
   }
 
   count() {
     return new CountQuery(this._collection);
   }
 
-  updateOne(values: UpdateFilter<InferSchemaOutput<T>>) {
-    return new UpdateOneQuery(this._collection, values);
+  updateOne() {
+    return new UpdateOneQuery(this._collection);
+  }
+
+  updateMany() {
+    return new UpdateManyQuery(this._collection);
   }
 
   deleteOne() {
@@ -177,6 +200,21 @@ export class Query<T extends Schema<any, any>> {
   }
 }
 
+export class MutationQuery<T extends Schema<any, any>> extends Query<T> {
+  protected values = {} as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
+
+  constructor(
+    _collection: Collection<InferSchemaOutput<T>>,
+  ) {
+    super(_collection);
+  }
+  
+  set(values: UpdateFilter<InferSchemaOutput<T>>): this {
+    Object.assign(this.values, values);
+    return this;
+  }
+}
+
 // Define a query class for find operations
 export class FindQuery<T extends Schema<any, any>> extends Query<T> {
   async exec(): Promise<WithId<InferSchemaOutput<T>>[]> {
@@ -211,10 +249,9 @@ export class FindOneAndDeleteQuery<T extends Schema<any, any>> extends Query<T> 
   }
 }
 
-export class FindOneAndUpdateQuery<T extends Schema<any, any>> extends Query<T> {
+export class FindOneAndUpdateQuery<T extends Schema<any, any>> extends MutationQuery<T> {
   constructor(
     _collection: Collection<InferSchemaOutput<T>>,
-    private values: UpdateFilter<InferSchemaOutput<T>>
   ) {
     super(_collection);
   }
@@ -224,10 +261,9 @@ export class FindOneAndUpdateQuery<T extends Schema<any, any>> extends Query<T> 
   }
 }
 
-export class FindOneAndReplaceQuery<T extends Schema<any, any>> extends Query<T> {
+export class FindOneAndReplaceQuery<T extends Schema<any, any>> extends MutationQuery<T> {
   constructor(
     _collection: Collection<InferSchemaOutput<T>>,
-    private values: OptionalUnlessRequiredId<InferSchemaOutput<T>>
   ) {
     super(_collection);
   }
@@ -268,10 +304,9 @@ export class InsertManyQuery<T extends Schema<any, any>> extends Query<T> {
 }
 
 // Define a query class for replaceOne operations
-export class ReplaceOneQuery<T extends Schema<any, any>> extends Query<T> {
+export class ReplaceOneQuery<T extends Schema<any, any>> extends MutationQuery<T> {
   constructor(
     _collection: Collection<InferSchemaOutput<T>>,
-    private values: OptionalUnlessRequiredId<InferSchemaOutput<T>>
   ) {
     super(_collection);
   }
@@ -286,11 +321,11 @@ export class ReplaceOneQuery<T extends Schema<any, any>> extends Query<T> {
   }
 }
 
+
 // Define a query class for updateOne operations
-export class UpdateOneQuery<T extends Schema<any, any>> extends Query<T> {
+export class UpdateOneQuery<T extends Schema<any, any>> extends MutationQuery<T> {
   constructor(
     _collection: Collection<InferSchemaOutput<T>>,
-    private values: UpdateFilter<InferSchemaOutput<T>>
   ) {
     super(_collection);
   }
@@ -306,10 +341,9 @@ export class UpdateOneQuery<T extends Schema<any, any>> extends Query<T> {
 }
 
 // Define a query class for updateMany operations
-export class UpdateManyQuery<T extends Schema<any, any>> extends Query<T> {
+export class UpdateManyQuery<T extends Schema<any, any>> extends MutationQuery<T> {
   constructor(
     _collection: Collection<InferSchemaOutput<T>>,
-    private values: UpdateFilter<InferSchemaOutput<T>>
   ) {
     super(_collection);
   }

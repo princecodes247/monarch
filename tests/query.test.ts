@@ -69,9 +69,17 @@ describe("test for date", () => {
       name: 1,
     });
 
-    collections.users.updateOne().;
+    collections.users.updateOne().set({
+      name: "",
+      abilities: {
+        $inc: { speed: 10 },
+      },
+      $pop: {
+        abilities: -1,
+      },
+    });
 
     collections.users.createIndex({ name: 1 });
-    collections.users.dropIndex("name");
+    collections.users.dropIndex("");
   });
 });
