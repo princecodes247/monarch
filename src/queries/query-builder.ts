@@ -23,6 +23,25 @@ type BulkWriteResult<T> = {
   insertedIds: { [key: number]: T };
   upsertedIds: { [key: number]: T };
 };
+
+
+type IndexType = "2d" | "2dsphere" | "hashed" | "text";
+
+// Index operations
+type IndexDefinitionOptions<T> = {
+  key: { [K in keyof T]: 1 | -1 | IndexType};
+  name?: string;
+  unique?: boolean;
+  sparse?: boolean;
+  background?: boolean;
+  expireAfterSeconds?: number;
+  v?: number;
+  partialFilterExpression?: { [K in keyof T]?: 1 | 0 };
+};
+
+type IndexDefinitionKey<T> = { [K in keyof T]: 1 | -1 | IndexType};
+
+
 export type Projection<T> = {
   [K in keyof T]?: 1 | 0;
 };
@@ -106,20 +125,24 @@ export class QueryBuilder<T extends Schema<any, any>> {
   }
 
   // Indexing
-  createIndex(values: IndexDefinitionKey<InferSchemaOutput<T>>, options?: IndexDefinitionOptions<InferSchemaOutput<T>>) {
-    return new CreateIndexOperation(this._collection, values, options);
+  createIndex(key: IndexDefinitionKey<InferSchemaOutput<T>>, options?: IndexDefinitionOptions<InferSchemaOutput<T>>) {
+      return this._collection.createIndex(key, options);
   }
 
+  createIndexes(keys: IndexDefinitionKey<InferSchemaOutput<T>>[], options?: IndexDefinitionOptions<InferSchemaOutput<T>>) {
+    return this._collection.createIndexes(keys.map((key) => ({ key, ...options })), options);
+}  
+
   dropIndex(value: keyof InferSchemaOutput<T>) {
-    return new DropIndexOperation(this._collection, value);
+    return this._collection.dropIndex(value);
   }
 
   dropIndexes(values: keyof InferSchemaOutput<T>[]) {
-    return new DropIndexesOperation(this._collection, values);
+    return this._collection.dropIndexes(values);
   }
 
-  getIndexes() {
-    return new GetIndexesQuery(this._collection);
+  listIndexes() {
+    return this._collection.listIndexes();
   }
 }
 
@@ -354,54 +377,3 @@ export class BulkWriteQuery<T extends Schema<any, any>> extends Query<T> {
   }
 }
 
-type IndexType = "2d" | "2dsphere" | "hashed" | "text";
-
-// Index operations
-type IndexDefinitionOptions<T> = {
-  key: { [K in keyof T]: 1 | -1 | IndexType};
-  name?: string;
-  unique?: boolean;
-  sparse?: boolean;
-  background?: boolean;
-  expireAfterSeconds?: number;
-  v?: number;
-  partialFilterExpression?: { [K in keyof T]?: 1 | 0 };
-};
-
-type IndexDefinitionKey<T> = { [K in keyof T]: 1 | -1 | IndexType};
-
-export class CreateIndexOperation<T extends Schema<any, any>> {
-  constructor(
-    protected readonly _collection: Collection<InferSchemaOutput<T>>,
-    private values: IndexDefinitionKey<InferSchemaOutput<T>>,
-    private options?: IndexDefinitionOptions<InferSchemaOutput<T>>
-  ) {
-    // super(_collection);
-  }
-  async exec() {
-    return this._collection.createIndex(this.values, this.options);
-  }
-}
-
-export class CreateIndexesOperation<T extends Schema<any, any>> {
-  constructor(
-    protected readonly _collection: Collection<InferSchemaOutput<T>>,
-    private values: IndexDefinitionKey<InferSchemaOutput<T>>[],
-    private options: IndexDefinitionOptions<InferSchemaOutput<T>>
-  ) {}
-
-  async exec() {
-    return this._collection.createIndexes(this.values, this.options);
-  }
-}
-
-export class DropIndexOperation<T extends Schema<any, any>> {
-  constructor(
-    protected readonly _collection: Collection<InferSchemaOutput<T>>,
-    private values: keyof InferSchemaOutput<T>
-  ) {}
-
-  async exec() {
-    return this._collection.dropIndex(this.values);
-  }
-}
