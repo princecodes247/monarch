@@ -2,8 +2,10 @@ import type {
   AnyBulkWriteOperation,
   Collection,
   DeleteResult,
+  DropIndexesOptions,
   Filter,
   FindOptions,
+  IndexDirection,
   MongoClient,
   OptionalUnlessRequiredId,
   UpdateResult,
@@ -38,8 +40,7 @@ type IndexDefinitionOptions<T> = {
   partialFilterExpression?: { [K in keyof T]?: 1 | 0 };
 };
 
-type IndexDefinitionKey<T> = { [K in keyof T]?: 1 | -1 | IndexType};
-
+type IndexDefinitionKey<T> = { [K in keyof T]: IndexDirection};
 
 export type Projection<T> = {
   [K in keyof T]?: 1 | 0;
@@ -132,7 +133,7 @@ export class QueryBuilder<T extends Schema<any, any>> {
   }
 
   // Indexing
-  createIndex(key: IndexDefinitionKey<InferSchemaOutput<T>>, options?: IndexDefinitionOptions<InferSchemaOutput<T>>) {
+  createIndex(key: IndexDefinitionKey<Partial<InferSchemaOutput<T>>>, options?: IndexDefinitionOptions<InferSchemaOutput<T>>) {
       return this._collection.createIndex(key, options);
   }
 
@@ -141,11 +142,11 @@ export class QueryBuilder<T extends Schema<any, any>> {
 }  
 
   dropIndex(value: keyof InferSchemaOutput<T>) {
-    return this._collection.dropIndex(value);
+    return this._collection.dropIndex(value as string);
   }
 
-  dropIndexes(values: keyof InferSchemaOutput<T>[]) {
-    return this._collection.dropIndexes(values);
+  dropIndexes(options?: DropIndexesOptions) {
+    return this._collection.dropIndexes(options);
   }
 
   listIndexes() {
@@ -189,7 +190,7 @@ export class Query<T extends Schema<any, any>> {
 }
 
 export class MutationBaseQuery<T extends Schema<any, any>> extends Query<T> {
-  protected values = {} as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
+  protected data = {} as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
 
   constructor(
     _collection: Collection<InferSchemaOutput<T>>,
@@ -197,8 +198,8 @@ export class MutationBaseQuery<T extends Schema<any, any>> extends Query<T> {
     super(_collection);
   }
   
-  set(values: UpdateFilter<InferSchemaOutput<T>>): this {
-    Object.assign(this.values, values);
+  values(values: UpdateFilter<InferSchemaOutput<T>>): this {
+    Object.assign(this.data, values);
     return this;
   }
 }
@@ -276,7 +277,7 @@ export class FindOneAndUpdateQuery<T extends Schema<any, any>> extends MutationB
 
 export class FindOneAndReplaceQuery<T extends Schema<any, any>> extends MutationBaseQuery<T> {
   async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
-    return this._collection.findOneAndReplace(this.filters, this.values);
+    return this._collection.findOneAndReplace(this.filters, this.data);
   }
 }
 
@@ -298,7 +299,7 @@ export class ReplaceOneQuery<T extends Schema<any, any>> extends MutationBaseQue
   async exec(): Promise<boolean> {
     const result = await this._collection.replaceOne(
       this.filters,
-      this.values,
+      this.data,
       this.options
     );
     return !!result.modifiedCount;
