@@ -202,6 +202,10 @@ export class MutationBaseQuery<T extends Schema<any, any>> extends Query<T> {
     Object.assign(this.data, values);
     return this;
   }
+  set(values: UpdateFilter<InferSchemaOutput<T>>): this {
+    Object.assign(this.data, {$set: values});
+    return this;
+  }
 }
 
 export class InsertBaseQuery<T extends Schema<any, any>> extends Query<T> {
@@ -271,7 +275,11 @@ export class FindOneAndDeleteQuery<T extends Schema<any, any>> extends Query<T> 
 
 export class FindOneAndUpdateQuery<T extends Schema<any, any>> extends MutationBaseQuery<T> {
   async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
-    return this._collection.findOneAndUpdate(this.filters, this.values);
+    
+    return await this._collection.findOneAndUpdate(this.filters, this.data, {
+      returnDocument: "after"
+    });
+    
   }
 }
 
@@ -310,7 +318,7 @@ export class UpdateOneQuery<T extends Schema<any, any>> extends MutationBaseQuer
   async exec(): Promise<boolean> {
     const result: UpdateResult = await this._collection.updateOne(
       this.filters,
-      this.values,
+      this.data,
       this.options
     );
     return !!result.modifiedCount;
@@ -321,7 +329,7 @@ export class UpdateManyQuery<T extends Schema<any, any>> extends MutationBaseQue
   async exec(): Promise<boolean> {
     const result: UpdateResult = await this._collection.updateMany(
       this.filters,
-      this.values,
+      this.data,
       this.options
     );
     return !!result.modifiedCount;
@@ -348,12 +356,12 @@ export class DeleteManyQuery<T extends Schema<any, any>> extends Query<T> {
 export class BulkWriteQuery<T extends Schema<any, any>> extends Query<T> {
   constructor(
     _collection: Collection<InferSchemaOutput<T>>,
-    private values: AnyBulkWriteOperation<InferSchemaOutput<T>>[]
+    private data: AnyBulkWriteOperation<InferSchemaOutput<T>>[]
   ) {
     super(_collection);
   }
   async exec(): Promise<BulkWriteResult<InferSchemaOutput<T>>> {
-    return this._collection.bulkWrite(this.values);
+    return this._collection.bulkWrite(this.data);
   }
 }
 
