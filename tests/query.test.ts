@@ -1,4 +1,3 @@
-import { MongoClient } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { beforeAll, describe, it } from "vitest";
 import {
@@ -9,11 +8,12 @@ import {
   object,
   string,
 } from "../src";
+import { createClient } from "../src/database";
 
 const mongod = await MongoMemoryServer.create();
 
 const uri = mongod.getUri();
-const client = new MongoClient(uri);
+const client = createClient(uri);
 
 describe("test for date", () => {
   beforeAll(async () => {

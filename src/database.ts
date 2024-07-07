@@ -1,4 +1,4 @@
-import type { MongoClient } from "mongodb";
+import { MongoClient, MongoClientOptions } from "mongodb";
 import { MonarchError } from "./errors";
 import { QueryBuilder } from "./queries/query-builder";
 import type { Schema } from "./schema";
@@ -40,4 +40,9 @@ export function createDatabase<T extends Record<string, Schema<any, any>>>(
     db: (schema) => new QueryBuilder(client, schema),
     collections,
   };
+}
+
+export function createClient(uri: string, options?: MongoClientOptions) {
+  const client = new MongoClient(uri, options);
+  return client;
 }
