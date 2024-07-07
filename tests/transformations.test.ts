@@ -98,6 +98,7 @@ describe("test for transformations", () => {
         name: "mon",
       })
       .exec();
+
     expect(newUser).not.toBe(null);
     expect(newUser).toStrictEqual(
       expect.objectContaining({

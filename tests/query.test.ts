@@ -73,7 +73,7 @@ describe("test for date", () => {
     //   name: 1,
     // });
 
-    collections.users.updateOne().set({
+    collections.users.updateOne().values({
       name: "",
       abilities: {
         $inc: { speed: 10 },

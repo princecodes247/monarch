@@ -284,7 +284,7 @@ export class FindOneAndReplaceQuery<T extends Schema<any, any>> extends Mutation
 export class InsertOneQuery<T extends Schema<any, any>> extends InsertBaseQuery<T> {
   async exec() {
     const result = await this._collection.insertOne(this.data);
-    return { _id: result.insertedId, ...this.values };
+    return { _id: result.insertedId, ...this.data };
   }
 }
 
