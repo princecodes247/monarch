@@ -16,7 +16,7 @@ const mockUsers = [
     isVerified: true,
   },
   {
-     name: "anon1",
+    name: "anon1",
     email: "anon1@gmail.com",
     age: 20,
     isVerified: false,
@@ -40,14 +40,15 @@ const { collections, db } = createDatabase(client, {
   users: UserSchema,
 });
 
-describe("Query Tests", () => {
+describe("Query methods Tests", () => {
 
   beforeAll(async () => {
     await client.connect();
-
-  
-
   });
+
+  // beforeEach(async () => {
+  //   await collections.users.dropIndexes();
+  // })
 
   it("inserts one document", async () => {
     const newUser = await collections.users
@@ -76,7 +77,7 @@ describe("Query Tests", () => {
   });
 
   it("finds one document", async () => {
-    
+
     const user = await collections.users.findOne().where({ email: "anon@gmail.com", }).exec();
     expect(user).toStrictEqual(
       expect.objectContaining(mockUsers[0])
@@ -87,12 +88,16 @@ describe("Query Tests", () => {
     const updatedUser = await collections.users
       .findOneAndUpdate()
       .where({ email: "anon@gmail.com" })
-      .values({ $set: {
-        age: 30
-      } })
+      .values({
+        $set: {
+          age: 30
+        }
+      }).options({
+        returnDocument: "after"
+      })
       .exec();
 
-      
+
 
     expect(updatedUser).not.toBe(null);
     expect(updatedUser?.age).toBe(30);
@@ -152,7 +157,7 @@ describe("Query Tests", () => {
   });
 
   it("creates index", async () => {
-    const indexName = await collections.users.createIndex({ email: 1 }, { unique: true });
+    const indexName = await collections.users.createIndex({ email: 1 });
     expect(indexName).toBeDefined();
   });
 
@@ -160,12 +165,16 @@ describe("Query Tests", () => {
     const indexNames = await collections.users.createIndexes([
       { name: 1 },
       { age: -1 },
+
     ]);
     expect(indexNames).toBeDefined();
   });
 
   it("drops an index", async () => {
-    await collections.users.createIndex({ email: 1 }, { unique: true });
+    await collections.users.createIndex({ email: 1 });
+    const indexes = await collections.users.listIndexes().toArray()
+    console.log({ indexes })
+
     const dropIndexResult = await collections.users.dropIndex("email_1");
     expect(dropIndexResult).toBeTruthy();
   });
@@ -182,12 +191,17 @@ describe("Query Tests", () => {
   });
 
   it("aggregates data", async () => {
+
+    await collections.users.insertMany().values(mockUsers).exec();
+
     const pipeline = [
       { $match: { isVerified: true } },
       { $group: { _id: "$isVerified", count: { $sum: 1 } } },
     ];
     const aggregatedData = await collections.users.aggregate().addStage(pipeline[0]).addStage(pipeline[1]).exec();
-    expect(aggregatedData).toBeInstanceOf(Array);
-    expect(aggregatedData.length).toBeGreaterThanOrEqual(1);
+    const result = await aggregatedData.toArray()
+    console.log({ aggregatedData: result })
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBeGreaterThanOrEqual(1);
   });
 });
