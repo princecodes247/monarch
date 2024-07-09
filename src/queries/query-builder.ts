@@ -131,6 +131,10 @@ export class QueryBuilder<T extends Schema<any, any>> {
     return new DeleteOneQuery(this._collection);
   }
 
+  deleteMany() {
+    return new DeleteManyQuery(this._collection);
+  }
+
   aggregate(): AggregationPipeline<T> {
     return new AggregationPipeline(this._collection);
   }
