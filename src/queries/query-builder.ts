@@ -18,7 +18,7 @@ import type {
   UpdateResult,
   WithId,
 } from "mongodb";
-import type { InferSchemaInput, InferSchemaOutput, Schema } from "../schema";
+import type { AnySchema, InferSchemaInput, InferSchemaOutput } from "../schema";
 import { parseSchema } from "../schema";
 import { PipelineStage } from "./pipeline-stage";
 // import { PipelineStage } from "./pipeline-stage";
@@ -32,7 +32,6 @@ type BulkWriteResult<T> = {
   insertedIds: { [key: number]: T };
   upsertedIds: { [key: number]: T };
 };
-
 
 type IndexType = "2d" | "2dsphere" | "hashed" | "text";
 
@@ -65,15 +64,23 @@ export type UpdateFilter<T> = {
   $addToSet?: { [K in keyof T]?: T[K] | { $each: T[K][] } };
   $pop?: { [K in keyof T]?: -1 | 1 };
   $pull?: { [K in keyof T]?: T[K] | { [key: string]: any } };
-  $push?: { [K in keyof T]?: T[K] | { $each: T[K][]; $position?: number; $slice?: number; $sort?: 1 | -1 | { [key: string]: 1 | -1 } } };
+  $push?: {
+    [K in keyof T]?:
+      | T[K]
+      | {
+          $each: T[K][];
+          $position?: number;
+          $slice?: number;
+          $sort?: 1 | -1 | { [key: string]: 1 | -1 };
+        };
+  };
   $pullAll?: { [K in keyof T]?: T[K][] };
 } & {
-    // [K in keyof T]?: T[K] | { $each: T[K][] } | { $position?: number; $slice?: number; $sort?: 1 | -1 | { [key: string]: 1 | -1 } } | { $each: T[K][] } | UpdateFilter<T>;
-    [K in keyof T]?: T[K] | UpdateFilter<T[K]>;
-  };
+  // [K in keyof T]?: T[K] | { $each: T[K][] } | { $position?: number; $slice?: number; $sort?: 1 | -1 | { [key: string]: 1 | -1 } } | { $each: T[K][] } | UpdateFilter<T>;
+  [K in keyof T]?: T[K] | UpdateFilter<T[K]>;
+};
 
-
-export class QueryBuilder<T extends Schema<any, any>> {
+export class QueryBuilder<T extends AnySchema> {
   private _collection: Collection<InferSchemaOutput<T>>;
 
   constructor(private _client: MongoClient, private _schema: T) {
@@ -86,12 +93,10 @@ export class QueryBuilder<T extends Schema<any, any>> {
     return new InsertOneQuery(this._collection, this._schema);
   }
   insertOne() {
-
     return new InsertOneQuery(this._collection, this._schema);
   }
 
   insertMany() {
-
     return new InsertManyQuery(this._collection, this._schema);
   }
 
@@ -144,12 +149,21 @@ export class QueryBuilder<T extends Schema<any, any>> {
   }
 
   // Indexing
-  createIndex(key: IndexDefinitionKey<Partial<InferSchemaOutput<T>>>, options?: IndexDefinitionOptions<InferSchemaOutput<T>>) {
+  createIndex(
+    key: IndexDefinitionKey<Partial<InferSchemaOutput<T>>>,
+    options?: IndexDefinitionOptions<InferSchemaOutput<T>>
+  ) {
     return this._collection.createIndex(key, options);
   }
 
-  createIndexes(keys: IndexDefinitionKey<Partial<InferSchemaOutput<T>>>[], options?: IndexDefinitionOptions<InferSchemaOutput<T>>) {
-    return this._collection.createIndexes(keys.map((key) => ({ key, ...options })), options);
+  createIndexes(
+    keys: IndexDefinitionKey<Partial<InferSchemaOutput<T>>>[],
+    options?: IndexDefinitionOptions<InferSchemaOutput<T>>
+  ) {
+    return this._collection.createIndexes(
+      keys.map((key) => ({ key, ...options })),
+      options
+    );
   }
 
   dropIndex(value: string) {
@@ -166,14 +180,14 @@ export class QueryBuilder<T extends Schema<any, any>> {
 }
 
 // Define a base query class
-export class Query<T extends Schema<any, any>> {
+export class Query<T extends AnySchema> {
   protected filters: Filter<InferSchemaOutput<T>> = {};
-  protected projection: Projection<InferSchemaOutput<T>> = {};
+  protected projection: Projection<WithId<InferSchemaOutput<T>>> = {};
   protected _options: FindOptions = {};
 
   constructor(
     protected readonly _collection: Collection<InferSchemaOutput<T>>
-  ) { }
+  ) {}
 
   where(filter: Filter<InferSchemaOutput<T>>): this {
     Object.assign(this.filters, filter);
@@ -216,7 +230,7 @@ export class Query<T extends Schema<any, any>> {
   }
 }
 
-export class MutationBaseQuery<T extends Schema<any, any>> extends Query<T> {
+export class MutationBaseQuery<T extends AnySchema> extends Query<T> {
   protected data = {} as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
 
   values(values: UpdateFilter<InferSchemaOutput<T>>): this {
@@ -229,7 +243,7 @@ export class MutationBaseQuery<T extends Schema<any, any>> extends Query<T> {
   }
 }
 
-export class InsertBaseQuery<T extends Schema<any, any>> extends Query<T> {
+export class InsertBaseQuery<T extends AnySchema> extends Query<T> {
   protected data = {} as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
 
   constructor(
@@ -240,12 +254,14 @@ export class InsertBaseQuery<T extends Schema<any, any>> extends Query<T> {
   }
 
   values(data: OptionalUnlessRequiredId<InferSchemaInput<T>>): this {
-    this.data = parseSchema(this._schema, data) as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
+    this.data = parseSchema(this._schema, data) as OptionalUnlessRequiredId<
+      InferSchemaOutput<T>
+    >;
     return this;
   }
 }
 
-export class InsertManyBaseQuery<T extends Schema<any, any>> extends Query<T> {
+export class InsertManyBaseQuery<T extends AnySchema> extends Query<T> {
   protected data = [] as OptionalUnlessRequiredId<InferSchemaOutput<T>>[];
 
   constructor(
@@ -256,14 +272,18 @@ export class InsertManyBaseQuery<T extends Schema<any, any>> extends Query<T> {
   }
 
   values(data: OptionalUnlessRequiredId<InferSchemaInput<T>>[]): this {
-    this.data = data.map((value) => parseSchema(this._schema, value) as OptionalUnlessRequiredId<InferSchemaOutput<T>>);
+    this.data = data.map(
+      (value) =>
+        parseSchema(this._schema, value) as OptionalUnlessRequiredId<
+          InferSchemaOutput<T>
+        >
+    );
     return this;
   }
 }
 
-
 // Define specific query classes
-export class FindQuery<T extends Schema<any, any>> extends Query<T> {
+export class FindQuery<T extends AnySchema> extends Query<T> {
   async exec(): Promise<WithId<InferSchemaOutput<T>>[]> {
     return this._collection
       .find(this.filters, {
@@ -274,7 +294,7 @@ export class FindQuery<T extends Schema<any, any>> extends Query<T> {
   }
 }
 
-export class FindOneQuery<T extends Schema<any, any>> extends Query<T> {
+export class FindOneQuery<T extends AnySchema> extends Query<T> {
   async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
     return this._collection.findOne(this.filters, {
       projection: this.projection,
@@ -282,13 +302,13 @@ export class FindOneQuery<T extends Schema<any, any>> extends Query<T> {
   }
 }
 
-export class CountQuery<T extends Schema<any, any>> extends Query<T> {
+export class CountQuery<T extends AnySchema> extends Query<T> {
   async exec(): Promise<number> {
     return this._collection.countDocuments(this.filters);
   }
 }
 
-export class FindOneAndDeleteQuery<T extends Schema<any, any>> extends Query<T> {
+export class FindOneAndDeleteQuery<T extends AnySchema> extends Query<T> {
   protected _options: FindOneAndDeleteOptions = {};
 
   options(options: FindOneAndDeleteOptions): this {
@@ -301,7 +321,9 @@ export class FindOneAndDeleteQuery<T extends Schema<any, any>> extends Query<T> 
   }
 }
 
-export class FindOneAndUpdateQuery<T extends Schema<any, any>> extends MutationBaseQuery<T> {
+export class FindOneAndUpdateQuery<
+  T extends AnySchema
+> extends MutationBaseQuery<T> {
   protected _options: FindOneAndUpdateOptions = {};
 
   options(options: FindOneAndUpdateOptions): this {
@@ -310,11 +332,17 @@ export class FindOneAndUpdateQuery<T extends Schema<any, any>> extends MutationB
   }
 
   async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
-    return await this._collection.findOneAndUpdate(this.filters, this.data, this._options);
+    return await this._collection.findOneAndUpdate(
+      this.filters,
+      this.data,
+      this._options
+    );
   }
 }
 
-export class FindOneAndReplaceQuery<T extends Schema<any, any>> extends MutationBaseQuery<T> {
+export class FindOneAndReplaceQuery<
+  T extends AnySchema
+> extends MutationBaseQuery<T> {
   protected _options: FindOneAndReplaceOptions = {};
 
   options(options: FindOneAndReplaceOptions): this {
@@ -323,25 +351,34 @@ export class FindOneAndReplaceQuery<T extends Schema<any, any>> extends Mutation
   }
 
   async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
-    return this._collection.findOneAndReplace(this.filters, this.data, this._options);
+    return this._collection.findOneAndReplace(
+      this.filters,
+      this.data,
+      this._options
+    );
   }
 }
 
-export class InsertOneQuery<T extends Schema<any, any>> extends InsertBaseQuery<T> {
+export class InsertOneQuery<T extends AnySchema> extends InsertBaseQuery<T> {
   async exec() {
     const result = await this._collection.insertOne(this.data);
     return { _id: result.insertedId, ...this.data };
   }
 }
 
-export class InsertManyQuery<T extends Schema<any, any>> extends InsertManyBaseQuery<T> {
+export class InsertManyQuery<
+  T extends AnySchema
+> extends InsertManyBaseQuery<T> {
   async exec() {
     const result = await this._collection.insertMany(this.data);
-    return this.data.map((data, index) => ({ _id: result.insertedIds[index], ...data }))
+    return this.data.map((data, index) => ({
+      _id: result.insertedIds[index],
+      ...data,
+    }));
   }
 }
 
-export class ReplaceOneQuery<T extends Schema<any, any>> extends MutationBaseQuery<T> {
+export class ReplaceOneQuery<T extends AnySchema> extends MutationBaseQuery<T> {
   protected _options: ReplaceOptions = {};
 
   options(options: ReplaceOptions): this {
@@ -359,7 +396,7 @@ export class ReplaceOneQuery<T extends Schema<any, any>> extends MutationBaseQue
   }
 }
 
-export class UpdateOneQuery<T extends Schema<any, any>> extends MutationBaseQuery<T> {
+export class UpdateOneQuery<T extends AnySchema> extends MutationBaseQuery<T> {
   protected _options: UpdateOptions = {};
 
   options(options: UpdateOptions): this {
@@ -377,7 +414,7 @@ export class UpdateOneQuery<T extends Schema<any, any>> extends MutationBaseQuer
   }
 }
 
-export class UpdateManyQuery<T extends Schema<any, any>> extends MutationBaseQuery<T> {
+export class UpdateManyQuery<T extends AnySchema> extends MutationBaseQuery<T> {
   protected _options: UpdateOptions = {};
 
   options(options: UpdateOptions): this {
@@ -395,7 +432,7 @@ export class UpdateManyQuery<T extends Schema<any, any>> extends MutationBaseQue
   }
 }
 
-export class DeleteOneQuery<T extends Schema<any, any>> extends Query<T> {
+export class DeleteOneQuery<T extends AnySchema> extends Query<T> {
   protected _options: DeleteOptions = {};
 
   options(options: DeleteOptions): this {
@@ -404,12 +441,15 @@ export class DeleteOneQuery<T extends Schema<any, any>> extends Query<T> {
   }
 
   async exec(): Promise<DeleteResult> {
-    const result = await this._collection.deleteOne(this.filters, this._options);
+    const result = await this._collection.deleteOne(
+      this.filters,
+      this._options
+    );
     return result;
   }
 }
 
-export class DeleteManyQuery<T extends Schema<any, any>> extends Query<T> {
+export class DeleteManyQuery<T extends AnySchema> extends Query<T> {
   protected _options: DeleteOptions = {};
 
   options(options: DeleteOptions): this {
@@ -426,7 +466,7 @@ export class DeleteManyQuery<T extends Schema<any, any>> extends Query<T> {
   }
 }
 
-export class BulkWriteQuery<T extends Schema<any, any>> extends Query<T> {
+export class BulkWriteQuery<T extends AnySchema> extends Query<T> {
   constructor(
     _collection: Collection<InferSchemaOutput<T>>,
     private data: AnyBulkWriteOperation<InferSchemaOutput<T>>[]
@@ -439,14 +479,13 @@ export class BulkWriteQuery<T extends Schema<any, any>> extends Query<T> {
 }
 
 // Define a class to represent an aggregation pipeline
-export class AggregationPipeline<T extends Schema<any, any>> {
+export class AggregationPipeline<T extends AnySchema> {
   private pipeline: PipelineStage<
     OptionalUnlessRequiredId<InferSchemaOutput<T>>
   >[] = [];
   private _options: AggregateOptions = {};
 
-  constructor(private readonly _collection: Collection<InferSchemaOutput<T>>) { }
-
+  constructor(private readonly _collection: Collection<InferSchemaOutput<T>>) {}
 
   options(options: AggregateOptions): this {
     Object.assign(this._options, options);

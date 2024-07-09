@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "check": "tsc --noEmit",
     "watch": "vitest",
     "test": "vitest run"
   },
