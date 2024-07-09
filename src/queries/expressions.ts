@@ -1,4 +1,11 @@
-export interface NativeDate extends Date {}
+// NOTE: This code is adapted from the Mongoose project (https://github.com/Automattic/mongoose)
+// Mongoose is licensed under the MIT License.
+// Original source: https://github.com/Automattic/mongoose/blob/master/types/aggregate.d.ts
+
+// The following types and interfaces are derived from Mongoose's aggregate pipeline stages
+// with modifications to fit our project's needs.
+
+export interface NativeDate extends Date { }
 
 export type Condition<T> = T | RootQuerySelector<T>;
 
@@ -20,9 +27,8 @@ type RootQuerySelector<T> = {
   $where?: string | Function;
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/comment/#op._S_comment */
   $comment?: string;
-  // we could not find a proper TypeScript generic to support nested queries e.g. 'user.friends.name'
-  // this will mark all unrecognized properties as any (including nested queries)
-  [key: string]: any;
+
+
 };
 
 export type FilterQuery<T> = {
@@ -733,17 +739,17 @@ export interface DayOfMonth {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/dayOfMonth/#mongodb-expression-exp.-dayOfMonth
    */
   $dayOfMonth:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface DayOfWeek {
@@ -753,17 +759,17 @@ export interface DayOfWeek {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/dayOfWeek/#mongodb-expression-exp.-dayOfWeek
    */
   $dayOfWeek:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface DayOfYear {
@@ -773,17 +779,17 @@ export interface DayOfYear {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/dayOfYear/#mongodb-expression-exp.-dayOfYear
    */
   $dayOfYear:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface Hour {
@@ -793,17 +799,17 @@ export interface Hour {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/hour/#mongodb-expression-exp.-hour
    */
   $hour:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface IsoDayOfWeek {
@@ -814,17 +820,17 @@ export interface IsoDayOfWeek {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/isoDayOfWeek/#mongodb-expression-exp.-isoDayOfWeek
    */
   $isoDayOfWeek:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface IsoWeek {
@@ -835,17 +841,17 @@ export interface IsoWeek {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/isoWeek/#mongodb-expression-exp.-isoWeek
    */
   $isoWeek:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface IsoWeekYear {
@@ -856,17 +862,17 @@ export interface IsoWeekYear {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/isoWeekYear/#mongodb-expression-exp.-isoWeekYear
    */
   $isoWeekYear:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface Millisecond {
@@ -876,17 +882,17 @@ export interface Millisecond {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/millisecond/#mongodb-expression-exp.-millisecond
    */
   $millisecond:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface Minute {
@@ -896,17 +902,17 @@ export interface Minute {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/minute/#mongodb-expression-exp.-minute
    */
   $minute:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface Month {
@@ -916,17 +922,17 @@ export interface Month {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/month/#mongodb-expression-exp.-month
    */
   $month:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface Second {
@@ -936,17 +942,17 @@ export interface Second {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/second/#mongodb-expression-exp.-second
    */
   $second:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface ToDate {
@@ -966,17 +972,17 @@ export interface Week {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/week/#mongodb-expression-exp.-week
    */
   $week:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface Year {
@@ -986,17 +992,17 @@ export interface Year {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/year/#mongodb-expression-exp.-year
    */
   $year:
-    | DateExpression
-    | {
-        /**
-         * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
-         */
-        date: DateExpression;
-        /**
-         * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-         */
-        timezone?: tzExpression;
-      };
+  | DateExpression
+  | {
+    /**
+     * The date to which the operator is applied. <dateExpression> must be a valid expression that resolves to a Date, a Timestamp, or an ObjectID.
+     */
+    date: DateExpression;
+    /**
+     * The timezone of the operation result. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
+     */
+    timezone?: tzExpression;
+  };
 }
 
 export interface And {
@@ -1099,8 +1105,8 @@ export interface Cond {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/cond/#mongodb-expression-exp.-cond
    */
   $cond:
-    | { if: Expression; then: AnyExpression; else: AnyExpression }
-    | [BooleanExpression, AnyExpression, AnyExpression];
+  | { if: Expression; then: AnyExpression; else: AnyExpression }
+  | [BooleanExpression, AnyExpression, AnyExpression];
 }
 
 export interface IfNull {
@@ -1225,9 +1231,9 @@ export interface IndexOfArray {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/indexOfArray/#mongodb-expression-exp.-indexOfArray
    */
   $indexOfArray:
-    | [ArrayExpression, Expression]
-    | [ArrayExpression, Expression, NumberExpression]
-    | [ArrayExpression, Expression, NumberExpression, NumberExpression];
+  | [ArrayExpression, Expression]
+  | [ArrayExpression, Expression, NumberExpression]
+  | [ArrayExpression, Expression, NumberExpression, NumberExpression];
 }
 
 export interface IsArray {
@@ -1309,8 +1315,8 @@ export interface Range {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/range/#mongodb-expression-exp.-range
    */
   $range:
-    | [NumberExpression, NumberExpression]
-    | [NumberExpression, NumberExpression, NumberExpression];
+  | [NumberExpression, NumberExpression]
+  | [NumberExpression, NumberExpression, NumberExpression];
 }
 
 export interface Reduce {
@@ -1371,8 +1377,8 @@ export interface Slice {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/slice/#mongodb-expression-exp.-slice
    */
   $slice:
-    | [ArrayExpression, NumberExpression]
-    | [ArrayExpression, NumberExpression, NumberExpression];
+  | [ArrayExpression, NumberExpression]
+  | [ArrayExpression, NumberExpression, NumberExpression];
 }
 
 export interface Zip {
@@ -1425,9 +1431,9 @@ export interface IndexOfBytes {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/indexOfBytes/#mongodb-expression-exp.-indexOfBytes
    */
   $indexOfBytes:
-    | [StringExpression, StringExpression]
-    | [StringExpression, StringExpression, NumberExpression]
-    | [StringExpression, StringExpression, NumberExpression, NumberExpression];
+  | [StringExpression, StringExpression]
+  | [StringExpression, StringExpression, NumberExpression]
+  | [StringExpression, StringExpression, NumberExpression, NumberExpression];
 }
 
 export interface IndexOfCP {
@@ -1438,9 +1444,9 @@ export interface IndexOfCP {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/indexOfCP/#mongodb-expression-exp.-indexOfCP
    */
   $indexOfCP:
-    | [StringExpression, StringExpression]
-    | [StringExpression, StringExpression, NumberExpression]
-    | [StringExpression, StringExpression, NumberExpression, NumberExpression];
+  | [StringExpression, StringExpression]
+  | [StringExpression, StringExpression, NumberExpression]
+  | [StringExpression, StringExpression, NumberExpression, NumberExpression];
 }
 
 export interface Ltrim {
@@ -1859,10 +1865,10 @@ export interface MergeObjects {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/mergeObjects/#mongodb-expression-exp.-mergeObjects
    */
   $mergeObjects:
-    | ObjectExpression
-    | ObjectExpression[]
-    | ArrayExpression
-    | Record<string, string>;
+  | ObjectExpression
+  | ObjectExpression[]
+  | ArrayExpression
+  | Record<string, string>;
 }
 
 export interface SetField {
@@ -2147,50 +2153,50 @@ export interface ExpMovingAvg {
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/expMovingAvg/#mongodb-expression-exp.-expMovingAvg
    */
   $expMovingAvg:
-    | {
-        /**
-         * Specifies the expression to evaluate. Non-numeric expressions are ignored.
-         */
-        input: Expression;
+  | {
+    /**
+     * Specifies the expression to evaluate. Non-numeric expressions are ignored.
+     */
+    input: Expression;
 
-        /**
-         * An integer that specifies the number of historical documents that have a significant mathematical weight in
-         * the exponential moving average calculation, with the most recent documents contributing the most weight.
-         *
-         * You must specify either N or alpha. You cannot specify both.
-         */
-        N: NumberExpression;
+    /**
+     * An integer that specifies the number of historical documents that have a significant mathematical weight in
+     * the exponential moving average calculation, with the most recent documents contributing the most weight.
+     *
+     * You must specify either N or alpha. You cannot specify both.
+     */
+    N: NumberExpression;
 
-        /**
-         * A double that specifies the exponential decay value to use in the exponential moving average calculation. A
-         * higher alpha value assigns a lower mathematical significance to previous results from the calculation.
-         *
-         * You must specify either N or alpha. You cannot specify both.
-         */
-        alpha?: never;
-      }
-    | {
-        /**
-         * Specifies the expression to evaluate. Non-numeric expressions are ignored.
-         */
-        input: Expression;
+    /**
+     * A double that specifies the exponential decay value to use in the exponential moving average calculation. A
+     * higher alpha value assigns a lower mathematical significance to previous results from the calculation.
+     *
+     * You must specify either N or alpha. You cannot specify both.
+     */
+    alpha?: never;
+  }
+  | {
+    /**
+     * Specifies the expression to evaluate. Non-numeric expressions are ignored.
+     */
+    input: Expression;
 
-        /**
-         * An integer that specifies the number of historical documents that have a significant mathematical weight in
-         * the exponential moving average calculation, with the most recent documents contributing the most weight.
-         *
-         * You must specify either N or alpha. You cannot specify both.
-         */
-        N?: never;
+    /**
+     * An integer that specifies the number of historical documents that have a significant mathematical weight in
+     * the exponential moving average calculation, with the most recent documents contributing the most weight.
+     *
+     * You must specify either N or alpha. You cannot specify both.
+     */
+    N?: never;
 
-        /**
-         * A double that specifies the exponential decay value to use in the exponential moving average calculation. A
-         * higher alpha value assigns a lower mathematical significance to previous results from the calculation.
-         *
-         * You must specify either N or alpha. You cannot specify both.
-         */
-        alpha: NumberExpression;
-      };
+    /**
+     * A double that specifies the exponential decay value to use in the exponential moving average calculation. A
+     * higher alpha value assigns a lower mathematical significance to previous results from the calculation.
+     *
+     * You must specify either N or alpha. You cannot specify both.
+     */
+    alpha: NumberExpression;
+  };
 }
 
 export interface Integral {
@@ -2317,38 +2323,38 @@ export interface Sum {
 
 export interface Convert<
   K extends
-    | "double"
-    | 1
-    | "string"
-    | 2
-    | "objectId"
-    | 7
-    | "bool"
-    | 8
-    | "date"
-    | 9
-    | "int"
-    | 16
-    | "long"
-    | 18
-    | "decimal"
-    | 19 =
-    | "double"
-    | 1
-    | "string"
-    | 2
-    | "objectId"
-    | 7
-    | "bool"
-    | 8
-    | "date"
-    | 9
-    | "int"
-    | 16
-    | "long"
-    | 18
-    | "decimal"
-    | 19
+  | "double"
+  | 1
+  | "string"
+  | 2
+  | "objectId"
+  | 7
+  | "bool"
+  | 8
+  | "date"
+  | 9
+  | "int"
+  | 16
+  | "long"
+  | 18
+  | "decimal"
+  | 19 =
+  | "double"
+  | 1
+  | "string"
+  | 2
+  | "objectId"
+  | 7
+  | "bool"
+  | 8
+  | "date"
+  | 9
+  | "int"
+  | 16
+  | "long"
+  | 18
+  | "decimal"
+  | 19
 > {
   /**
    * Checks if the specified expression resolves to one of the following numeric

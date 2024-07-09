@@ -1,3 +1,10 @@
+// NOTE: This code is adapted from the Mongoose project (https://github.com/Automattic/mongoose)
+// Mongoose is licensed under the MIT License.
+// Original source: https://github.com/Automattic/mongoose/blob/master/types/aggregate.d.ts
+
+// The following types and interfaces are derived from Mongoose's aggregate pipeline stages
+// with modifications to fit our project's needs.
+
 import type {
   AccumulatorOperator,
   AnyExpression,
@@ -68,19 +75,19 @@ export interface BucketAuto {
     buckets: number;
     output?: Record<string, AccumulatorOperator>;
     granularity?:
-      | "R5"
-      | "R10"
-      | "R20"
-      | "R40"
-      | "R80"
-      | "1-2-5"
-      | "E6"
-      | "E12"
-      | "E24"
-      | "E48"
-      | "E96"
-      | "E192"
-      | "POWERSOF2";
+    | "R5"
+    | "R10"
+    | "R20"
+    | "R40"
+    | "R80"
+    | "1-2-5"
+    | "E6"
+    | "E12"
+    | "E24"
+    | "E48"
+    | "E96"
+    | "E192"
+    | "POWERSOF2";
   };
 }
 
@@ -107,15 +114,15 @@ export interface Densify {
     range: {
       step: number;
       unit?:
-        | "millisecond"
-        | "second"
-        | "minute"
-        | "hour"
-        | "day"
-        | "week"
-        | "month"
-        | "quarter"
-        | "year";
+      | "millisecond"
+      | "second"
+      | "minute"
+      | "hour"
+      | "day"
+      | "week"
+      | "month"
+      | "quarter"
+      | "year";
       bounds: number[] | globalThis.Date[] | "full" | "partition";
     };
   };
@@ -196,8 +203,8 @@ export interface Limit {
 export interface ListSessions {
   /** [`$listSessions` reference](https://www.mongodb.com/docs/manual/reference/operator/aggregation/listSessions/) */
   $listSessions:
-    | { users?: { user: string; db: string }[] }
-    | { allUsers?: true };
+  | { users?: { user: string; db: string }[] }
+  | { allUsers?: true };
 }
 
 export interface Lookup<T> {
@@ -224,14 +231,14 @@ export interface Merge<T> {
     on?: string | string[];
     let?: Record<string, Expression>;
     whenMatched?:
-      | "replace"
-      | "keepExisting"
-      | "merge"
-      | "fail"
-      | Extract<
-          PipelineStage<T>,
-          AddFields | Set | Project | Unset | ReplaceRoot | ReplaceWith
-        >[];
+    | "replace"
+    | "keepExisting"
+    | "merge"
+    | "fail"
+    | Extract<
+      PipelineStage<T>,
+      AddFields | Set | Project | Unset | ReplaceRoot | ReplaceWith
+    >[];
     whenNotMatched?: "insert" | "discard" | "fail";
   };
 }
@@ -266,9 +273,9 @@ export interface ReplaceRoot {
 export interface ReplaceWith {
   /** [`$replaceWith` reference](https://www.mongodb.com/docs/manual/reference/operator/aggregation/replaceWith/) */
   $replaceWith:
-    | ObjectExpressionOperator
-    | { [field: string]: Expression }
-    | `$${string}`;
+  | ObjectExpressionOperator
+  | { [field: string]: Expression }
+  | `$${string}`;
 }
 
 export interface Sample {
@@ -321,15 +328,15 @@ export interface SetWindowFields {
           documents?: [string | number, string | number];
           range?: [string | number, string | number];
           unit?:
-            | "year"
-            | "quarter"
-            | "month"
-            | "week"
-            | "day"
-            | "hour"
-            | "minute"
-            | "second"
-            | "millisecond";
+          | "year"
+          | "quarter"
+          | "month"
+          | "week"
+          | "day"
+          | "hour"
+          | "minute"
+          | "second"
+          | "millisecond";
         };
       }
     >;
@@ -354,11 +361,11 @@ export interface SortByCount {
 export interface UnionWith<T> {
   /** [`$unionWith` reference](https://www.mongodb.com/docs/manual/reference/operator/aggregation/unionWith/) */
   $unionWith:
-    | string
-    | {
-        coll: string;
-        pipeline?: Exclude<PipelineStage<T>, Out | Merge<T>>[];
-      };
+  | string
+  | {
+    coll: string;
+    pipeline?: Exclude<PipelineStage<T>, Out | Merge<T>>[];
+  };
 }
 
 export interface Unset {
@@ -369,12 +376,12 @@ export interface Unset {
 export interface Unwind {
   /** [`$unwind` reference](https://www.mongodb.com/docs/manual/reference/operator/aggregation/unwind/) */
   $unwind:
-    | string
-    | {
-        path: string;
-        includeArrayIndex?: string;
-        preserveNullAndEmptyArrays?: boolean;
-      };
+  | string
+  | {
+    path: string;
+    includeArrayIndex?: string;
+    preserveNullAndEmptyArrays?: boolean;
+  };
 }
 export interface VectorSearch {
   /** [`$vectorSearch` reference](https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-search-stage/) */
