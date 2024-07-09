@@ -342,7 +342,7 @@ export class InsertOneQuery<T extends Schema<any, any>> extends InsertBaseQuery<
 export class InsertManyQuery<T extends Schema<any, any>> extends InsertManyBaseQuery<T> {
   async exec() {
     const result = await this._collection.insertMany(this.data);
-    return result;
+    return this.data.map((data, index) => ({ _id: result.insertedIds[index], ...data }))
   }
 }
 
