@@ -46,9 +46,6 @@ describe("Query methods Tests", () => {
     await client.connect();
   });
 
-  // beforeEach(async () => {
-  //   await collections.users.dropIndexes();
-  // })
   afterEach(async () => {
     await collections.users.dropIndexes();
     await collections.users.deleteMany().where({}).exec();
@@ -78,6 +75,29 @@ describe("Query methods Tests", () => {
 
     expect(newUsers.length).toBe(mockUsers.length);
   });
+
+  it("finds documents", async () => {
+    await collections.users
+      .insertMany()
+      .values(mockUsers)
+      .exec();
+
+    const users = await collections.users.find().exec();
+    expect(users.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("finds one document", async () => {
+    await collections.users
+      .insert()
+      .values(mockUsers[0])
+      .exec();
+
+    const user = await collections.users.findOne().exec();
+    expect(user).toStrictEqual(
+      expect.objectContaining(mockUsers[0])
+    );
+  });
+
 
 
   describe("Base Query methods", () => {
@@ -110,23 +130,29 @@ describe("Query methods Tests", () => {
         .values(mockUsers)
         .exec();
 
-      const users1 = await collections.users.findOne().where({}).oldSelect({ name: 1, email: 1 }).exec();
+      const users1 = await collections.users.findOne().oldSelect({ name: 1, email: 1 }).exec();
       expect(users1?.name).toBe("anon");
       expect(users1?.email).toBe("anon@gmail.com");
       expect(users1?.age).toBeUndefined();
       expect(users1?.isVerified).toBeUndefined();
 
-      const users2 = await collections.users.find().where({}).select("name", "email").exec();
-      expect(users2[0].name).toBe("anon");
-      expect(users2[0].email).toBe("anon@gmail.com");
-      expect(users2[0].age).toBeUndefined();
-      expect(users2[0].isVerified).toBeUndefined();
+      const users2 = await collections.users.find().oldSelect({ name: 0, email: 0 }).exec();
+      expect(users2[0].name).toBeUndefined();
+      expect(users2[0].email).toBeUndefined();
+      expect(users2[0].age).toBe(17);
+      expect(users2[0].isVerified).toBe(true);
 
-      const users3 = await collections.users.find().where({}).omit("name", "email").exec();
-      expect(users3[0].name).toBeUndefined();
-      expect(users3[0].email).toBeUndefined();
-      expect(users3[0].age).toBe(17);
-      expect(users3[0].isVerified).toBe(true);
+      const users3 = await collections.users.find().select("name", "email").exec();
+      expect(users3[0].name).toBe("anon");
+      expect(users3[0].email).toBe("anon@gmail.com");
+      expect(users3[0].age).toBeUndefined();
+      expect(users3[0].isVerified).toBeUndefined();
+
+      const users4 = await collections.users.find().omit("name", "email").exec();
+      expect(users4[0].name).toBeUndefined();
+      expect(users4[0].email).toBeUndefined();
+      expect(users4[0].age).toBe(17);
+      expect(users4[0].isVerified).toBe(true);
     })
 
     it("query limit", async () => {
@@ -135,7 +161,7 @@ describe("Query methods Tests", () => {
         .values(mockUsers)
         .exec();
       const limit = 2
-      const users = await collections.users.find().where({}).limit(limit).exec();
+      const users = await collections.users.find().limit(limit).exec();
       expect(users.length).toBe(limit);
     })
 
@@ -145,35 +171,11 @@ describe("Query methods Tests", () => {
         .values(mockUsers)
         .exec();
       const skip = 2
-      const users = await collections.users.find().where({}).skip(skip).exec();
+      const users = await collections.users.find().skip(skip).exec();
       expect(users.length).toBe(mockUsers.length - skip);
     })
   })
 
-
-
-  it("finds documents", async () => {
-    await collections.users
-      .insertMany()
-      .values(mockUsers)
-      .exec();
-
-    const users = await collections.users.find().where({}).exec();
-    // console.log({ newUsers, users })
-    expect(users.length).toBeGreaterThanOrEqual(3);
-  });
-
-  it("finds one document", async () => {
-    await collections.users
-      .insert()
-      .values(mockUsers[0])
-      .exec();
-
-    const user = await collections.users.findOne().where({ email: "anon@gmail.com", }).exec();
-    expect(user).toStrictEqual(
-      expect.objectContaining(mockUsers[0])
-    );
-  });
 
   it("finds one and updates", async () => {
     await collections.users
