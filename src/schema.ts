@@ -7,30 +7,23 @@ import type {
   Pretty,
 } from "./types/type-helpers";
 
-type SchemaOmit<T extends Record<string, MonarchType<any>>> = {
-  [K in keyof T]?: true;
-};
-type InferSchemaOmit<T> = keyof {
-  [K in keyof T as T[K] extends true ? K : never]: unknown;
-};
-
+type SchemaOmit<T extends keyof any> = { [K in T]?: true };
 type SchemaVirtuals<
   T extends Record<string, MonarchType<any>>,
   U extends Record<string, any>
 > = (values: InferTypeObjectOutput<T>) => U;
-type InferSchemaVirtuals<T extends (value: any) => any> = ReturnType<T>;
 
 export type Schema<
   TName extends string,
   TTypes extends Record<string, MonarchType<any>>,
-  TOmit extends SchemaOmit<TTypes>,
-  TVirtuals extends SchemaVirtuals<TTypes, Record<string, any>>
+  TOmit extends keyof TTypes,
+  TVirtuals extends Record<string, any>
 > = {
   name: TName;
   types: TTypes;
   options?: {
-    omit?: TOmit;
-    virtuals?: TVirtuals;
+    omit?: SchemaOmit<TOmit>;
+    virtuals?: SchemaVirtuals<TTypes, TVirtuals>;
   };
 };
 export type AnySchema = Schema<any, any, any, any>;
@@ -50,14 +43,14 @@ type InferSchemaOptions<T extends AnySchema> = T extends Schema<
 export function createSchema<
   TName extends string,
   TTypes extends Record<string, MonarchType<any>>,
-  TOmit extends SchemaOmit<TTypes>,
-  TVirtuals extends SchemaVirtuals<TTypes, Record<string, any>>
+  TOmit extends keyof TTypes = never,
+  TVirtuals extends Record<string, any> = {}
 >(
   name: TName,
   types: TTypes,
   options?: {
-    omit?: TOmit;
-    virtuals?: TVirtuals;
+    omit?: SchemaOmit<TOmit>;
+    virtuals?: SchemaVirtuals<TTypes, TVirtuals>;
   }
 ): Schema<TName, TTypes, TOmit, TVirtuals> {
   return {
@@ -72,11 +65,8 @@ export type InferSchemaInput<T extends AnySchema> = InferTypeObjectInput<
 >;
 export type InferSchemaOutput<T extends AnySchema> = Pretty<
   Merge<
-    Omit<
-      InferTypeObjectOutput<T["types"]>,
-      InferSchemaOmit<InferSchemaOptions<T>["omit"]>
-    >,
-    KnownObjectKeys<InferSchemaVirtuals<InferSchemaOptions<T>["virtuals"]>>
+    Omit<InferTypeObjectOutput<T["types"]>, InferSchemaOptions<T>["omit"]>,
+    KnownObjectKeys<InferSchemaOptions<T>["virtuals"]>
   >
 >;
 
