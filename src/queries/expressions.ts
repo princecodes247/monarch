@@ -1,6 +1,6 @@
 // NOTE: This code is adapted from the Mongoose project (https://github.com/Automattic/mongoose)
 // Mongoose is licensed under the MIT License.
-// Original source: https://github.com/Automattic/mongoose/blob/master/types/aggregate.d.ts
+// Original source: https://github.com/Automattic/mongoose/blob/master/types/expressions.d.ts
 
 // The following types and interfaces are derived from Mongoose's aggregate pipeline stages
 // with modifications to fit our project's needs.
