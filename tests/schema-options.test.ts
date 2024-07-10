@@ -27,57 +27,6 @@ describe("Schema options", () => {
     expect(output).toStrictEqual({ name: "tom", age: 0 });
   });
 
-  it("transforms fields", () => {
-    const schema = createSchema(
-      "users",
-      {
-        name: string(),
-        age: number(),
-        isAdmin: boolean(),
-      },
-      {
-        transform: {
-          age: (value) => value.toString(),
-        },
-      }
-    );
-
-    const output = parseSchema(schema, {
-      name: "tom",
-      age: 0,
-      isAdmin: true,
-    });
-
-    expect(output).toStrictEqual({ name: "tom", age: "0", isAdmin: true });
-  });
-
-  it("omits transformed fields", () => {
-    const schema = createSchema(
-      "users",
-      {
-        name: string(),
-        age: number(),
-        isAdmin: boolean(),
-      },
-      {
-        omit: {
-          age: true,
-        },
-        transform: {
-          age: (value) => value.toString(),
-        },
-      }
-    );
-
-    const output = parseSchema(schema, {
-      name: "tom",
-      age: 0,
-      isAdmin: true,
-    });
-
-    expect(output).toStrictEqual({ name: "tom", isAdmin: true });
-  });
-
   it("adds extra fields", () => {
     const schema = createSchema(
       "users",
@@ -87,12 +36,9 @@ describe("Schema options", () => {
         isAdmin: boolean(),
       },
       {
-        extras(values) {
+        virtuals(values) {
           return {
-            initials: values.name
-              .split(" ")
-              .map((w) => w[0])
-              .join(""),
+            role: values.isAdmin ? "admin" : "user",
           };
         },
       }
@@ -108,7 +54,7 @@ describe("Schema options", () => {
       name: "tom cruise",
       age: 0,
       isAdmin: true,
-      initials: "tc",
+      role: "admin",
     });
   });
 
@@ -125,7 +71,7 @@ describe("Schema options", () => {
           // @ts-expect-error
           role: true,
         },
-        extras(values) {
+        virtuals(values) {
           return {
             role: values.isAdmin ? "admin" : "user",
           };
@@ -154,10 +100,10 @@ describe("Schema options", () => {
         name: string(),
         age: number(),
         isAdmin: boolean(),
-        role: string(), // manually added field to replace
+        role: number(), // manually added field to replace
       },
       {
-        extras(values) {
+        virtuals(values) {
           return {
             role: values.isAdmin ? "admin" : "user",
           };
@@ -169,7 +115,7 @@ describe("Schema options", () => {
       name: "tom",
       age: 0,
       isAdmin: true,
-      role: "user",
+      role: 1,
     });
 
     expect(output).toStrictEqual({
@@ -177,40 +123,6 @@ describe("Schema options", () => {
       age: 0,
       isAdmin: true,
       role: "admin",
-    });
-  });
-
-  it("calls extras with pre transformed output", () => {
-    const schema = createSchema(
-      "users",
-      {
-        name: string(),
-        age: number(),
-        isAdmin: boolean(),
-      },
-      {
-        transform: {
-          isAdmin: (value) => (value ? "yes" : "no"), // negate admin flag
-        },
-        extras(values) {
-          return {
-            extraIsAdmin: values.isAdmin,
-          };
-        },
-      }
-    );
-
-    const output = parseSchema(schema, {
-      name: "tom",
-      age: 0,
-      isAdmin: true,
-    });
-
-    expect(output).toStrictEqual({
-      name: "tom",
-      age: 0,
-      isAdmin: "yes",
-      extraIsAdmin: true,
     });
   });
 });

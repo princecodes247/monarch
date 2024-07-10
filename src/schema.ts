@@ -2,74 +2,64 @@ import type { MonarchType } from "./types/type";
 import type {
   InferTypeObjectInput,
   InferTypeObjectOutput,
-  InferTypeOutput,
+  KnownObjectKeys,
   Merge,
   Pretty,
 } from "./types/type-helpers";
 
-type SchemaTransform<T extends Record<string, MonarchType<any>>> = {
-  [K in keyof T]?: (value: InferTypeOutput<T[K]>) => any;
-};
-type InferSchemaTransform<T extends Record<string, (value: any) => any>> = {
-  [K in keyof T]: ReturnType<T[K]>;
-};
-
 type SchemaOmit<T extends Record<string, MonarchType<any>>> = {
   [K in keyof T]?: true;
 };
+type InferSchemaOmit<T> = keyof {
+  [K in keyof T as T[K] extends true ? K : never]: unknown;
+};
 
-type SchemaExtras<
+type SchemaVirtuals<
   T extends Record<string, MonarchType<any>>,
   U extends Record<string, any>
 > = (values: InferTypeObjectOutput<T>) => U;
-type InferSchemaExtras<T extends (value: any) => any> = ReturnType<T>;
+type InferSchemaVirtuals<T extends (value: any) => any> = ReturnType<T>;
 
 export type Schema<
   TName extends string,
   TTypes extends Record<string, MonarchType<any>>,
-  TTransform extends SchemaTransform<TTypes>,
   TOmit extends SchemaOmit<TTypes>,
-  TExtras extends SchemaExtras<TTypes, Record<string, any>>
+  TVirtuals extends SchemaVirtuals<TTypes, Record<string, any>>
 > = {
   name: TName;
   types: TTypes;
   options?: {
-    transform?: TTransform;
     omit?: TOmit;
-    extras?: TExtras;
+    virtuals?: TVirtuals;
   };
 };
-export type AnySchema = Schema<any, any, any, any, any>;
+export type AnySchema = Schema<any, any, any, any>;
 
 type InferSchemaOptions<T extends AnySchema> = T extends Schema<
   infer _Name,
   infer _Types,
-  infer Transform,
   infer Omit,
   infer Extras
 >
   ? {
-      transform: Transform;
       omit: Omit;
-      extras: Extras;
+      virtuals: Extras;
     }
   : never;
 
 export function createSchema<
   TName extends string,
   TTypes extends Record<string, MonarchType<any>>,
-  TTransform extends SchemaTransform<TTypes>,
   TOmit extends SchemaOmit<TTypes>,
-  TExtras extends SchemaExtras<TTypes, Record<string, any>>
+  TVirtuals extends SchemaVirtuals<TTypes, Record<string, any>>
 >(
   name: TName,
   types: TTypes,
   options?: {
-    transform?: TTransform;
     omit?: TOmit;
-    extras?: TExtras;
+    virtuals?: TVirtuals;
   }
-): Schema<TName, TTypes, TTransform, TOmit, TExtras> {
+): Schema<TName, TTypes, TOmit, TVirtuals> {
   return {
     name,
     types,
@@ -81,14 +71,13 @@ export type InferSchemaInput<T extends AnySchema> = InferTypeObjectInput<
   T["types"]
 >;
 export type InferSchemaOutput<T extends AnySchema> = Pretty<
-  Omit<
-    Merge<
+  Merge<
+    Omit<
       InferTypeObjectOutput<T["types"]>,
-      InferSchemaTransform<InferSchemaOptions<T>["transform"]>
+      InferSchemaOmit<InferSchemaOptions<T>["omit"]>
     >,
-    keyof InferSchemaOptions<T>["omit"]
-  > &
-    InferSchemaExtras<InferSchemaOptions<T>["extras"]>
+    KnownObjectKeys<InferSchemaVirtuals<InferSchemaOptions<T>["virtuals"]>>
+  >
 >;
 
 export function parseSchema<T extends AnySchema>(
@@ -96,7 +85,6 @@ export function parseSchema<T extends AnySchema>(
   input: InferSchemaInput<T>
 ): InferSchemaOutput<T> {
   const validated = {} as InferSchemaOutput<T>;
-  const transformedOriginal = {} as Partial<InferSchemaOutput<T>>;
 
   for (const [key, type] of Object.entries(schema.types) as [
     keyof T["types"],
@@ -107,21 +95,13 @@ export function parseSchema<T extends AnySchema>(
 
     // transform and add field
     const value = type._parser(input[key]);
-    const transformer = schema.options?.transform?.[key];
-    if (transformer) {
-      validated[key] = transformer(value);
-      transformedOriginal[key] = value;
-    } else {
-      validated[key] = value;
-    }
+    validated[key] = value;
   }
 
-  // add extra fields
-  const extras = schema.options?.extras?.({
-    ...validated,
-    ...transformedOriginal, // replace transformed fields with the original
-  });
-  if (extras) Object.assign(validated, extras);
+  // add virtual fields
+  if (schema.options?.virtuals) {
+    Object.assign(validated, schema.options.virtuals(validated));
+  }
 
   return validated;
 }
