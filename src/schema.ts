@@ -1,5 +1,5 @@
-import type { MonarchType } from "./types/type";
-import type {
+import { MonarchType } from "./types/type";
+import {
   InferTypeObjectInput,
   InferTypeObjectOutput,
   KnownObjectKeys,
@@ -7,11 +7,30 @@ import type {
   Pretty,
 } from "./types/type-helpers";
 
+import { CreateIndexesOptions, IndexDirection } from "mongodb";
+
 type SchemaOmit<T extends keyof any> = { [K in T]?: true };
+
 type SchemaVirtuals<
   T extends Record<string, MonarchType<any>>,
   U extends Record<string, any>
 > = (values: InferTypeObjectOutput<T>) => U;
+
+type SchemaIndexes<T extends Record<string, MonarchType<any>>> = (options: {
+  createIndex: CreateIndex<keyof T>;
+}) => {
+  [k: string]:
+    | [fields: CreateIndexesFields<keyof T>]
+    | [fields: CreateIndexesFields<keyof T>, options: CreateIndexesOptions];
+};
+
+type CreateIndex<T extends keyof any> = (
+  fields: CreateIndexesFields<T>,
+  options?: CreateIndexesOptions
+) => [CreateIndexesFields<T>, CreateIndexesOptions | undefined];
+type CreateIndexesFields<T extends keyof any> = {
+  [K in T]?: 1 | -1 | Exclude<IndexDirection, number>;
+};
 
 export type Schema<
   TName extends string,
@@ -24,6 +43,7 @@ export type Schema<
   options?: {
     omit?: SchemaOmit<TOmit>;
     virtuals?: SchemaVirtuals<TTypes, TVirtuals>;
+    indexes?: SchemaIndexes<TTypes>;
   };
 };
 export type AnySchema = Schema<any, any, any, any>;
@@ -51,6 +71,7 @@ export function createSchema<
   options?: {
     omit?: SchemaOmit<TOmit>;
     virtuals?: SchemaVirtuals<TTypes, TVirtuals>;
+    indexes?: SchemaIndexes<TTypes>;
   }
 ): Schema<TName, TTypes, TOmit, TVirtuals> {
   return {

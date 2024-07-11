@@ -1,5 +1,7 @@
+import { MongoClient } from "mongodb";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import { describe, expect, it } from "vitest";
-import { boolean, number, string } from "../src";
+import { boolean, createDatabase, number, string } from "../src";
 import { createSchema, parseSchema } from "../src/schema";
 
 describe("Schema options", () => {
@@ -124,5 +126,37 @@ describe("Schema options", () => {
       isAdmin: true,
       role: "admin",
     });
+  });
+
+  it("creates index", async () => {
+    const schema = createSchema(
+      "users",
+      {
+        name: string(),
+        age: number(),
+      },
+      {
+        indexes() {
+          return {
+            name: [{ name: 1 }, { unique: true }],
+          };
+        },
+      }
+    );
+
+    const server = await MongoMemoryServer.create();
+    const client = new MongoClient(server.getUri());
+    const db = createDatabase(client, { users: schema });
+
+    // wait for indexes
+    await new Promise((res) => setTimeout(res, 100));
+
+    await db.collections.users.insert().values({ name: "bob", age: 0 }).exec();
+    await expect(async () => {
+      await db.collections.users
+        .insert()
+        .values({ name: "bob", age: 1 })
+        .exec();
+    }).rejects.toThrow("E11000 duplicate key error");
   });
 });

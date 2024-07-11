@@ -11,6 +11,7 @@ import type {
   FindOneAndUpdateOptions,
   FindOptions,
   IndexDirection,
+  IndexSpecification,
   MongoClient,
   OptionalUnlessRequiredId,
   ReplaceOptions,
@@ -18,6 +19,7 @@ import type {
   UpdateResult,
   WithId,
 } from "mongodb";
+import { MonarchError } from "../errors";
 import type { AnySchema, InferSchemaInput, InferSchemaOutput } from "../schema";
 import { parseSchema } from "../schema";
 import { PipelineStage } from "./pipeline-stage";
@@ -83,10 +85,24 @@ export type UpdateFilter<T> = {
 export class QueryBuilder<T extends AnySchema> {
   private _collection: Collection<InferSchemaOutput<T>>;
 
-  constructor(private _client: MongoClient, private _schema: T) {
-    this._collection = this._client
-      .db()
-      .collection<InferSchemaOutput<T>>(this._schema.name);
+  constructor(_client: MongoClient, private _schema: T) {
+    const db = _client.db();
+    // create indexes
+    if (_schema.options?.indexes) {
+      const indexes = _schema.options.indexes({
+        createIndex: (fields, options) => [fields, options],
+      });
+      for (const [key, [fields, options]] of Object.entries(indexes)) {
+        db.createIndex(
+          _schema.name,
+          fields as IndexSpecification,
+          options
+        ).catch((error) => {
+          throw new MonarchError(`failed to create index '${key}': ${error}`);
+        });
+      }
+    }
+    this._collection = db.collection<InferSchemaOutput<T>>(this._schema.name);
   }
 
   insert() {
