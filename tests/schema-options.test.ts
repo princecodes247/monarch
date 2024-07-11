@@ -136,9 +136,9 @@ describe("Schema options", () => {
         age: number(),
       },
       {
-        indexes() {
+        indexes({ createIndex }) {
           return {
-            name: [{ name: 1 }, { unique: true }],
+            name: createIndex({ name: 1 }, { unique: true }),
           };
         },
       }

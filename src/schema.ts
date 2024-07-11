@@ -21,7 +21,10 @@ type SchemaIndexes<T extends Record<string, MonarchType<any>>> = (options: {
 }) => {
   [k: string]:
     | [fields: CreateIndexesFields<keyof T>]
-    | [fields: CreateIndexesFields<keyof T>, options: CreateIndexesOptions];
+    | [
+        fields: CreateIndexesFields<keyof T>,
+        options: CreateIndexesOptions | undefined
+      ];
 };
 
 type CreateIndex<T extends keyof any> = (
