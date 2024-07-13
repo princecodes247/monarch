@@ -1,5 +1,5 @@
 import { MongoClient } from "mongodb";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { boolean, createDatabase, createSchema, number, string } from "../src";
 
 import { MongoMemoryServer } from "mongodb-memory-server";
@@ -30,10 +30,10 @@ const mockUsers = [
 ]
 
 const UserSchema = createSchema("users", {
-  name: string().nullable(),
+  name: string().optional(),
   email: string().lowercase().optional(),
   age: number().optional().default(10),
-  isVerified: boolean(),
+  isVerified: boolean().default(false),
 });
 
 const { collections, db } = createDatabase(client, {
@@ -51,6 +51,11 @@ describe("Query methods Tests", () => {
     await collections.users.deleteMany().where({}).exec();
   });
 
+  afterAll(async () => {
+    await client.close();
+    await mongod.stop();
+  });
+
   it("inserts one document", async () => {
     const newUser1 = await collections.users
       .insert()
@@ -65,6 +70,62 @@ describe("Query methods Tests", () => {
       .exec();
 
     expect(newUser2).not.toBe(null);
+
+    // Test edge case: Insert empty document
+    const emptyUser = await collections.users
+      .insert()
+      .values({})
+      .exec();
+
+    expect(emptyUser).not.toBe(null);
+    expect(emptyUser.age).toBe(10); // Should use default value
+
+    // TODO: Write Test edge case: Insert document with null values
+
+    //   const nullUser = await collections.users
+    //   .insert()
+    //   .values({
+    //     name: null,
+    //     email: null,
+    //     age: null,
+    //     isVerified: false
+    //   })
+    //   .exec();
+
+    // expect(nullUser).not.toBe(null);
+    // expect(nullUser.name).toBe(null);
+    // expect(nullUser.email).toBe(null);
+    // expect(nullUser.age).toBe(null);
+    // expect(nullUser.isVerified).toBe(false);
+
+    // Test edge case: Insert document with invalid email (should be lowercase)
+    const invalidEmailUser = await collections.users
+      .insert()
+      .values({
+        name: "Test",
+        email: "TEST@EXAMPLE.COM",
+        age: 30,
+        isVerified: true
+      })
+      .exec();
+
+    expect(invalidEmailUser).not.toBe(null);
+    expect(invalidEmailUser.email).toBe("test@example.com");
+
+    // Test edge case: Insert document with extra fields
+    const extraFieldsUser = await collections.users
+      .insert()
+      .values({
+        name: "Extra",
+        email: "extra@example.com",
+        age: 40,
+        isVerified: true,
+        extraField: "This should be ignored"
+      } as any)
+      .exec();
+
+    expect(extraFieldsUser).not.toBe(null);
+    expect(extraFieldsUser).not.toHaveProperty("extraField");
   })
 
   it("inserts many documents", async () => {
@@ -130,29 +191,17 @@ describe("Query methods Tests", () => {
         .values(mockUsers)
         .exec();
 
-      const users1 = await collections.users.findOne().oldSelect({ name: 1, email: 1 }).exec();
-      expect(users1?.name).toBe("anon");
-      expect(users1?.email).toBe("anon@gmail.com");
-      expect(users1?.age).toBeUndefined();
-      expect(users1?.isVerified).toBeUndefined();
+      const users1 = await collections.users.find().select("name", "email").exec();
+      expect(users1[0].name).toBe("anon");
+      expect(users1[0].email).toBe("anon@gmail.com");
+      expect(users1[0].age).toBeUndefined();
+      expect(users1[0].isVerified).toBeUndefined();
 
-      const users2 = await collections.users.find().oldSelect({ name: 0, email: 0 }).exec();
+      const users2 = await collections.users.find().omit("name", "email").exec();
       expect(users2[0].name).toBeUndefined();
       expect(users2[0].email).toBeUndefined();
       expect(users2[0].age).toBe(17);
       expect(users2[0].isVerified).toBe(true);
-
-      const users3 = await collections.users.find().select("name", "email").exec();
-      expect(users3[0].name).toBe("anon");
-      expect(users3[0].email).toBe("anon@gmail.com");
-      expect(users3[0].age).toBeUndefined();
-      expect(users3[0].isVerified).toBeUndefined();
-
-      const users4 = await collections.users.find().omit("name", "email").exec();
-      expect(users4[0].name).toBeUndefined();
-      expect(users4[0].email).toBeUndefined();
-      expect(users4[0].age).toBe(17);
-      expect(users4[0].isVerified).toBe(true);
     })
 
     it("query limit", async () => {

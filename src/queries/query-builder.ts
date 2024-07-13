@@ -180,11 +180,6 @@ export class Query<T extends Schema<any, any>> {
     return this;
   }
 
-  oldSelect(projection: Projection<WithId<InferSchemaOutput<T>>>): this {
-    Object.assign(this.projection, projection);
-    return this;
-  }
-
   select(...fields: (keyof WithId<InferSchemaOutput<T>>)[]): this {
     this.projection = fields.reduce((acc, field) => {
       acc[field] = 1;
