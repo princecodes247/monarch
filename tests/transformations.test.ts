@@ -23,7 +23,8 @@ describe("test for transformations", () => {
     });
 
     const newUser = await collections.users
-      .insert({
+      .insert()
+      .values({
         name: "PRINCE",
       })
       .exec();
@@ -58,7 +59,8 @@ describe("test for transformations", () => {
     });
 
     const newUser = await collections.users
-      .insert({
+      .insert()
+      .values({
         name: "EriiC",
       })
       .exec();
@@ -91,10 +93,12 @@ describe("test for transformations", () => {
       users: UserSchema,
     });
     const newUser = await collections.users
-      .insert({
+      .insert()
+      .values({
         name: "mon",
       })
       .exec();
+
     expect(newUser).not.toBe(null);
     expect(newUser).toStrictEqual(
       expect.objectContaining({

@@ -27,7 +27,8 @@ describe("test for boolean, number and string", () => {
     });
 
     const newUser = await collections.users
-      .insert({
+      .insert()
+      .values({
         name: "anon",
         email: "anon@gmail.com",
         age: 0,

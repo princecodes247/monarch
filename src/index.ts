@@ -1,4 +1,4 @@
-export { createDatabase } from "./database";
+export { createClient, createDatabase } from "./database";
 export { MonarchError, MonarchParseError } from "./errors";
 export { InferSchemaInput, InferSchemaOutput, createSchema } from "./schema";
 export { array } from "./types/array";
@@ -13,3 +13,4 @@ export { taggedUnion } from "./types/tagged-union";
 export { tuple } from "./types/tuple";
 export { MonarchType, type } from "./types/type";
 export { InferTypeInput, InferTypeOutput } from "./types/type-helpers";
+
