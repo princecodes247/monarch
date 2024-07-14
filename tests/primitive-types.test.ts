@@ -1,5 +1,5 @@
 import { MongoClient } from "mongodb";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { boolean, createDatabase, createSchema, number, string } from "../src";
 
 import { MongoMemoryServer } from "mongodb-memory-server";
@@ -12,6 +12,11 @@ const client = new MongoClient(uri);
 describe("test for boolean, number and string", () => {
   beforeAll(async () => {
     await client.connect();
+  });
+
+  afterAll(async () => {
+    await client.close();
+    await mongod.stop();
   });
 
   it("inserts and finds", async () => {
