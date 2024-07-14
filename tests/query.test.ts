@@ -48,7 +48,7 @@ describe("Query methods Tests", () => {
 
   afterEach(async () => {
     await collections.users.dropIndexes();
-    await collections.users.deleteMany().where({}).exec();
+    await collections.users.deleteMany({}).exec();
   });
 
   afterAll(async () => {
@@ -168,10 +168,10 @@ describe("Query methods Tests", () => {
         .insertMany()
         .values(mockUsers)
         .exec();
-      const users = await collections.users.find().where({}).exec();
+      const users = await collections.users.find({}).exec();
       expect(users.length).toBeGreaterThanOrEqual(mockUsers.length);
 
-      const firstUser = await collections.users.findOne().where({ name: "anon" }).exec();
+      const firstUser = await collections.users.findOne({ name: "anon" }).exec();
       expect(firstUser?.name).toBe("anon");
     });
 
@@ -181,7 +181,7 @@ describe("Query methods Tests", () => {
         .values(mockUsers)
         .exec();
 
-      const users = await collections.users.find().where({ name: "anon", age: 17 }).exec();
+      const users = await collections.users.find({ name: "anon", age: 17 }).exec();
       expect(users.length).toBe(1);
     })
 
