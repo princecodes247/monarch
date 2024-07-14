@@ -1,22 +1,29 @@
 import type {
+  AbstractCursorOptions,
   AggregateOptions,
   AnyBulkWriteOperation,
+  ChangeStreamOptions,
   Collection,
   DeleteOptions,
   DeleteResult,
   DropIndexesOptions,
+  EstimatedDocumentCountOptions,
   Filter,
   FindOneAndDeleteOptions,
   FindOneAndReplaceOptions,
   FindOneAndUpdateOptions,
   FindOptions,
   IndexDirection,
+  IndexInformationOptions,
   MongoClient,
+  OperationOptions,
   OptionalUnlessRequiredId,
+  RenameOptions,
   ReplaceOptions,
+  SearchIndexDescription,
   UpdateOptions,
   UpdateResult,
-  WithId,
+  WithId
 } from "mongodb";
 import type { InferSchemaInput, InferSchemaOutput, Schema } from "../schema";
 import { parseSchema } from "../schema";
@@ -135,12 +142,45 @@ export class QueryBuilder<T extends Schema<any, any>> {
     return new DeleteManyQuery(this._collection, filter);
   }
 
-  aggregate(): AggregationPipeline<T> {
-    return new AggregationPipeline(this._collection);
+  replaceOne(filter?: Filter<InferSchemaOutput<T>>) {
+    return new ReplaceOneQuery(this._collection, this._schema, filter);
+  }
+
+  aggregate(pipeline?: PipelineStage<OptionalUnlessRequiredId<InferSchemaOutput<T>>>[]): AggregationPipeline<T> {
+    return new AggregationPipeline(this._collection, pipeline);
+  }
+
+  watch(pipeline?: PipelineStage<any>[]) {
+    return new WatchPipeline(this._collection, pipeline);
   }
 
   bulkWrite(values: AnyBulkWriteOperation<InferSchemaOutput<T>>[]) {
     return new BulkWriteQuery(this._collection, values);
+  }
+
+  distinct(field: keyof InferSchemaOutput<T>, filter?: Filter<InferSchemaOutput<T>>) {
+    return new DistinctQuery(this._collection, field, filter);
+  }
+
+
+  async drop() {
+    return this._collection.drop();
+  }
+
+  estimatedDocumentCount(options?: EstimatedDocumentCountOptions) {
+    return this._collection.estimatedDocumentCount(options);
+  }
+
+  isCapped() {
+    return this._collection.isCapped();
+  }
+
+  options(options?: OperationOptions) {
+    return this._collection.options(options);
+  }
+
+  rename(newName: string, options?: RenameOptions) {
+    return this._collection.rename(newName, options);
   }
 
   // Indexing
@@ -162,6 +202,36 @@ export class QueryBuilder<T extends Schema<any, any>> {
 
   listIndexes() {
     return this._collection.listIndexes();
+  }
+
+  indexExists(name: string, options?: AbstractCursorOptions) {
+    return this._collection.indexExists(name, options);
+  }
+
+  indexInformation(options: IndexInformationOptions & {
+    full?: boolean;
+  }) {
+    return this._collection.indexInformation(options);
+  }
+
+  createSearchIndex(description: SearchIndexDescription) {
+    return this._collection.createSearchIndex(description);
+  }
+
+  createSearchIndexes(descriptions: SearchIndexDescription[]) {
+    return this._collection.createSearchIndexes(descriptions);
+  }
+
+  dropSearchIndex(name: string) {
+    return this._collection.dropSearchIndex(name);
+  }
+
+  listSearchIndexes() {
+    return this._collection.listSearchIndexes();
+  }
+
+  updateSearchIndex(name: string, description: SearchIndexDescription) {
+    return this._collection.updateSearchIndex(name, description);
   }
 }
 
@@ -250,6 +320,10 @@ export class BaseMutationQuery<T extends Schema<any, any>> extends BaseFindQuery
     // this.data = parseSchema(this._schema, data) as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
     return this;
   }
+}
+
+export class BaseUpdateQuery<T extends Schema<any, any>> extends BaseMutationQuery<T> {
+
   set(values: UpdateFilter<InferSchemaOutput<T>>): this {
     Object.assign(this.data, { $set: values });
     return this;
@@ -289,7 +363,31 @@ export class BaseInsertManyQuery<T extends Schema<any, any>> extends Query<T> {
 }
 
 
-// Define specific query classes
+export class CountQuery<T extends Schema<any, any>> extends BaseFindQuery<T> {
+  async exec(): Promise<number> {
+    return this._collection.countDocuments(this.filters);
+  }
+}
+
+export class DistinctQuery<T extends Schema<any, any>> extends BaseFindQuery<T> {
+
+  constructor(
+    _collection: Collection<InferSchemaOutput<T>>,
+    private _field: keyof InferSchemaOutput<T>,
+    _filters?: Filter<InferSchemaOutput<T>>,
+  ) {
+    super(_collection);
+  }
+
+  async exec(): Promise<any[]> {
+
+    return this._collection.distinct(this._field, this.filters);
+  }
+}
+
+
+
+
 export class FindQuery<T extends Schema<any, any>> extends BaseFindManyQuery<T> {
   async exec(): Promise<WithId<InferSchemaOutput<T>>[]> {
     return this._collection
@@ -306,12 +404,6 @@ export class FindOneQuery<T extends Schema<any, any>> extends BaseFindQuery<T> {
     return this._collection.findOne(this.filters, {
       projection: this.projection,
     });
-  }
-}
-
-export class CountQuery<T extends Schema<any, any>> extends BaseFindQuery<T> {
-  async exec(): Promise<number> {
-    return this._collection.countDocuments(this.filters);
   }
 }
 
@@ -340,6 +432,7 @@ export class FindOneAndUpdateQuery<T extends Schema<any, any>> extends BaseMutat
     return await this._collection.findOneAndUpdate(this.filters, this.data, this._options);
   }
 }
+
 
 export class FindOneAndReplaceQuery<T extends Schema<any, any>> extends BaseMutationQuery<T> {
   protected _options: FindOneAndReplaceOptions = {};
@@ -382,11 +475,12 @@ export class ReplaceOneQuery<T extends Schema<any, any>> extends BaseMutationQue
       this.data,
       this._options
     );
+    console.log({ result })
     return !!result.modifiedCount;
   }
 }
 
-export class UpdateOneQuery<T extends Schema<any, any>> extends BaseMutationQuery<T> {
+export class UpdateOneQuery<T extends Schema<any, any>> extends BaseUpdateQuery<T> {
   protected _options: UpdateOptions = {};
 
   options(options: UpdateOptions): this {
@@ -404,7 +498,7 @@ export class UpdateOneQuery<T extends Schema<any, any>> extends BaseMutationQuer
   }
 }
 
-export class UpdateManyQuery<T extends Schema<any, any>> extends BaseMutationQuery<T> {
+export class UpdateManyQuery<T extends Schema<any, any>> extends BaseUpdateQuery<T> {
   protected _options: UpdateOptions = {};
 
   options(options: UpdateOptions): this {
@@ -465,14 +559,18 @@ export class BulkWriteQuery<T extends Schema<any, any>> extends Query<T> {
   }
 }
 
-// Define a class to represent an aggregation pipeline
-export class AggregationPipeline<T extends Schema<any, any>> {
-  private pipeline: PipelineStage<
+export class Pipeline<T extends Schema<any, any>> {
+  protected pipeline: PipelineStage<
     OptionalUnlessRequiredId<InferSchemaOutput<T>>
   >[] = [];
-  private _options: AggregateOptions = {};
+  protected _options: AggregateOptions = {};
 
-  constructor(private readonly _collection: Collection<InferSchemaOutput<T>>) { }
+  constructor(protected readonly _collection: Collection<InferSchemaOutput<T>>,
+    pipeline?: PipelineStage<OptionalUnlessRequiredId<InferSchemaOutput<T>>>[]) {
+    if (pipeline) {
+      this.pipeline = pipeline;
+    }
+  }
 
 
   options(options: AggregateOptions): this {
@@ -480,7 +578,7 @@ export class AggregationPipeline<T extends Schema<any, any>> {
     return this;
   }
 
-  // Method to add a stage to the aggregation pipeline
+  // Method to add a stage to the pipeline
   addStage(
     stage: PipelineStage<OptionalUnlessRequiredId<InferSchemaOutput<T>>>
   ): this {
@@ -488,8 +586,39 @@ export class AggregationPipeline<T extends Schema<any, any>> {
     return this;
   }
 
+}
+
+export class AggregationPipeline<T extends Schema<any, any>> extends Pipeline<T> {
+
+  options(options: AggregateOptions): this {
+    Object.assign(this._options, options);
+    return this;
+  }
+
   // Method to execute the aggregation pipeline
   async exec() {
-    return this._collection.aggregate(this.pipeline, this._options);
+    const aggregatedData = this._collection.aggregate(this.pipeline, this._options);
+    return await aggregatedData.toArray()
+  }
+}
+
+export class WatchPipeline<T extends Schema<any, any>> extends Pipeline<T> {
+  protected _options: ChangeStreamOptions = {};
+
+  options(options: ChangeStreamOptions): this {
+    Object.assign(this._options, options);
+    return this;
+  }
+
+  addStage(
+    stage: PipelineStage<any>
+  ): this {
+    this.pipeline.push(stage);
+    return this;
+  }
+
+  // Method to execute the watch pipeline
+  exec() {
+    return this._collection.watch(this.pipeline, this._options);
   }
 }

@@ -302,6 +302,42 @@ describe("Query methods Tests", () => {
     expect(updated).toBe(true);
   });
 
+  it("replaces one document", async () => {
+    const firstUser = await collections.users
+      .insert()
+      .values(mockUsers[0])
+      .exec();
+    const replaced = await collections.users
+      .replaceOne()
+      .where({ email: "anon@gmail.com" })
+      .values({ name: "New Name" })
+      .exec();
+
+    expect(replaced).toBe(true);
+  });
+
+  it("distinct method", async () => {
+    await collections.users
+      .insertMany()
+      .values([{ name: "John", email: "john@example.com" }, { name: "Jane", email: "jane@example.com" }, { name: "John", email: "john@example.com" }])
+      .exec();
+    const distinctEmails = await collections.users
+      .distinct("email")
+      .exec();
+
+    expect(distinctEmails).toEqual(["jane@example.com", "john@example.com"]);
+  });
+
+  it("estimatedDocumentCount", async () => {
+    await collections.users
+      .insertMany()
+      .values(mockUsers)
+      .exec();
+    const estimatedCount = await collections.users.estimatedDocumentCount();
+
+    expect(estimatedCount).toBe(3);
+  });
+
   it("deletes one document", async () => {
     await collections.users
       .insert()
@@ -358,6 +394,53 @@ describe("Query methods Tests", () => {
     expect(indexes.length).toBeGreaterThanOrEqual(1);
   });
 
+  it("checks if an index exists", async () => {
+    await collections.users.createIndex({ email: 1 }, { unique: true });
+    const indexExists = await collections.users.indexExists("email_1");
+    expect(indexExists).toBeTruthy();
+  });
+
+  it("gets index information", async () => {
+    await collections.users.createIndex({ email: 1 }, { unique: true });
+    const indexInformation = await collections.users.indexInformation({
+
+    });
+    console.log({ indexInformation })
+    expect(indexInformation).toHaveProperty("email_1");
+  });
+
+  // it("creates a search index", async () => {
+  //   const searchIndexName = await collections.users.createSearchIndex({});
+  //   expect(searchIndexName).toBeDefined();
+  // });
+
+  // it("creates multiple search indexes", async () => {
+  //   const searchIndexNames = await collections.users.createSearchIndexes([
+  //     { name: 1 },
+  //     { age: -1 },
+  //   ]);
+  //   expect(searchIndexNames).toBeDefined();
+  // });
+
+  // it("drops a search index", async () => {
+  //   await collections.users.createSearchIndex({ email: 1 });
+  //   const dropSearchIndexResult = await collections.users.dropSearchIndex("email_1");
+  //   expect(dropSearchIndexResult).toBeTruthy();
+  // });
+
+  // it("lists search indexes", async () => {
+  //   await collections.users.createSearchIndex({ email: 1 });
+  //   const searchIndexes = await collections.users.listSearchIndexes();
+  //   expect(searchIndexes).toHaveProperty("email_1");
+  // });
+
+  // it("updates a search index", async () => {
+  //   await collections.users.createSearchIndex({ email: 1 });
+  //   const updateSearchIndexResult = await collections.users.updateSearchIndex("email_1", { email: 1, name: 1 });
+  //   expect(updateSearchIndexResult).toBeTruthy();
+  // });
+
+
   it("aggregates data", async () => {
 
     await collections.users.insertMany().values(mockUsers).exec();
@@ -366,10 +449,24 @@ describe("Query methods Tests", () => {
       { $match: { isVerified: true } },
       { $group: { _id: "$isVerified", count: { $sum: 1 } } },
     ];
-    const aggregatedData = await collections.users.aggregate().addStage(pipeline[0]).addStage(pipeline[1]).exec();
-    const result = await aggregatedData.toArray()
-    // console.log({ aggregatedData: result })
+    const result = await collections.users.aggregate().addStage(pipeline[0]).addStage(pipeline[1]).exec();
+
+    console.log({ aggregatedData: result })
     expect(result).toBeInstanceOf(Array);
     expect(result.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("watches for changes", async () => {
+    const pipeline = [
+      { $match: { operationType: "insert" } },
+    ];
+    const watchStream = collections.users.watch(pipeline).addStage({
+      $match: { operationType: "insert" }
+
+    }).exec().on("change", (change) => {
+      expect(change.operationType).toBe("insert");
+    });
+    await collections.users.insertOne().values({ name: "Test User" }).exec();
+    watchStream.close();
   });
 });

@@ -36,6 +36,8 @@ export function createDatabase<T extends Record<string, Schema<any, any>>>(
     );
   }
 
+  // TODO: Implement additional methods like   listCollections() 
+
   return {
     db: (schema) => new QueryBuilder(client, schema),
     collections,
