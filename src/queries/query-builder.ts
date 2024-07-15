@@ -91,6 +91,7 @@ export class QueryBuilder<T extends AnySchema> {
     if (_schema.options?.indexes) {
       const indexes = _schema.options.indexes({
         createIndex: (fields, options) => [fields, options],
+        unique: (field) => [{ [field]: 1 as const }, { unique: true }],
       });
       for (const [key, [fields, options]] of Object.entries(indexes)) {
         db.createIndex(

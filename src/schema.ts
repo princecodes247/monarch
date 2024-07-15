@@ -18,6 +18,7 @@ type SchemaVirtuals<
 
 type SchemaIndexes<T extends Record<string, MonarchType<any>>> = (options: {
   createIndex: CreateIndex<keyof T>;
+  unique: UniqueIndex<keyof T>;
 }) => {
   [k: string]:
     | [fields: CreateIndexesFields<keyof T>]
@@ -27,13 +28,18 @@ type SchemaIndexes<T extends Record<string, MonarchType<any>>> = (options: {
       ];
 };
 
+export type SchemaIndex<T extends keyof any> = [
+  CreateIndexesFields<T>,
+  CreateIndexesOptions | undefined
+];
+export type CreateIndexesFields<T extends keyof any> = {
+  [K in T]?: 1 | -1 | Exclude<IndexDirection, number>;
+};
 type CreateIndex<T extends keyof any> = (
   fields: CreateIndexesFields<T>,
   options?: CreateIndexesOptions
-) => [CreateIndexesFields<T>, CreateIndexesOptions | undefined];
-type CreateIndexesFields<T extends keyof any> = {
-  [K in T]?: 1 | -1 | Exclude<IndexDirection, number>;
-};
+) => SchemaIndex<T>;
+type UniqueIndex<T extends keyof any> = (field: T) => SchemaIndex<T>;
 
 export type Schema<
   TName extends string,

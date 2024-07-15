@@ -132,13 +132,19 @@ describe("Schema options", () => {
     const schema = createSchema(
       "users",
       {
-        name: string(),
+        firstname: string(),
+        surname: string(),
+        username: string(),
         age: number(),
       },
       {
-        indexes({ createIndex }) {
+        indexes({ createIndex, unique }) {
           return {
-            name: createIndex({ name: 1 }, { unique: true }),
+            username: unique("username"),
+            fullname: createIndex(
+              { firstname: 1, surname: 1 },
+              { unique: true }
+            ),
           };
         },
       }
@@ -151,11 +157,47 @@ describe("Schema options", () => {
     // wait for indexes
     await new Promise((res) => setTimeout(res, 100));
 
-    await db.collections.users.insert().values({ name: "bob", age: 0 }).exec();
+    // duplicate username
+    await db.collections.users
+      .insert()
+      .values({
+        firstname: "bob",
+        surname: "paul",
+        username: "bobpaul",
+        age: 0,
+      })
+      .exec();
     await expect(async () => {
       await db.collections.users
         .insert()
-        .values({ name: "bob", age: 1 })
+        .values({
+          firstname: "bobby",
+          surname: "paul",
+          username: "bobpaul",
+          age: 0,
+        })
+        .exec();
+    }).rejects.toThrow("E11000 duplicate key error");
+
+    // duplicate firstname and lastname pair
+    await db.collections.users
+      .insert()
+      .values({
+        firstname: "alice",
+        surname: "wonder",
+        username: "alicewonder",
+        age: 0,
+      })
+      .exec();
+    await expect(async () => {
+      await db.collections.users
+        .insert()
+        .values({
+          firstname: "alice",
+          surname: "wonder",
+          username: "allywon",
+          age: 0,
+        })
         .exec();
     }).rejects.toThrow("E11000 duplicate key error");
   });
