@@ -20,8 +20,11 @@ import type {
   WithId,
 } from "mongodb";
 import { MonarchError } from "../errors";
-import type { AnySchema, InferSchemaInput, InferSchemaOutput } from "../schema";
-import { parseSchema } from "../schema";
+import { AnySchema, parseSchema } from "../schema/schema";
+import type {
+  InferSchemaInput,
+  InferSchemaOutput,
+} from "../schema/type-helpers";
 import { PipelineStage } from "./pipeline-stage";
 // import { PipelineStage } from "./pipeline-stage";
 

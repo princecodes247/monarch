@@ -1,13 +1,12 @@
-import { MonarchType } from "./types/type";
+import { MonarchType } from "../types/type";
+import { InferTypeObjectOutput } from "../types/type-helpers";
 import {
-  InferTypeObjectInput,
-  InferTypeObjectOutput,
-  KnownObjectKeys,
-  Merge,
-  Pretty,
-} from "./types/type-helpers";
-
-import { CreateIndexesOptions, IndexDirection } from "mongodb";
+  CreateIndex,
+  InferSchemaInput,
+  InferSchemaOutput,
+  SchemaIndex,
+  UniqueIndex,
+} from "./type-helpers";
 
 type SchemaOmit<T extends keyof any> = { [K in T]?: true };
 
@@ -17,29 +16,9 @@ type SchemaVirtuals<
 > = (values: InferTypeObjectOutput<T>) => U;
 
 type SchemaIndexes<T extends Record<string, MonarchType<any>>> = (options: {
-  createIndex: CreateIndex<keyof T>;
-  unique: UniqueIndex<keyof T>;
-}) => {
-  [k: string]:
-    | [fields: CreateIndexesFields<keyof T>]
-    | [
-        fields: CreateIndexesFields<keyof T>,
-        options: CreateIndexesOptions | undefined
-      ];
-};
-
-export type SchemaIndex<T extends keyof any> = [
-  CreateIndexesFields<T>,
-  CreateIndexesOptions | undefined
-];
-export type CreateIndexesFields<T extends keyof any> = {
-  [K in T]?: 1 | -1 | Exclude<IndexDirection, number>;
-};
-type CreateIndex<T extends keyof any> = (
-  fields: CreateIndexesFields<T>,
-  options?: CreateIndexesOptions
-) => SchemaIndex<T>;
-type UniqueIndex<T extends keyof any> = (field: T) => SchemaIndex<T>;
+  createIndex: CreateIndex<T>;
+  unique: UniqueIndex<T>;
+}) => { [k: string]: SchemaIndex<T> };
 
 export type Schema<
   TName extends string,
@@ -56,18 +35,6 @@ export type Schema<
   };
 };
 export type AnySchema = Schema<any, any, any, any>;
-
-type InferSchemaOptions<T extends AnySchema> = T extends Schema<
-  infer _Name,
-  infer _Types,
-  infer Omit,
-  infer Extras
->
-  ? {
-      omit: Omit;
-      virtuals: Extras;
-    }
-  : never;
 
 export function createSchema<
   TName extends string,
@@ -89,16 +56,6 @@ export function createSchema<
     options,
   };
 }
-
-export type InferSchemaInput<T extends AnySchema> = InferTypeObjectInput<
-  T["types"]
->;
-export type InferSchemaOutput<T extends AnySchema> = Pretty<
-  Merge<
-    Omit<InferTypeObjectOutput<T["types"]>, InferSchemaOptions<T>["omit"]>,
-    KnownObjectKeys<InferSchemaOptions<T>["virtuals"]>
-  >
->;
 
 export function parseSchema<T extends AnySchema>(
   schema: T,

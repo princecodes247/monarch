@@ -2,15 +2,16 @@ import { describe, expect, it, test, vi } from "vitest";
 import {
   array,
   boolean,
+  createSchema,
   literal,
   number,
   object,
+  parseSchema,
   record,
   string,
   taggedUnion,
   tuple,
 } from "../src";
-import { createSchema, parseSchema } from "../src/schema";
 import { type } from "../src/types/type";
 
 const numberString = () => type<number, `${number}`>((input) => `${input}`);

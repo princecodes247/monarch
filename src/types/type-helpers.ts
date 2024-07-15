@@ -1,15 +1,5 @@
+import { Pretty } from "../type-helpers";
 import { MonarchType } from "./type";
-
-export type Merge<First, Second> = Omit<First, keyof Second> & Second;
-export type Pretty<T> = { [K in keyof T]: T[K] } & {};
-export type KnownKey<T> = string extends T
-  ? never
-  : number extends T
-  ? never
-  : symbol extends T
-  ? never
-  : T;
-export type KnownObjectKeys<T> = { [K in keyof T as KnownKey<K>]: T[K] };
 
 export type InferTypeInput<T> = T extends MonarchType<infer U, any> ? U : never;
 export type InferTypeOutput<T> = T extends MonarchType<any, infer U>

@@ -1,7 +1,7 @@
 import { MongoClient, MongoClientOptions } from "mongodb";
 import { MonarchError } from "./errors";
 import { QueryBuilder } from "./queries/query-builder";
-import { AnySchema } from "./schema";
+import { AnySchema } from "./schema/schema";
 
 type DbQueryBuilder = <T extends AnySchema>(schema: T) => QueryBuilder<T>;
 type CollectionsQueryBuilder<T extends Record<string, AnySchema>> = {

@@ -2,7 +2,7 @@ import { MongoClient } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { describe, expect, it } from "vitest";
 import { boolean, createDatabase, number, string } from "../src";
-import { createSchema, parseSchema } from "../src/schema";
+import { createSchema, parseSchema } from "../src/schema/schema";
 
 describe("Schema options", () => {
   it("omits fields", () => {

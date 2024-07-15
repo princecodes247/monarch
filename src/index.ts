@@ -1,6 +1,7 @@
 export { createClient, createDatabase } from "./database";
 export { MonarchError, MonarchParseError } from "./errors";
-export { InferSchemaInput, InferSchemaOutput, createSchema } from "./schema";
+export { createSchema, parseSchema } from "./schema/schema";
+export { InferSchemaInput, InferSchemaOutput } from "./schema/type-helpers";
 export { array } from "./types/array";
 export { boolean } from "./types/boolean";
 export { date, dateString } from "./types/date";
