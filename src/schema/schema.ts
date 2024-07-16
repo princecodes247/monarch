@@ -70,7 +70,7 @@ export function parseSchema<T extends AnySchema>(
     // omit field
     if (schema.options?.omit?.[key]) continue;
 
-    // transform and add field
+    // add field
     const value = type._parser(input[key]);
     validated[key] = value;
   }

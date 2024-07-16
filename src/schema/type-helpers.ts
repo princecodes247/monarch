@@ -45,16 +45,17 @@ export type UniqueIndex<T extends Record<string, MonarchType<any>>> = (
   field: IndexKeys<InferTypeObjectOutput<T>>
 ) => SchemaIndex<T>;
 
-type SubKeys<T, K, Prefix extends string> = K extends keyof T & string
-  ? IndexKeys<T[K], `${Prefix}${K}.`>
-  : never;
-type ShapeKeys<K extends string, Prefix extends string> = string extends K
-  ? `${Prefix}$**`
-  : `${Prefix}${K}` | `${Prefix}$**`;
 type IndexKeys<T, Prefix extends string = ""> = T extends Array<infer U>
   ? IndexKeys<U, Prefix>
   : T extends Record<string, any>
   ? keyof T extends infer K extends string
-    ? ShapeKeys<K, Prefix> | SubKeys<T, K, Prefix>
+    ? KeysWithWildcard<K, Prefix> | SubKeys<T, K, Prefix>
     : never
   : never;
+type SubKeys<T, K, Prefix extends string> = K extends keyof T & string
+  ? IndexKeys<T[K], `${Prefix}${K}.`>
+  : never;
+type KeysWithWildcard<
+  K extends string,
+  Prefix extends string
+> = string extends K ? `${Prefix}$**` : `${Prefix}${K}` | `${Prefix}$**`;

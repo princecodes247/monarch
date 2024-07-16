@@ -21,12 +21,8 @@ import type {
 } from "mongodb";
 import { MonarchError } from "../errors";
 import { AnySchema, parseSchema } from "../schema/schema";
-import type {
-  InferSchemaInput,
-  InferSchemaOutput,
-} from "../schema/type-helpers";
+import { InferSchemaInput, InferSchemaOutput } from "../schema/type-helpers";
 import { PipelineStage } from "./pipeline-stage";
-// import { PipelineStage } from "./pipeline-stage";
 
 type BulkWriteResult<T> = {
   insertedCount: number;
