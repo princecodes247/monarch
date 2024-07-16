@@ -10,7 +10,7 @@ import {
   UniqueIndex,
 } from "./type-helpers";
 
-type SchemaOmit<K extends keyof any> = K[];
+type SchemaOmit<K extends keyof any> = Record<K, true>;
 
 type SchemaVirtuals<
   T extends Record<string, MonarchType<any>>,
@@ -41,15 +41,12 @@ export class Schema<
   toData(data: InferSchemaInput<this>): InferSchemaData<this> {
     const parsed = {} as InferSchemaData<this>;
     if (data._id) parsed._id = data._id;
-
     // parse fields
-    for (const [key, type] of Object.entries(this.types) as [
-      keyof TTypes,
-      MonarchType<any>
-    ][]) {
-      parsed[key] = type._parser(data[key as keyof InferSchemaInput<this>]);
+    for (const [key, type] of Object.entries(this.types)) {
+      parsed[key as keyof TTypes] = type._parser(
+        data[key as keyof InferSchemaInput<this>]
+      );
     }
-
     return parsed;
   }
 
@@ -57,19 +54,16 @@ export class Schema<
     data: WithRequiredId<InferSchemaData<this>>
   ): InferSchemaOutput<this> {
     const parsed = data as InferSchemaOutput<this>;
-
     // omit fields
     if (this.options?.omit) {
-      for (const key of this.options.omit) {
+      for (const key of Object.keys(this.options.omit)) {
         delete data[key];
       }
     }
-
     // add virtual fields
     if (this.options?.virtuals) {
       Object.assign(data, this.options.virtuals(data));
     }
-
     return parsed;
   }
 }
@@ -80,7 +74,7 @@ export function createSchema<
   TName extends string,
   TTypes extends Record<string, MonarchType<any>>,
   TVirtuals extends Record<string, any> = {},
-  TOmit extends keyof TTypes | "_id" = never
+  TOmit extends keyof TTypes | "_id" = keyof TTypes | "_id"
 >(
   name: TName,
   types: TTypes,
@@ -89,6 +83,11 @@ export function createSchema<
     virtuals?: SchemaVirtuals<TTypes, TVirtuals>;
     indexes?: SchemaIndexes<TTypes>;
   }
-): Schema<TName, TTypes, TVirtuals, TOmit> {
+): Schema<
+  TName,
+  TTypes,
+  TVirtuals,
+  keyof TTypes | "_id" extends TOmit ? never : TOmit
+> {
   return new Schema(name, types, options);
 }

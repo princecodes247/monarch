@@ -30,7 +30,9 @@ describe("Schema options", () => {
         isAdmin: boolean(),
       },
       {
-        omit: ["isAdmin"],
+        omit: {
+          isAdmin: true,
+        },
       }
     );
     const db = createDatabase(client, { users: schema });
@@ -96,7 +98,9 @@ describe("Schema options", () => {
         isAdmin: boolean(),
       },
       {
-        omit: ["role" as never],
+        omit: {
+          role: true,
+        } as {},
         virtuals(values) {
           return {
             role: values.isAdmin ? "admin" : "user",
