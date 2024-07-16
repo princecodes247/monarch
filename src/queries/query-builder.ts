@@ -20,8 +20,12 @@ import type {
   WithId,
 } from "mongodb";
 import { MonarchError } from "../errors";
-import { AnySchema, parseSchema } from "../schema/schema";
-import { InferSchemaInput, InferSchemaOutput } from "../schema/type-helpers";
+import { AnySchema } from "../schema/schema";
+import {
+  InferSchemaData,
+  InferSchemaInput,
+  InferSchemaOutput,
+} from "../schema/type-helpers";
 import { PipelineStage } from "./pipeline-stage";
 
 type BulkWriteResult<T> = {
@@ -82,7 +86,7 @@ export type UpdateFilter<T> = {
 };
 
 export class QueryBuilder<T extends AnySchema> {
-  private _collection: Collection<InferSchemaOutput<T>>;
+  private _collection: Collection<InferSchemaData<T>>;
 
   constructor(_client: MongoClient, private _schema: T) {
     const db = _client.db();
@@ -102,7 +106,7 @@ export class QueryBuilder<T extends AnySchema> {
         });
       }
     }
-    this._collection = db.collection<InferSchemaOutput<T>>(this._schema.name);
+    this._collection = db.collection<InferSchemaData<T>>(this._schema.name);
   }
 
   insert() {
@@ -117,51 +121,51 @@ export class QueryBuilder<T extends AnySchema> {
   }
 
   find() {
-    return new FindQuery(this._collection);
+    return new FindQuery(this._collection, this._schema);
   }
 
   findOne() {
-    return new FindOneQuery(this._collection);
+    return new FindOneQuery(this._collection, this._schema);
   }
 
   findOneAndDelete() {
-    return new FindOneAndDeleteQuery(this._collection);
+    return new FindOneAndDeleteQuery(this._collection, this._schema);
   }
 
   findOneAndUpdate() {
-    return new FindOneAndUpdateQuery(this._collection);
+    return new FindOneAndUpdateQuery(this._collection, this._schema);
   }
 
   findOneAndReplace() {
-    return new FindOneAndReplaceQuery(this._collection);
+    return new FindOneAndReplaceQuery(this._collection, this._schema);
   }
 
   count() {
-    return new CountQuery(this._collection);
+    return new CountQuery(this._collection, this._schema);
   }
 
   updateOne() {
-    return new UpdateOneQuery(this._collection);
+    return new UpdateOneQuery(this._collection, this._schema);
   }
 
   updateMany() {
-    return new UpdateManyQuery(this._collection);
+    return new UpdateManyQuery(this._collection, this._schema);
   }
 
   deleteOne() {
-    return new DeleteOneQuery(this._collection);
+    return new DeleteOneQuery(this._collection, this._schema);
   }
 
   deleteMany() {
-    return new DeleteManyQuery(this._collection);
+    return new DeleteManyQuery(this._collection, this._schema);
   }
 
   aggregate(): AggregationPipeline<T> {
     return new AggregationPipeline(this._collection);
   }
 
-  bulkWrite(values: AnyBulkWriteOperation<InferSchemaOutput<T>>[]) {
-    return new BulkWriteQuery(this._collection, values);
+  bulkWrite() {
+    return new BulkWriteQuery(this._collection, this._schema);
   }
 
   // Indexing
@@ -197,32 +201,33 @@ export class QueryBuilder<T extends AnySchema> {
 
 // Define a base query class
 export class Query<T extends AnySchema> {
-  protected filters: Filter<InferSchemaOutput<T>> = {};
-  protected projection: Projection<WithId<InferSchemaOutput<T>>> = {};
+  protected filters: Filter<InferSchemaData<T>> = {};
+  protected projection: Projection<WithId<InferSchemaData<T>>> = {};
   protected _options: FindOptions = {};
 
   constructor(
-    protected readonly _collection: Collection<InferSchemaOutput<T>>
+    protected readonly _collection: Collection<InferSchemaData<T>>,
+    protected _schema: T
   ) {}
 
-  where(filter: Filter<InferSchemaOutput<T>>): this {
+  where(filter: Filter<InferSchemaData<T>>): this {
     Object.assign(this.filters, filter);
     return this;
   }
 
-  select(...fields: (keyof WithId<InferSchemaOutput<T>>)[]): this {
+  select(...fields: (keyof WithId<InferSchemaData<T>>)[]): this {
     this.projection = fields.reduce((acc, field) => {
       acc[field] = 1;
       return acc;
-    }, {} as Projection<WithId<InferSchemaOutput<T>>>);
+    }, {} as Projection<WithId<InferSchemaData<T>>>);
     return this;
   }
 
-  omit(...fields: (keyof WithId<InferSchemaOutput<T>>)[]): this {
+  omit(...fields: (keyof WithId<InferSchemaData<T>>)[]): this {
     this.projection = fields.reduce((acc, field) => {
       acc[field] = 0;
       return acc;
-    }, {} as Projection<WithId<InferSchemaOutput<T>>>);
+    }, {} as Projection<WithId<InferSchemaData<T>>>);
     return this;
   }
 
@@ -247,74 +252,56 @@ export class Query<T extends AnySchema> {
 }
 
 export class MutationBaseQuery<T extends AnySchema> extends Query<T> {
-  protected data = {} as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
+  protected data = {} as OptionalUnlessRequiredId<InferSchemaData<T>>;
 
-  values(values: UpdateFilter<InferSchemaOutput<T>>): this {
+  values(values: UpdateFilter<InferSchemaData<T>>): this {
     Object.assign(this.data, values);
     return this;
   }
-  set(values: UpdateFilter<InferSchemaOutput<T>>): this {
+  set(values: UpdateFilter<InferSchemaData<T>>): this {
     Object.assign(this.data, { $set: values });
     return this;
   }
 }
 
 export class InsertBaseQuery<T extends AnySchema> extends Query<T> {
-  protected data = {} as OptionalUnlessRequiredId<InferSchemaOutput<T>>;
+  protected data = {} as InferSchemaData<T>;
 
-  constructor(
-    _collection: Collection<InferSchemaOutput<T>>,
-    private _schema: T
-  ) {
-    super(_collection);
-  }
-
-  values(data: OptionalUnlessRequiredId<InferSchemaInput<T>>): this {
-    this.data = parseSchema(this._schema, data) as OptionalUnlessRequiredId<
-      InferSchemaOutput<T>
-    >;
+  values(data: InferSchemaInput<T>): this {
+    this.data = this._schema.toData(data);
     return this;
   }
 }
 
 export class InsertManyBaseQuery<T extends AnySchema> extends Query<T> {
-  protected data = [] as OptionalUnlessRequiredId<InferSchemaOutput<T>>[];
+  protected data = [] as InferSchemaData<T>[];
 
-  constructor(
-    _collection: Collection<InferSchemaOutput<T>>,
-    private _schema: T
-  ) {
-    super(_collection);
-  }
-
-  values(data: OptionalUnlessRequiredId<InferSchemaInput<T>>[]): this {
-    this.data = data.map(
-      (value) =>
-        parseSchema(this._schema, value) as OptionalUnlessRequiredId<
-          InferSchemaOutput<T>
-        >
-    );
+  values(data: InferSchemaInput<T>[]): this {
+    this.data = data.map((value) => this._schema.toData(value));
     return this;
   }
 }
 
 // Define specific query classes
 export class FindQuery<T extends AnySchema> extends Query<T> {
-  async exec(): Promise<WithId<InferSchemaOutput<T>>[]> {
+  async exec(): Promise<InferSchemaOutput<T>[]> {
     return this._collection
       .find(this.filters, {
         ...this._options,
         projection: this.projection,
       })
-      .toArray();
+      .toArray()
+      .then((res) => res.map((res) => this._schema.fromData(res)));
   }
 }
 
 export class FindOneQuery<T extends AnySchema> extends Query<T> {
-  async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
-    return this._collection.findOne(this.filters, {
-      projection: this.projection,
-    });
+  async exec(): Promise<InferSchemaOutput<T> | null> {
+    return this._collection
+      .findOne(this.filters, {
+        projection: this.projection,
+      })
+      .then((res) => (res ? this._schema.fromData(res) : res));
   }
 }
 
@@ -332,8 +319,10 @@ export class FindOneAndDeleteQuery<T extends AnySchema> extends Query<T> {
     return this;
   }
 
-  async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
-    return this._collection.findOneAndDelete(this.filters, this._options);
+  async exec(): Promise<InferSchemaOutput<T> | null> {
+    return this._collection
+      .findOneAndDelete(this.filters, this._options)
+      .then((res) => (res ? this._schema.fromData(res) : res));
   }
 }
 
@@ -347,12 +336,10 @@ export class FindOneAndUpdateQuery<
     return this;
   }
 
-  async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
-    return await this._collection.findOneAndUpdate(
-      this.filters,
-      this.data,
-      this._options
-    );
+  async exec(): Promise<InferSchemaOutput<T> | null> {
+    return await this._collection
+      .findOneAndUpdate(this.filters, this.data, this._options)
+      .then((res) => (res ? this._schema.fromData(res) : res));
   }
 }
 
@@ -366,31 +353,32 @@ export class FindOneAndReplaceQuery<
     return this;
   }
 
-  async exec(): Promise<WithId<InferSchemaOutput<T>> | null> {
-    return this._collection.findOneAndReplace(
-      this.filters,
-      this.data,
-      this._options
-    );
+  async exec(): Promise<InferSchemaOutput<T> | null> {
+    return this._collection
+      .findOneAndReplace(this.filters, this.data, this._options)
+      .then((res) => (res ? this._schema.fromData(res) : res));
   }
 }
 
 export class InsertOneQuery<T extends AnySchema> extends InsertBaseQuery<T> {
-  async exec() {
-    const result = await this._collection.insertOne(this.data);
-    return { _id: result.insertedId, ...this.data };
+  async exec(): Promise<InferSchemaOutput<T>> {
+    const result = await this._collection.insertOne(
+      this.data as OptionalUnlessRequiredId<InferSchemaData<T>>
+    );
+    return this._schema.fromData({ _id: result.insertedId, ...this.data });
   }
 }
 
 export class InsertManyQuery<
   T extends AnySchema
 > extends InsertManyBaseQuery<T> {
-  async exec() {
-    const result = await this._collection.insertMany(this.data);
-    return this.data.map((data, index) => ({
-      _id: result.insertedIds[index],
-      ...data,
-    }));
+  async exec(): Promise<InferSchemaOutput<T>[]> {
+    const result = await this._collection.insertMany(
+      this.data as OptionalUnlessRequiredId<InferSchemaData<T>>[]
+    );
+    return this.data.map((data, index) =>
+      this._schema.fromData({ _id: result.insertedIds[index], ...data })
+    );
   }
 }
 
@@ -483,13 +471,14 @@ export class DeleteManyQuery<T extends AnySchema> extends Query<T> {
 }
 
 export class BulkWriteQuery<T extends AnySchema> extends Query<T> {
-  constructor(
-    _collection: Collection<InferSchemaOutput<T>>,
-    private data: AnyBulkWriteOperation<InferSchemaOutput<T>>[]
-  ) {
-    super(_collection);
+  protected data = [] as AnyBulkWriteOperation<InferSchemaData<T>>[];
+
+  values(data: AnyBulkWriteOperation<InferSchemaData<T>>[]): this {
+    this.data = data;
+    return this;
   }
-  async exec(): Promise<BulkWriteResult<InferSchemaOutput<T>>> {
+
+  async exec(): Promise<BulkWriteResult<InferSchemaData<T>>> {
     return this._collection.bulkWrite(this.data);
   }
 }
@@ -497,11 +486,11 @@ export class BulkWriteQuery<T extends AnySchema> extends Query<T> {
 // Define a class to represent an aggregation pipeline
 export class AggregationPipeline<T extends AnySchema> {
   private pipeline: PipelineStage<
-    OptionalUnlessRequiredId<InferSchemaOutput<T>>
+    OptionalUnlessRequiredId<InferSchemaData<T>>
   >[] = [];
   private _options: AggregateOptions = {};
 
-  constructor(private readonly _collection: Collection<InferSchemaOutput<T>>) {}
+  constructor(private readonly _collection: Collection<InferSchemaData<T>>) {}
 
   options(options: AggregateOptions): this {
     Object.assign(this._options, options);
@@ -510,7 +499,7 @@ export class AggregationPipeline<T extends AnySchema> {
 
   // Method to add a stage to the aggregation pipeline
   addStage(
-    stage: PipelineStage<OptionalUnlessRequiredId<InferSchemaOutput<T>>>
+    stage: PipelineStage<OptionalUnlessRequiredId<InferSchemaData<T>>>
   ): this {
     this.pipeline.push(stage);
     return this;

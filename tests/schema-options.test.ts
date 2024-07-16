@@ -1,11 +1,27 @@
 import { MongoClient } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { describe, expect, it } from "vitest";
-import { boolean, createDatabase, number, string } from "../src";
-import { createSchema, parseSchema } from "../src/schema/schema";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { boolean, createDatabase, createSchema, number, string } from "../src";
+import {} from "../src/schema/schema";
+
+const server = await MongoMemoryServer.create();
+const client = new MongoClient(server.getUri());
 
 describe("Schema options", () => {
-  it("omits fields", () => {
+  beforeAll(async () => {
+    await client.connect();
+  });
+
+  afterEach(async () => {
+    await client.db().dropDatabase();
+  });
+
+  afterAll(async () => {
+    await client.close();
+    await server.stop();
+  });
+
+  it("omits fields", async () => {
     const schema = createSchema(
       "users",
       {
@@ -14,22 +30,26 @@ describe("Schema options", () => {
         isAdmin: boolean(),
       },
       {
-        omit: {
-          isAdmin: true,
-        },
+        omit: ["isAdmin"],
       }
     );
-
-    const output = parseSchema(schema, {
-      name: "tom",
-      age: 0,
-      isAdmin: true,
-    });
-
-    expect(output).toStrictEqual({ name: "tom", age: 0 });
+    const db = createDatabase(client, { users: schema });
+    const res = await db.collections.users
+      .insert()
+      .values({
+        name: "tom",
+        age: 0,
+        isAdmin: true,
+      })
+      .exec();
+    const doc = await db.collections.users
+      .findOne()
+      .where({ _id: res._id })
+      .exec();
+    expect(doc).toStrictEqual({ _id: res._id, name: "tom", age: 0 });
   });
 
-  it("adds extra fields", () => {
+  it("adds virtuals fields", async () => {
     const schema = createSchema(
       "users",
       {
@@ -45,14 +65,21 @@ describe("Schema options", () => {
         },
       }
     );
-
-    const output = parseSchema(schema, {
-      name: "tom cruise",
-      age: 0,
-      isAdmin: true,
-    });
-
-    expect(output).toStrictEqual({
+    const db = createDatabase(client, { users: schema });
+    const res = await db.collections.users
+      .insert()
+      .values({
+        name: "tom cruise",
+        age: 0,
+        isAdmin: true,
+      })
+      .exec();
+    const doc = await db.collections.users
+      .findOne()
+      .where({ _id: res._id })
+      .exec();
+    expect(doc).toStrictEqual({
+      _id: res._id,
       name: "tom cruise",
       age: 0,
       isAdmin: true,
@@ -60,7 +87,7 @@ describe("Schema options", () => {
     });
   });
 
-  it("does not omit extra fields", () => {
+  it("does not omit virtual fields", async () => {
     const schema = createSchema(
       "users",
       {
@@ -69,10 +96,7 @@ describe("Schema options", () => {
         isAdmin: boolean(),
       },
       {
-        omit: {
-          // @ts-expect-error
-          role: true,
-        },
+        omit: ["role" as never],
         virtuals(values) {
           return {
             role: values.isAdmin ? "admin" : "user",
@@ -80,14 +104,21 @@ describe("Schema options", () => {
         },
       }
     );
-
-    const output = parseSchema(schema, {
-      name: "tom",
-      age: 0,
-      isAdmin: true,
-    });
-
-    expect(output).toStrictEqual({
+    const db = createDatabase(client, { users: schema });
+    const res = await db.collections.users
+      .insert()
+      .values({
+        name: "tom",
+        age: 0,
+        isAdmin: true,
+      })
+      .exec();
+    const doc = await db.collections.users
+      .findOne()
+      .where({ _id: res._id })
+      .exec();
+    expect(doc).toStrictEqual({
+      _id: res._id,
       name: "tom",
       age: 0,
       isAdmin: true,
@@ -95,7 +126,7 @@ describe("Schema options", () => {
     });
   });
 
-  it("replaces fields with extras", () => {
+  it("replaces fields with extras", async () => {
     const schema = createSchema(
       "users",
       {
@@ -112,15 +143,22 @@ describe("Schema options", () => {
         },
       }
     );
-
-    const output = parseSchema(schema, {
-      name: "tom",
-      age: 0,
-      isAdmin: true,
-      role: 1,
-    });
-
-    expect(output).toStrictEqual({
+    const db = createDatabase(client, { users: schema });
+    const res = await db.collections.users
+      .insert()
+      .values({
+        name: "tom",
+        age: 0,
+        isAdmin: true,
+        role: 1,
+      })
+      .exec();
+    const doc = await db.collections.users
+      .findOne()
+      .where({ _id: res._id })
+      .exec();
+    expect(doc).toStrictEqual({
+      _id: res._id,
       name: "tom",
       age: 0,
       isAdmin: true,
@@ -149,12 +187,8 @@ describe("Schema options", () => {
         },
       }
     );
-
-    const server = await MongoMemoryServer.create();
-    const client = new MongoClient(server.getUri());
     const db = createDatabase(client, { users: schema });
-
-    // wait for indexes
+    // TODO: wait for indexes
     await new Promise((res) => setTimeout(res, 100));
 
     // duplicate username

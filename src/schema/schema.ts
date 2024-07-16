@@ -1,46 +1,86 @@
+import { WithRequiredId } from "../type-helpers";
 import { MonarchType } from "../types/type";
 import { InferTypeObjectOutput } from "../types/type-helpers";
 import {
   CreateIndex,
+  InferSchemaData,
   InferSchemaInput,
   InferSchemaOutput,
   SchemaIndex,
   UniqueIndex,
 } from "./type-helpers";
 
-type SchemaOmit<T extends keyof any> = { [K in T]?: true };
+type SchemaOmit<K extends keyof any> = K[];
 
 type SchemaVirtuals<
   T extends Record<string, MonarchType<any>>,
   U extends Record<string, any>
-> = (values: InferTypeObjectOutput<T>) => U;
+> = (values: WithRequiredId<InferTypeObjectOutput<T>>) => U;
 
 type SchemaIndexes<T extends Record<string, MonarchType<any>>> = (options: {
   createIndex: CreateIndex<T>;
   unique: UniqueIndex<T>;
 }) => { [k: string]: SchemaIndex<T> };
 
-export type Schema<
+export class Schema<
   TName extends string,
   TTypes extends Record<string, MonarchType<any>>,
-  TOmit extends keyof TTypes,
-  TVirtuals extends Record<string, any>
-> = {
-  name: TName;
-  types: TTypes;
-  options?: {
-    omit?: SchemaOmit<TOmit>;
-    virtuals?: SchemaVirtuals<TTypes, TVirtuals>;
-    indexes?: SchemaIndexes<TTypes>;
-  };
-};
+  TVirtuals extends Record<string, any>,
+  TOmit extends keyof TTypes | "_id"
+> {
+  constructor(
+    public name: TName,
+    public types: TTypes,
+    public options?: {
+      omit?: SchemaOmit<TOmit>;
+      virtuals?: SchemaVirtuals<TTypes, TVirtuals>;
+      indexes?: SchemaIndexes<TTypes>;
+    }
+  ) {}
+
+  toData(data: InferSchemaInput<this>): InferSchemaData<this> {
+    const parsed = {} as InferSchemaData<this>;
+    if (data._id) parsed._id = data._id;
+
+    // parse fields
+    for (const [key, type] of Object.entries(this.types) as [
+      keyof TTypes,
+      MonarchType<any>
+    ][]) {
+      parsed[key] = type._parser(data[key as keyof InferSchemaInput<this>]);
+    }
+
+    return parsed;
+  }
+
+  fromData(
+    data: WithRequiredId<InferSchemaData<this>>
+  ): InferSchemaOutput<this> {
+    const parsed = data as InferSchemaOutput<this>;
+
+    // omit fields
+    if (this.options?.omit) {
+      for (const key of this.options.omit) {
+        delete data[key];
+      }
+    }
+
+    // add virtual fields
+    if (this.options?.virtuals) {
+      Object.assign(data, this.options.virtuals(data));
+    }
+
+    return parsed;
+  }
+}
+
 export type AnySchema = Schema<any, any, any, any>;
 
 export function createSchema<
   TName extends string,
   TTypes extends Record<string, MonarchType<any>>,
-  TOmit extends keyof TTypes = never,
-  TVirtuals extends Record<string, any> = {}
+  TVirtuals extends Record<string, any> = {},
+  TOmit extends keyof TTypes | "_id" = never
 >(
   name: TName,
   types: TTypes,
@@ -49,36 +89,6 @@ export function createSchema<
     virtuals?: SchemaVirtuals<TTypes, TVirtuals>;
     indexes?: SchemaIndexes<TTypes>;
   }
-): Schema<TName, TTypes, TOmit, TVirtuals> {
-  return {
-    name,
-    types,
-    options,
-  };
-}
-
-export function parseSchema<T extends AnySchema>(
-  schema: T,
-  input: InferSchemaInput<T>
-): InferSchemaOutput<T> {
-  const validated = {} as InferSchemaOutput<T>;
-
-  for (const [key, type] of Object.entries(schema.types) as [
-    keyof T["types"],
-    MonarchType<any>
-  ][]) {
-    // omit field
-    if (schema.options?.omit?.[key]) continue;
-
-    // add field
-    const value = type._parser(input[key]);
-    validated[key] = value;
-  }
-
-  // add virtual fields
-  if (schema.options?.virtuals) {
-    Object.assign(validated, schema.options.virtuals(validated));
-  }
-
-  return validated;
+): Schema<TName, TTypes, TVirtuals, TOmit> {
+  return new Schema(name, types, options);
 }

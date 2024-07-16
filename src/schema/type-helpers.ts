@@ -1,5 +1,11 @@
 import { CreateIndexesOptions, IndexDirection } from "mongodb";
-import { KnownObjectKeys, Merge, Pretty } from "../type-helpers";
+import {
+  KnownObjectKeys,
+  Merge,
+  Pretty,
+  WithOptionalId,
+  WithRequiredId,
+} from "../type-helpers";
 import { MonarchType } from "../types/type";
 import {
   InferTypeObjectInput,
@@ -7,29 +13,33 @@ import {
 } from "../types/type-helpers";
 import { AnySchema, Schema } from "./schema";
 
-export type InferSchemaInput<T extends AnySchema> = InferTypeObjectInput<
-  T["types"]
+export type InferSchemaInput<T extends AnySchema> = Pretty<
+  WithOptionalId<InferTypeObjectInput<T["types"]>>
+>;
+export type InferSchemaData<T extends AnySchema> = WithOptionalId<
+  InferTypeObjectOutput<T["types"]>
 >;
 export type InferSchemaOutput<T extends AnySchema> = Pretty<
-  Merge<
-    Omit<InferTypeObjectOutput<T["types"]>, InferSchemaOptions<T>["omit"]>,
-    KnownObjectKeys<InferSchemaOptions<T>["virtuals"]>
-  >
+  Omit<WithRequiredId<{}>, InferSchemaOptions<T>["omit"]> &
+    Merge<
+      Omit<InferSchemaData<T>, InferSchemaOptions<T>["omit"]>,
+      KnownObjectKeys<InferSchemaOptions<T>["virtuals"]>
+    >
 >;
 type InferSchemaOptions<T extends AnySchema> = T extends Schema<
   infer _Name,
   infer _Types,
-  infer Omit,
-  infer Extras
+  infer Virtuals,
+  infer Omit
 >
   ? {
+      virtuals: Virtuals;
       omit: Omit;
-      virtuals: Extras;
     }
   : never;
 
 export type CreateIndexesFields<T extends Record<string, MonarchType<any>>> = {
-  [K in IndexKeys<InferTypeObjectOutput<T>>]?:
+  [K in IndexKeys<InferTypeObjectOutput<T>> | "_id"]?:
     | 1
     | -1
     | Exclude<IndexDirection, number>;
