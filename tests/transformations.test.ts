@@ -1,6 +1,6 @@
 import { MongoClient } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDatabase, createSchema, string } from "../src";
 
 const mongod = await MongoMemoryServer.create();
@@ -11,6 +11,11 @@ const client = new MongoClient(uri);
 describe("test for transformations", () => {
   beforeAll(async () => {
     await client.connect();
+  });
+
+  afterAll(async () => {
+    await client.close();
+    await mongod.stop();
   });
 
   it("returns value in lowercase", async () => {
