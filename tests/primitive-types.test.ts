@@ -1,8 +1,7 @@
 import { MongoClient } from "mongodb";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import { beforeAll, describe, expect, it } from "vitest";
 import { boolean, createDatabase, createSchema, number, string } from "../src";
-
-import { MongoMemoryServer } from "mongodb-memory-server";
 
 const mongod = await MongoMemoryServer.create();
 
@@ -27,7 +26,8 @@ describe("test for boolean, number and string", () => {
     });
 
     const newUser = await collections.users
-      .insert({
+      .insert()
+      .values({
         name: "anon",
         email: "anon@gmail.com",
         age: 0,

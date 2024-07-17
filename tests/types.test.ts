@@ -2,6 +2,7 @@ import { describe, expect, it, test, vi } from "vitest";
 import {
   array,
   boolean,
+  createSchema,
   literal,
   number,
   object,
@@ -9,9 +10,8 @@ import {
   string,
   taggedUnion,
   tuple,
+  type,
 } from "../src";
-import { createSchema, parseSchema } from "../src/schema";
-import { type } from "../src/types/type";
 
 const numberString = () => type<number, `${number}`>((input) => `${input}`);
 
@@ -22,13 +22,12 @@ describe("Types", () => {
       upperName: string().transform((input) => input.toUpperCase()),
       age: numberString(),
     });
-
-    const output = parseSchema(schema, {
+    const data = schema.toData({
       name: "tom",
       upperName: "tom",
       age: 0,
     });
-    expect(output).toStrictEqual({ name: "tom", upperName: "TOM", age: "0" });
+    expect(data).toStrictEqual({ name: "tom", upperName: "TOM", age: "0" });
   });
 
   it("validate and transform order", () => {
@@ -40,7 +39,7 @@ describe("Types", () => {
           "String is not in all caps"
         ),
     });
-    expect(() => parseSchema(schema, { name: "somename" })).not.toThrowError();
+    expect(() => schema.toData({ name: "somename" })).not.toThrowError();
   });
 
   test("nullable", () => {
@@ -48,15 +47,15 @@ describe("Types", () => {
     const schema1 = createSchema("users", {
       age: numberString().nullable(),
     });
-    const output1 = parseSchema(schema1, { age: null });
-    expect(output1).toStrictEqual({ age: null });
+    const data1 = schema1.toData({ age: null });
+    expect(data1).toStrictEqual({ age: null });
 
     // transform is applied when value is not null
     const schema2 = createSchema("users", {
       age: numberString().nullable(),
     });
-    const output2 = parseSchema(schema2, { age: 0 });
-    expect(output2).toStrictEqual({ age: "0" });
+    const data2 = schema2.toData({ age: 0 });
+    expect(data2).toStrictEqual({ age: "0" });
   });
 
   test("optional", () => {
@@ -64,15 +63,15 @@ describe("Types", () => {
     const schema1 = createSchema("users", {
       age: numberString().optional(),
     });
-    const output1 = parseSchema(schema1, {});
-    expect(output1).toStrictEqual({ age: undefined });
+    const data1 = schema1.toData({});
+    expect(data1).toStrictEqual({ age: undefined });
 
     // transform is applied when value is not undefined
     const schema2 = createSchema("users", {
       age: numberString().optional(),
     });
-    const output2 = parseSchema(schema2, { age: 0 });
-    expect(output2).toStrictEqual({ age: "0" });
+    const data2 = schema2.toData({ age: 0 });
+    expect(data2).toStrictEqual({ age: "0" });
   });
 
   test("default", () => {
@@ -82,8 +81,8 @@ describe("Types", () => {
       age: numberString().default(10),
       ageLazy: numberString().default(defaultFnTrap1),
     });
-    const output1 = parseSchema(schema1, {});
-    expect(output1).toStrictEqual({ age: "10", ageLazy: "11" });
+    const data1 = schema1.toData({});
+    expect(data1).toStrictEqual({ age: "10", ageLazy: "11" });
     expect(defaultFnTrap1).toHaveBeenCalledTimes(1);
 
     // default value is ignored when value is not null or undefined
@@ -92,8 +91,8 @@ describe("Types", () => {
       age: numberString().default(10),
       ageLazy: numberString().default(defaultFnTrap2),
     });
-    const output2 = parseSchema(schema2, { age: 1, ageLazy: 2 });
-    expect(output2).toStrictEqual({ age: "1", ageLazy: "2" });
+    const data2 = schema2.toData({ age: 1, ageLazy: 2 });
+    expect(data2).toStrictEqual({ age: "1", ageLazy: "2" });
     expect(defaultFnTrap2).toHaveBeenCalledTimes(0);
   });
 
@@ -112,8 +111,8 @@ describe("Types", () => {
             .transform((str) => `count-${str}`)
         ),
     });
-    const output1 = parseSchema(schema1, { count: "1" });
-    expect(output1).toStrictEqual({ count: "count-1000" });
+    const data1 = schema1.toData({ count: "1" });
+    expect(data1).toStrictEqual({ count: "count-1000" });
     expect(outerValidateFnTrap).toHaveBeenCalledTimes(1);
     expect(innerValidateFnTrap).toHaveBeenCalledTimes(1);
     outerValidateFnTrap.mockClear();
@@ -132,8 +131,8 @@ describe("Types", () => {
             .transform((str) => `count-${str}`)
         ),
     });
-    const output2 = parseSchema(schema2, {});
-    expect(output2).toStrictEqual({ count: "count-2000" });
+    const data2 = schema2.toData({});
+    expect(data2).toStrictEqual({ count: "count-2000" });
     expect(outerValidateFnTrap).toHaveBeenCalledTimes(1);
     expect(innerValidateFnTrap).toHaveBeenCalledTimes(1);
     outerValidateFnTrap.mockClear();
@@ -152,8 +151,8 @@ describe("Types", () => {
         )
         .default("3"),
     });
-    const output3 = parseSchema(schema3, {});
-    expect(output3).toStrictEqual({ count: "count-3000" });
+    const data3 = schema3.toData({});
+    expect(data3).toStrictEqual({ count: "count-3000" });
     expect(outerValidateFnTrap).toHaveBeenCalledTimes(1);
     expect(innerValidateFnTrap).toHaveBeenCalledTimes(1);
     outerValidateFnTrap.mockClear();
@@ -173,8 +172,8 @@ describe("Types", () => {
             .default(4)
         ),
     });
-    const output4 = parseSchema(schema4, {});
-    expect(output4).toStrictEqual({ count: "count-4000" });
+    const data4 = schema4.toData({});
+    expect(data4).toStrictEqual({ count: "count-4000" });
     expect(outerValidateFnTrap).toHaveBeenCalledTimes(0);
     expect(innerValidateFnTrap).toHaveBeenCalledTimes(1);
     outerValidateFnTrap.mockClear();
@@ -186,36 +185,36 @@ describe("Types", () => {
       permissions: object({
         canUpdate: boolean(),
         canDelete: boolean().default(false),
-        role: string(),
+        role: literal("admin", "moderator", "customer"),
       }),
     });
 
     // @ts-expect-error
-    expect(() => parseSchema(schema, {})).toThrowError(
+    expect(() => schema.toData({})).toThrowError(
       "expected 'object' received 'undefined'"
     );
     expect(() =>
       // @ts-expect-error
-      parseSchema(schema, { permissions: { canUpdate: "yes" } })
+      schema.toData({ permissions: { canUpdate: "yes" } })
     ).toThrowError("field 'canUpdate' expected 'boolean' received 'string'");
     // fields are validates in the order they are registered in type
     expect(() =>
       // @ts-expect-error
-      parseSchema(schema, { permissions: { role: false } })
+      schema.toData({ permissions: { role: false } })
     ).toThrowError("field 'canUpdate' expected 'boolean' received 'undefined'");
     // unknwon fields are rejected
     expect(() =>
-      parseSchema(schema, {
+      schema.toData({
         // @ts-expect-error
         permissions: { canUpdate: true, role: "admin", canCreate: true },
       })
     ).toThrowError(
       "unknown field 'canCreate', object may only specify known fields"
     );
-    const res = parseSchema(schema, {
+    const data = schema.toData({
       permissions: { canUpdate: true, role: "moderator" },
     });
-    expect(res).toStrictEqual({
+    expect(data).toStrictEqual({
       permissions: { canUpdate: true, canDelete: false, role: "moderator" },
     });
   });
@@ -226,17 +225,17 @@ describe("Types", () => {
     });
 
     // @ts-expect-error
-    expect(() => parseSchema(schema, {})).toThrowError(
+    expect(() => schema.toData({})).toThrowError(
       "expected 'object' received 'undefined'"
     );
     // empty object is ok
-    expect(() => parseSchema(schema, { grades: {} })).not.toThrowError();
+    expect(() => schema.toData({ grades: {} })).not.toThrowError();
     expect(() =>
       // @ts-expect-error
-      parseSchema(schema, { grades: { math: "50" } })
+      schema.toData({ grades: { math: "50" } })
     ).toThrowError("field 'math' expected 'number' received 'string'");
-    const res = parseSchema(schema, { grades: { math: 50 } });
-    expect(res).toStrictEqual({ grades: { math: 50 } });
+    const data = schema.toData({ grades: { math: 50 } });
+    expect(data).toStrictEqual({ grades: { math: 50 } });
   });
 
   test("tuple", () => {
@@ -245,17 +244,17 @@ describe("Types", () => {
     });
 
     // @ts-expect-error
-    expect(() => parseSchema(schema, {})).toThrowError(
+    expect(() => schema.toData({})).toThrowError(
       "expected 'array' received 'undefined'"
     );
     // @ts-expect-error
-    expect(() => parseSchema(schema, { items: [] })).toThrowError(
+    expect(() => schema.toData({ items: [] })).toThrowError(
       "element at index '0' expected 'number' received 'undefined'"
     );
-    const res = parseSchema(schema, { items: [0, "1"] });
-    expect(res).toStrictEqual({ items: [0, "1"] });
+    const data = schema.toData({ items: [0, "1"] });
+    expect(data).toStrictEqual({ items: [0, "1"] });
     // @ts-expect-error
-    expect(() => parseSchema(schema, { items: [1, "1", 2] })).toThrowError(
+    expect(() => schema.toData({ items: [1, "1", 2] })).toThrowError(
       "expected array with 2 elements received 3 elements"
     );
   });
@@ -266,17 +265,17 @@ describe("Types", () => {
     });
 
     // @ts-expect-error
-    expect(() => parseSchema(schema, {})).toThrowError(
+    expect(() => schema.toData({})).toThrowError(
       "expected 'array' received 'undefined'"
     );
     // empty array is ok
-    expect(() => parseSchema(schema, { items: [] })).not.toThrowError();
+    expect(() => schema.toData({ items: [] })).not.toThrowError();
     // @ts-expect-error
-    expect(() => parseSchema(schema, { items: [0, "1"] })).toThrowError(
+    expect(() => schema.toData({ items: [0, "1"] })).toThrowError(
       "element at index '1' expected 'number' received 'string'"
     );
-    const res = parseSchema(schema, { items: [0, 1] });
-    expect(res).toStrictEqual({ items: [0, 1] });
+    const data = schema.toData({ items: [0, 1] });
+    expect(data).toStrictEqual({ items: [0, 1] });
   });
 
   test("literal", () => {
@@ -285,15 +284,15 @@ describe("Types", () => {
     });
 
     // @ts-expect-error
-    expect(() => parseSchema(schema, {})).toThrowError(
+    expect(() => schema.toData({})).toThrowError(
       "unknown value 'undefined', literal may only specify known values"
     );
     // @ts-expect-error
-    expect(() => parseSchema(schema, { role: "user" })).toThrowError(
+    expect(() => schema.toData({ role: "user" })).toThrowError(
       "unknown value 'user', literal may only specify known values"
     );
-    const res = parseSchema(schema, { role: "admin" });
-    expect(res).toStrictEqual({ role: "admin" });
+    const data = schema.toData({ role: "admin" });
+    expect(data).toStrictEqual({ role: "admin" });
   });
 
   test("taggedUnion", () => {
@@ -308,23 +307,21 @@ describe("Types", () => {
     });
 
     // @ts-expect-error
-    expect(() => parseSchema(schema, {})).toThrowError(
+    expect(() => schema.toData({})).toThrowError(
       "expected 'object' received 'undefined'"
     );
     // @ts-expect-error
-    expect(() => parseSchema(schema, { color: {} })).toThrowError(
-      "missing field"
-    );
+    expect(() => schema.toData({ color: {} })).toThrowError("missing field");
     // @ts-expect-error
-    expect(() => parseSchema(schema, { color: { tag: "hex" } })).toThrowError(
+    expect(() => schema.toData({ color: { tag: "hex" } })).toThrowError(
       "missing field 'value' in tagged union"
     );
     expect(() =>
       // @ts-expect-error
-      parseSchema(schema, { color: { value: "#fff" } })
+      schema.toData({ color: { value: "#fff" } })
     ).toThrowError("missing field 'tag' in tagged union");
     expect(() =>
-      parseSchema(schema, {
+      schema.toData({
         // @ts-expect-error
         color: { tag: "hex", value: "#fff", extra: "user" },
       })
@@ -333,28 +330,28 @@ describe("Types", () => {
     );
     expect(() =>
       // @ts-expect-error
-      parseSchema(schema, { color: { tag: "hwb", value: "#fff" } })
+      schema.toData({ color: { tag: "hwb", value: "#fff" } })
     ).toThrowError("unknown tag 'hwb'");
     expect(() =>
       // @ts-expect-error
-      parseSchema(schema, { color: { tag: "hsl", value: "#fff" } })
+      schema.toData({ color: { tag: "hsl", value: "#fff" } })
     ).toThrowError("invalid value for tag 'hsl'");
-    const res1 = parseSchema(schema, {
+    const data1 = schema.toData({
       color: { tag: "rgba", value: { r: 0, g: 0, b: 0, a: "100%" } },
     });
-    expect(res1).toStrictEqual({
+    expect(data1).toStrictEqual({
       color: { tag: "rgba", value: { r: 0, g: 0, b: 0, a: "100%" } },
     });
-    const res2 = parseSchema(schema, {
+    const data2 = schema.toData({
       color: { tag: "hex", value: "#fff" },
     });
-    expect(res2).toStrictEqual({
+    expect(data2).toStrictEqual({
       color: { tag: "hex", value: "#fff" },
     });
-    const res3 = parseSchema(schema, {
+    const data3 = schema.toData({
       color: { tag: "hsl", value: ["0", "0", "0"] },
     });
-    expect(res3).toStrictEqual({
+    expect(data3).toStrictEqual({
       color: { tag: "hsl", value: "000" },
     });
   });

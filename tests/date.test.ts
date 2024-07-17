@@ -24,7 +24,7 @@ describe("test for date", () => {
 
     // collections query builder
     const newUser = await collections.users
-      .insert({
+      .insert().values({
         currentDate: markedDate,
       })
       .exec();
@@ -61,7 +61,8 @@ describe("test for date", () => {
 
     // collections query builder
     const newUser = await collections.users
-      .insert({
+      .insert()
+      .values({
         currentDate: markedDate,
       })
       .exec();
