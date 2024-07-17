@@ -1,6 +1,7 @@
 export { createClient, createDatabase } from "./database";
 export { MonarchError, MonarchParseError } from "./errors";
-export { InferSchemaInput, InferSchemaOutput, createSchema } from "./schema";
+export { AnySchema, Schema, createSchema } from "./schema/schema";
+export { InferSchemaInput, InferSchemaOutput } from "./schema/type-helpers";
 export { array } from "./types/array";
 export { boolean } from "./types/boolean";
 export { date, dateString } from "./types/date";
@@ -13,4 +14,3 @@ export { taggedUnion } from "./types/tagged-union";
 export { tuple } from "./types/tuple";
 export { MonarchType, type } from "./types/type";
 export { InferTypeInput, InferTypeOutput } from "./types/type-helpers";
-

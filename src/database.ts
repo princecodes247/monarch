@@ -1,21 +1,19 @@
 import { MongoClient, MongoClientOptions } from "mongodb";
 import { MonarchError } from "./errors";
 import { QueryBuilder } from "./queries/query-builder";
-import type { Schema } from "./schema";
+import { AnySchema } from "./schema/schema";
 
-type DbQueryBuilder = <T extends Schema<any, any>>(
-  schema: T
-) => QueryBuilder<T>;
-type CollectionsQueryBuilder<T extends Record<string, Schema<any, any>>> = {
+type DbQueryBuilder = <T extends AnySchema>(schema: T) => QueryBuilder<T>;
+type CollectionsQueryBuilder<T extends Record<string, AnySchema>> = {
   [K in keyof T]: QueryBuilder<T[K]>;
 };
 
-type Database<T extends Record<string, Schema<any, any>>> = {
+type Database<T extends Record<string, AnySchema>> = {
   db: DbQueryBuilder;
   collections: CollectionsQueryBuilder<T>;
 };
 
-export function createDatabase<T extends Record<string, Schema<any, any>>>(
+export function createDatabase<T extends Record<string, AnySchema>>(
   client: MongoClient,
   schemas: T
 ): Database<T> {
