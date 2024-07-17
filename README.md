@@ -6,7 +6,7 @@
 **Monarch** is a strong, type-safe Object Document Mapper (ODM) for MongoDB, designed to provide a seamless and efficient way to interact with your MongoDB database in a type-safe manner. Monarch ensures that your data models are strictly enforced, reducing the risk of runtime errors and enhancing code maintainability.
 
 
-
+<!-- > Inspired by Drizzle and Mongoose. -->
 
 
 ## Table of Contents
