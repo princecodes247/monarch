@@ -459,4 +459,9 @@ describe("Query methods Tests", () => {
     await collections.users.insertOne().values({ name: "Test User" }).exec();
     watchStream.close();
   });
+
+  it("executes raw MongoDB operations", async () => {
+    const result = await collections.users.raw().find().toArray();
+    expect(result).toBeInstanceOf(Array);
+  });
 });

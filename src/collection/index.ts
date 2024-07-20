@@ -171,6 +171,9 @@ export class Collection<T extends AnySchema> {
     return this._collection.rename(newName, options);
   }
 
+  raw() {
+    return this._collection;
+  }
 
   // Indexing
   createIndex(
