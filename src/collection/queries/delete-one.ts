@@ -10,7 +10,7 @@ export class DeleteOneQuery<T extends AnySchema> extends BaseFindQuery<T> {
     protected _options: DeleteOptions = {};
 
     options(options: DeleteOptions): this {
-        Object.assign(this._options, options);
+        this._options = { ...this._options, ...options };
         return this;
     }
 

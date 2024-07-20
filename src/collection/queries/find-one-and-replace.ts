@@ -9,7 +9,7 @@ export class FindOneAndReplaceQuery<
     protected _options: FindOneAndReplaceOptions = {};
 
     options(options: FindOneAndReplaceOptions): this {
-        Object.assign(this._options, options);
+        this._options = { ...this._options, ...options };
         return this;
     }
 

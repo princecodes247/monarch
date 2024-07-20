@@ -16,7 +16,6 @@ export class ReplaceOneQuery<T extends AnySchema> extends BaseMutationQuery<T> {
             this.data,
             this._options
         );
-        console.log({ result })
         return !!result.modifiedCount;
     }
 }
