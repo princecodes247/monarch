@@ -54,37 +54,6 @@ type IndexDefinitionOptions<T> = {
 
 type IndexDefinitionKey<T> = { [K in keyof T]: IndexDirection | IndexType };
 
-export type Projection<T> = {
-  [K in keyof T]?: 1 | 0;
-};
-export type UpdateFilter<T> = {
-  $currentDate?: { [K in keyof T]?: true | { $type: "date" | "timestamp" } };
-  $inc?: { [K in keyof T]?: number };
-  $min?: { [K in keyof T]?: T[K] };
-  $max?: { [K in keyof T]?: T[K] };
-  $mul?: { [K in keyof T]?: number };
-  $rename?: { [K in keyof T]?: string };
-  $set?: Partial<T>;
-  $setOnInsert?: Partial<T>;
-  $unset?: { [K in keyof T]?: "" | 1 | true };
-  $addToSet?: { [K in keyof T]?: T[K] | { $each: T[K][] } };
-  $pop?: { [K in keyof T]?: -1 | 1 };
-  $pull?: { [K in keyof T]?: T[K] | { [key: string]: any } };
-  $push?: {
-    [K in keyof T]?:
-    | T[K]
-    | {
-      $each: T[K][];
-      $position?: number;
-      $slice?: number;
-      $sort?: 1 | -1 | { [key: string]: 1 | -1 };
-    };
-  };
-  $pullAll?: { [K in keyof T]?: T[K][] };
-} & {
-    // [K in keyof T]?: T[K] | { $each: T[K][] } | { $position?: number; $slice?: number; $sort?: 1 | -1 | { [key: string]: 1 | -1 } } | { $each: T[K][] } | UpdateFilter<T>;
-    [K in keyof T]?: T[K] | UpdateFilter<T[K]>;
-  };
 
 export class Collection<T extends AnySchema> {
   private _collection: MongoDBCollection<InferSchemaData<T>>;
