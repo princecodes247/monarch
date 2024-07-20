@@ -1,23 +1,23 @@
 import { MongoClient, MongoClientOptions } from "mongodb";
+import { Collection } from "./collection";
 import { MonarchError } from "./errors";
-import { QueryBuilder } from "./queries/query-builder";
 import { AnySchema } from "./schema/schema";
 
-type DbQueryBuilder = <T extends AnySchema>(schema: T) => QueryBuilder<T>;
-type CollectionsQueryBuilder<T extends Record<string, AnySchema>> = {
-  [K in keyof T]: QueryBuilder<T[K]>;
+type DbCollectionManager = <T extends AnySchema>(schema: T) => Collection<T>;
+type Collections<T extends Record<string, AnySchema>> = {
+  [K in keyof T]: Collection<T[K]>;
 };
 
 type Database<T extends Record<string, AnySchema>> = {
-  db: DbQueryBuilder;
-  collections: CollectionsQueryBuilder<T>;
+  db: DbCollectionManager;
+  collections: Collections<T>;
 };
 
 export function createDatabase<T extends Record<string, AnySchema>>(
   client: MongoClient,
   schemas: T
 ): Database<T> {
-  const collections = {} as { [K in keyof T]: QueryBuilder<T[K]> };
+  const collections = {} as { [K in keyof T]: Collection<T[K]> };
   const collectionNames = new Set<string>();
 
   for (const [key, schema] of Object.entries(schemas)) {
@@ -28,7 +28,7 @@ export function createDatabase<T extends Record<string, AnySchema>>(
     }
     collectionNames.add(schema.name);
 
-    collections[key as keyof T] = new QueryBuilder(
+    collections[key as keyof T] = new Collection(
       client,
       schema as T[keyof T]
     );
@@ -37,7 +37,7 @@ export function createDatabase<T extends Record<string, AnySchema>>(
   // TODO: Implement additional methods like   listCollections() 
 
   return {
-    db: (schema) => new QueryBuilder(client, schema),
+    db: (schema) => new Collection(client, schema),
     collections,
   };
 }
