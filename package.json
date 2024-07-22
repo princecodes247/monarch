@@ -1,22 +1,50 @@
 {
-  "name": "monarch",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "monarch-orm",
+  "version": "0.1.0",
+  "description": "Type safe Object Document Mapper (ODM) for MongoDB",
+  "private": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
+    "build": "npm run check && shx rm -rf dist && tsup src/index.ts --format esm,cjs --dts",
+    "release": "npm run build && changeset publish",
     "check": "tsc --noEmit",
     "watch": "vitest",
     "test": "vitest run"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "mongodb",
+    "odm",
+    "orm",
+    "typescript"
+  ],
+  "author": "Prince Gbalam <princecodes247@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/princecodes247/monarch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/princecodes247/monarch/issues"
+  },
+  "homepage": "https://github.com/princecodes247/monarch#readme",
   "dependencies": {
     "mongodb": "^6.6.2"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.7",
     "@types/node": "^20.12.12",
     "mongodb-memory-server": "^9.4.1",
+    "shx": "^0.3.4",
+    "tsup": "^8.2.0",
     "typescript": "^5.4.5",
     "vitest": "^1.6.0"
   }
