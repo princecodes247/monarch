@@ -1,5 +1,5 @@
 import { AnySchema } from "../../schema/schema";
-import { InferSchemaData } from "../../schema/type-helpers";
+import { InferSchemaOutput } from "../../schema/type-helpers";
 import { BaseFindQuery } from "./base";
 
 export class FindQuery<T extends AnySchema> extends BaseFindQuery<T> {
@@ -13,7 +13,7 @@ export class FindQuery<T extends AnySchema> extends BaseFindQuery<T> {
         return this;
     }
 
-    async exec(): Promise<InferSchemaData<T>[]> {
+    async exec(): Promise<InferSchemaOutput<T>[]> {
         return this._collection
             .find(this.filters, {
                 ...this._options,
