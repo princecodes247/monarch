@@ -80,15 +80,36 @@ export class Collection<T extends AnySchema> {
     this._collection = db.collection<InferSchemaData<T>>(this._schema.name);
   }
 
-  insert() {
-    return new InsertOneQuery(this._collection, this._schema);
-  }
-  insertOne() {
-    return new InsertOneQuery(this._collection, this._schema);
+  aggregate(pipeline?: PipelineStage<OptionalUnlessRequiredId<InferSchemaData<T>>>[]): AggregationPipeline<T> {
+    return new AggregationPipeline(this._collection, pipeline);
   }
 
-  insertMany() {
-    return new InsertManyQuery(this._collection, this._schema);
+  bulkWrite() {
+    return new BulkWriteQuery(this._collection, this._schema);
+  }
+
+  count(filter?: Filter<InferSchemaData<T>>) {
+    return new CountQuery(this._collection, this._schema, filter);
+  }
+
+  deleteOne(filter?: Filter<InferSchemaData<T>>) {
+    return new DeleteOneQuery(this._collection, this._schema, filter);
+  }
+
+  deleteMany(filter?: Filter<InferSchemaData<T>>) {
+    return new DeleteManyQuery(this._collection, this._schema, filter);
+  }
+
+  distinct(field: keyof InferSchemaOutput<T>, filter?: Filter<InferSchemaData<T>>) {
+    return new DistinctQuery(this._collection, this._schema, field, filter);
+  }
+
+  async drop() {
+    return this._collection.drop();
+  }
+
+  estimatedDocumentCount(options?: EstimatedDocumentCountOptions) {
+    return this._collection.estimatedDocumentCount(options);
   }
 
   find(filter?: Filter<InferSchemaData<T>>) {
@@ -111,53 +132,15 @@ export class Collection<T extends AnySchema> {
     return new FindOneAndReplaceQuery(this._collection, this._schema, filter);
   }
 
-  count(filter?: Filter<InferSchemaData<T>>) {
-    return new CountQuery(this._collection, this._schema, filter);
+  insert() {
+    return new InsertOneQuery(this._collection, this._schema);
+  }
+  insertOne() {
+    return new InsertOneQuery(this._collection, this._schema);
   }
 
-  updateOne(filter?: Filter<InferSchemaData<T>>) {
-    return new UpdateOneQuery(this._collection, this._schema, filter);
-  }
-
-  updateMany(filter?: Filter<InferSchemaData<T>>) {
-    return new UpdateManyQuery(this._collection, this._schema, filter);
-  }
-
-  deleteOne(filter?: Filter<InferSchemaData<T>>) {
-    return new DeleteOneQuery(this._collection, this._schema, filter);
-  }
-
-  deleteMany(filter?: Filter<InferSchemaData<T>>) {
-    return new DeleteManyQuery(this._collection, this._schema, filter);
-  }
-
-  replaceOne(filter?: Filter<InferSchemaData<T>>) {
-    return new ReplaceOneQuery(this._collection, this._schema, filter);
-  }
-
-  aggregate(pipeline?: PipelineStage<OptionalUnlessRequiredId<InferSchemaData<T>>>[]): AggregationPipeline<T> {
-    return new AggregationPipeline(this._collection, pipeline);
-  }
-
-  watch(pipeline?: PipelineStage<any>[]) {
-    return new WatchPipeline(this._collection, pipeline);
-  }
-
-  bulkWrite() {
-    return new BulkWriteQuery(this._collection, this._schema);
-  }
-
-  distinct(field: keyof InferSchemaOutput<T>, filter?: Filter<InferSchemaData<T>>) {
-    return new DistinctQuery(this._collection, this._schema, field, filter);
-  }
-
-
-  async drop() {
-    return this._collection.drop();
-  }
-
-  estimatedDocumentCount(options?: EstimatedDocumentCountOptions) {
-    return this._collection.estimatedDocumentCount(options);
+  insertMany() {
+    return new InsertManyQuery(this._collection, this._schema);
   }
 
   isCapped() {
@@ -168,12 +151,28 @@ export class Collection<T extends AnySchema> {
     return this._collection.options(options);
   }
 
+  raw() {
+    return this._collection;
+  }
+
   rename(newName: string, options?: RenameOptions) {
     return this._collection.rename(newName, options);
   }
 
-  raw() {
-    return this._collection;
+  replaceOne(filter?: Filter<InferSchemaData<T>>) {
+    return new ReplaceOneQuery(this._collection, this._schema, filter);
+  }
+
+  updateOne(filter?: Filter<InferSchemaData<T>>) {
+    return new UpdateOneQuery(this._collection, this._schema, filter);
+  }
+
+  updateMany(filter?: Filter<InferSchemaData<T>>) {
+    return new UpdateManyQuery(this._collection, this._schema, filter);
+  }
+
+  watch(pipeline?: PipelineStage<any>[]) {
+    return new WatchPipeline(this._collection, pipeline);
   }
 
   // Indexing
@@ -202,10 +201,6 @@ export class Collection<T extends AnySchema> {
     return this._collection.dropIndexes(options);
   }
 
-  listIndexes() {
-    return this._collection.listIndexes();
-  }
-
   indexExists(name: string, options?: AbstractCursorOptions) {
     return this._collection.indexExists(name, options);
   }
@@ -216,6 +211,11 @@ export class Collection<T extends AnySchema> {
     return this._collection.indexInformation(options);
   }
 
+  listIndexes() {
+    return this._collection.listIndexes();
+  }
+
+  // Search Indexing
   createSearchIndex(description: SearchIndexDescription) {
     return this._collection.createSearchIndex(description);
   }
