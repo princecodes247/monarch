@@ -1,6 +1,6 @@
 import { FindOneAndUpdateOptions } from "mongodb";
 import { AnySchema } from "../../schema/schema";
-import { InferSchemaData } from "../../schema/type-helpers";
+import { InferSchemaOutput } from "../../schema/type-helpers";
 import { BaseMutationQuery } from "./base";
 
 
@@ -12,7 +12,7 @@ export class FindOneAndUpdateQuery<T extends AnySchema> extends BaseMutationQuer
         return this;
     }
 
-    async exec(): Promise<InferSchemaData<T> | null> {
+    async exec(): Promise<InferSchemaOutput<T> | null> {
         return await this._collection
             .findOneAndUpdate(this.filters, this.data, this._options)
             .then((res) => (res ? this._schema.fromData(res) : res));

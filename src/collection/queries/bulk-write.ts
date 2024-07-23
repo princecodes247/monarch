@@ -1,6 +1,6 @@
 import { AnyBulkWriteOperation } from "mongodb";
 import { AnySchema } from "../../schema/schema";
-import { InferSchemaData } from "../../schema/type-helpers";
+import { InferSchemaData, InferSchemaOutput } from "../../schema/type-helpers";
 import { Query } from "./base";
 
 
@@ -22,7 +22,7 @@ export class BulkWriteQuery<T extends AnySchema> extends Query<T> {
         return this;
     }
 
-    async exec(): Promise<BulkWriteResult<InferSchemaData<T>>> {
+    async exec(): Promise<BulkWriteResult<InferSchemaOutput<T>>> {
         return this._collection.bulkWrite(this.data);
     }
 }
