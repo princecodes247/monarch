@@ -16,7 +16,8 @@ import type {
 import { MonarchError } from "../errors";
 import { AnySchema } from "../schema/schema";
 import {
-  InferSchemaData
+  InferSchemaData,
+  InferSchemaOutput
 } from "../schema/type-helpers";
 import { BulkWriteQuery } from "./queries/bulk-write";
 
@@ -146,7 +147,7 @@ export class Collection<T extends AnySchema> {
     return new BulkWriteQuery(this._collection, this._schema);
   }
 
-  distinct(field: keyof InferSchemaData<T>, filter?: Filter<InferSchemaData<T>>) {
+  distinct(field: keyof InferSchemaOutput<T>, filter?: Filter<InferSchemaData<T>>) {
     return new DistinctQuery(this._collection, this._schema, field, filter);
   }
 

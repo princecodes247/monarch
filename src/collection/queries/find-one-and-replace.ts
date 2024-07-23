@@ -1,6 +1,6 @@
 import { FindOneAndReplaceOptions } from "mongodb";
 import { AnySchema } from "../../schema/schema";
-import { InferSchemaData } from "../../schema/type-helpers";
+import { InferSchemaOutput } from "../../schema/type-helpers";
 import { BaseMutationQuery } from "./base";
 
 export class FindOneAndReplaceQuery<
@@ -13,7 +13,7 @@ export class FindOneAndReplaceQuery<
         return this;
     }
 
-    async exec(): Promise<InferSchemaData<T> | null> {
+    async exec(): Promise<InferSchemaOutput<T> | null> {
         return this._collection
             .findOneAndReplace(this.filters, this.data, this._options)
             .then((res) => (res ? this._schema.fromData(res) : res));
