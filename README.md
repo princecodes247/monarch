@@ -88,7 +88,7 @@ import { boolean, createDatabase, createSchema, number, string } from "monarch-o
 
 ## Quick Start
 
-### Defining Schemas
+### Defining Schemas and connecting to the database
 
 Use the createSchema function to define the structure of your model. Specify the fields and their types, using the available types and modifiers.
 
@@ -99,11 +99,11 @@ const UserSchema = createSchema("users", {
 });
 ```
 
-### Connecting to the Database
-
 Create a database instance using any client you deem fit and drop it into the createDatabase function
 
 Or you can use the built-in createClient function.
+
+Then you pass your schemas to the second arguement
 
 ```typescript
 const { collections } = createDatabase(client, {
@@ -191,6 +191,30 @@ console.log(updatedUsers);
 ```
 
 Note: The update method returns the number of documents updated.
+
+## Alternative setup
+You can also decentralize the models
+
+```typescript
+const { db } = createDatabase(client);
+
+const UserSchema = createSchema("users", {
+  name: string(),
+  isVerified: boolean(),
+});
+
+const UserModel = db(UserSchema);
+export default UserModel;
+```
+
+And use it like this
+
+```typescript
+const user = await UserModel.findOne({
+  name: "Alice"
+}).exec();
+console.log(users);
+```
 
 
 ## Types

@@ -11,12 +11,12 @@ export class UpdateOneQuery<T extends AnySchema> extends BaseUpdateQuery<T> {
         return this;
     }
 
-    async exec(): Promise<boolean> {
+    async exec() {
         const result: UpdateResult = await this._collection.updateOne(
             this.filters,
             this.data,
             this._options
         );
-        return !!result.modifiedCount;
+        return result;
     }
 }
