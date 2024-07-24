@@ -214,6 +214,23 @@ describe("Query methods Tests", () => {
       const users = await collections.users.find().skip(skip).exec();
       expect(users.length).toBe(mockUsers.length - skip);
     });
+
+    it("query sort", async () => {
+      await collections.users.insertMany().values(mockUsers).exec();
+      const users = await collections.users.find().sort({
+        age: -1
+      }).exec();
+      expect(users[0].age).toBe(25);
+      expect(users[1].age).toBe(20);
+      expect(users[2].age).toBe(17);
+
+      const users2 = await collections.users.find().sort({
+        email: 'asc'
+      }).exec();
+      expect(users2[0].email).toBe("anon1@gmail.com");
+      expect(users2[1].email).toBe("anon2@gmail.com");
+      expect(users2[2].email).toBe("anon@gmail.com");
+    });
   });
 
   it("finds one and updates", async () => {
