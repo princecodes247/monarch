@@ -192,7 +192,7 @@ console.log(updatedUsers);
 
 Note: The update method returns the number of documents updated.
 
-## Alternative setup
+### Alternative setup
 You can also decentralize the models
 
 ```typescript
