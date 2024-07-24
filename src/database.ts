@@ -15,7 +15,7 @@ type Database<T extends Record<string, AnySchema>> = {
 
 export function createDatabase<T extends Record<string, AnySchema>>(
   client: MongoClient,
-  schemas: T
+  schemas = {} as T
 ): Database<T> {
   const collections = {} as { [K in keyof T]: Collection<T[K]> };
   const collectionNames = new Set<string>();
