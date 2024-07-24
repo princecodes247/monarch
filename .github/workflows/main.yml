@@ -37,7 +37,7 @@ jobs:
         with:
           node-version: 18.x
 
-      - run: npm ci --only=prod
+      - run: npm ci
 
       - name: Create Release Pull Request or Publish
         id: changesets
