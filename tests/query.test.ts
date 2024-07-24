@@ -279,7 +279,7 @@ describe("Query methods Tests", () => {
       .set({ age: 35 })
       .exec();
 
-    expect(updated).toBe(true);
+    expect(updated.acknowledged).toBe(true);
   });
 
   it("updates many documents", async () => {
@@ -290,7 +290,7 @@ describe("Query methods Tests", () => {
       .set({ age: 40 })
       .exec();
 
-    expect(updated).toBe(true);
+    expect(updated.acknowledged).toBe(true);
   });
 
   it("replaces one document", async () => {
