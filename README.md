@@ -22,7 +22,13 @@
   - [Updating Documents](#updating-documents)
   - [Deleting Documents](#deleting-documents)
 - [Types](#types)
-  - [Primitives](#defining-schemas)
+  - [Primitives](#primitives)
+  - [Literals](#literals)
+  - [Objects](#objects)
+  - [Records](#records)
+  - [Arrays](#arrays)
+  - [Tuples](#tuples)
+  - [Tagged Union](#tagged-union)
 <!-- - [Type Safety](#type-safety) -->
 <!-- - [Configuration](#configuration) -->
 - [Roadmap](#roadmap)
@@ -253,12 +259,12 @@ const UserSchema = createSchema("users", {
 
  - `.nullable()`: Allows the field to accept null values.
  - `.default()`: Sets a default value if none is provided.
- - `optional()`: Makes the field optional, allowing it to be omitted.
+ - `.optional()`: Makes the field optional, allowing it to be omitted.
 
-### Literal - literal()
+### Literals
 
 
-The `literal` type allows you to define a schema with fixed possible values, similar to enums in TypeScript. This is useful for enforcing specific, predefined values for a field.
+The `literal()` type allows you to define a schema with fixed possible values, similar to enums in TypeScript. This is useful for enforcing specific, predefined values for a field.
 
 ```typescript
   const UserRoleSchema = createSchema("userRoles", {
@@ -276,7 +282,7 @@ const invalidUser = {
 
 ```
 
-### Objects - object()
+### Objects
 
 ```typescript
  
@@ -297,9 +303,9 @@ type User = {
 ```
 
 
-### Records - record()
+### Records
 
-A record allows you to define a flexible schema where each user can have a varying number of subjects and grades without needing to define a fixed schema for each subject.
+A `record()` allows you to define a flexible schema where each user can have a varying number of subjects and grades without needing to define a fixed schema for each subject.
 
 ```typescript
  
@@ -336,7 +342,7 @@ console.log(user.grades);
 // Output: { math: 90, science: 85, history: 88 }
 ```
 
-### Arrays - array()
+### Arrays
 
 ```typescript
  
@@ -356,9 +362,9 @@ type Result = {
 };
 ```
 
-### Tuples - tuple()
+### Tuples
 
-Unlike arrays, tuples have a fixed number of elements and each element can have a different type.
+Unlike arrays, A `tuple()` has a fixed number of elements but each element can have a different type.
 
 ```typescript
  
@@ -376,9 +382,9 @@ type Control = {
 };
 ```
 
-### Tagged Union - taggedUnion()
+### Tagged Union
 
-The `taggedUnion` allows you to define a schema for related types, each with its own structure, distinguished by a common "tag" field. This is useful for representing variable types in a type-safe manner.
+The `taggedUnion()` allows you to define a schema for related types, each with its own structure, distinguished by a common "tag" field. This is useful for representing variable types in a type-safe manner.
 
 ```typescript - taggedUnion()
 
