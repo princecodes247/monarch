@@ -6,7 +6,7 @@ import type {
 import { AnySchema } from "../../schema/schema";
 import { InferSchemaData, InferSchemaOutput } from "../../schema/type-helpers";
 import { BaseFindQuery } from "./base";
-import { FilterQuery } from "./pipeline/expressions";
+import { FilterQuery } from "./expressions";
 
 export class DistinctQuery<T extends AnySchema, K extends keyof InferSchemaOutput<T>> extends BaseFindQuery<T> {
 

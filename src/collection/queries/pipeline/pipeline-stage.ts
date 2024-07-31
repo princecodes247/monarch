@@ -14,7 +14,7 @@ import type {
   Meta,
   ObjectExpressionOperator,
   WindowOperator,
-} from "./expressions";
+} from "../expressions";
 
 export type PipelineStage<T> =
   | AddFields
@@ -256,7 +256,7 @@ export interface PlanCacheStats {
 export interface Project {
   /** [`$project` reference](https://www.mongodb.com/docs/manual/reference/operator/aggregation/project/) */
   $project: {
-    [field: string]: AnyExpression | Expression | Project["$project"];
+    [field: string]: AnyExpression | Expression | Project;
   };
 }
 

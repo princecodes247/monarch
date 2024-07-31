@@ -9,7 +9,7 @@ import {
     InferSchemaData,
     InferSchemaInput,
 } from "../../schema/type-helpers";
-import { FilterQuery } from "./pipeline/expressions";
+import { FilterQuery } from "./expressions";
 
 export type Projection<T> = {
     [K in keyof T]?: 1 | 0;

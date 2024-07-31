@@ -28,13 +28,13 @@ import { CountQuery } from "./queries/count";
 import { DeleteManyQuery } from "./queries/delete-many";
 import { DeleteOneQuery } from "./queries/delete-one";
 import { DistinctQuery } from "./queries/distinct";
+import { FilterQuery } from "./queries/expressions";
 import { FindQuery } from "./queries/find";
 import { FindOneQuery } from "./queries/find-one";
 import { FindOneAndDeleteQuery } from "./queries/find-one-and-delete";
 import { FindOneAndReplaceQuery } from "./queries/find-one-and-replace";
 import { FindOneAndUpdateQuery } from "./queries/find-one-and-update";
 import { InsertOneQuery } from "./queries/insert-one";
-import { FilterQuery } from "./queries/pipeline/expressions";
 import { ReplaceOneQuery } from "./queries/replace-one";
 import { UpdateManyQuery } from "./queries/update-many";
 import { UpdateOneQuery } from "./queries/update-one";
@@ -194,7 +194,7 @@ export class Collection<T extends AnySchema> {
   }
 
   dropIndex(value: string) {
-    return this._collection.dropIndex(value as string);
+    return this._collection.dropIndex(value);
   }
 
   dropIndexes(options?: DropIndexesOptions) {
