@@ -2,7 +2,6 @@ import type {
   AbstractCursorOptions,
   DropIndexesOptions,
   EstimatedDocumentCountOptions,
-  Filter,
   IndexDirection,
   IndexInformationOptions,
   IndexSpecification,
@@ -35,6 +34,7 @@ import { FindOneAndDeleteQuery } from "./queries/find-one-and-delete";
 import { FindOneAndReplaceQuery } from "./queries/find-one-and-replace";
 import { FindOneAndUpdateQuery } from "./queries/find-one-and-update";
 import { InsertOneQuery } from "./queries/insert-one";
+import { FilterQuery } from "./queries/pipeline/expressions";
 import { ReplaceOneQuery } from "./queries/replace-one";
 import { UpdateManyQuery } from "./queries/update-many";
 import { UpdateOneQuery } from "./queries/update-one";
@@ -50,7 +50,7 @@ type IndexDefinitionOptions<T> = {
   background?: boolean;
   expireAfterSeconds?: number;
   v?: number;
-  partialFilterExpression?: { [K in keyof T]?: 1 | 0 };
+  partialFilterQueryExpression?: { [K in keyof T]?: 1 | 0 };
 };
 
 type IndexDefinitionKey<T> = { [K in keyof T]: IndexDirection | IndexType };
@@ -88,19 +88,19 @@ export class Collection<T extends AnySchema> {
     return new BulkWriteQuery(this._collection, this._schema);
   }
 
-  count(filter?: Filter<InferSchemaData<T>>) {
+  count(filter?: FilterQuery<InferSchemaData<T>>) {
     return new CountQuery(this._collection, this._schema, filter);
   }
 
-  deleteOne(filter?: Filter<InferSchemaData<T>>) {
+  deleteOne(filter?: FilterQuery<InferSchemaData<T>>) {
     return new DeleteOneQuery(this._collection, this._schema, filter);
   }
 
-  deleteMany(filter?: Filter<InferSchemaData<T>>) {
+  deleteMany(filter?: FilterQuery<InferSchemaData<T>>) {
     return new DeleteManyQuery(this._collection, this._schema, filter);
   }
 
-  distinct(field: keyof InferSchemaOutput<T>, filter?: Filter<InferSchemaData<T>>) {
+  distinct(field: keyof InferSchemaOutput<T>, filter?: FilterQuery<InferSchemaData<T>>) {
     return new DistinctQuery(this._collection, this._schema, field, filter);
   }
 
@@ -112,23 +112,23 @@ export class Collection<T extends AnySchema> {
     return this._collection.estimatedDocumentCount(options);
   }
 
-  find(filter?: Filter<InferSchemaData<T>>) {
+  find(filter?: FilterQuery<InferSchemaData<T>>) {
     return new FindQuery(this._collection, this._schema, filter);
   }
 
-  findOne(filter?: Filter<InferSchemaData<T>>) {
+  findOne(filter?: FilterQuery<InferSchemaData<T>>) {
     return new FindOneQuery(this._collection, this._schema, filter);
   }
 
-  findOneAndDelete(filter?: Filter<InferSchemaData<T>>) {
+  findOneAndDelete(filter?: FilterQuery<InferSchemaData<T>>) {
     return new FindOneAndDeleteQuery(this._collection, this._schema, filter);
   }
 
-  findOneAndUpdate(filter?: Filter<InferSchemaData<T>>) {
+  findOneAndUpdate(filter?: FilterQuery<InferSchemaData<T>>) {
     return new FindOneAndUpdateQuery(this._collection, this._schema, filter);
   }
 
-  findOneAndReplace(filter?: Filter<InferSchemaData<T>>) {
+  findOneAndReplace(filter?: FilterQuery<InferSchemaData<T>>) {
     return new FindOneAndReplaceQuery(this._collection, this._schema, filter);
   }
 
@@ -159,15 +159,15 @@ export class Collection<T extends AnySchema> {
     return this._collection.rename(newName, options);
   }
 
-  replaceOne(filter?: Filter<InferSchemaData<T>>) {
+  replaceOne(filter?: FilterQuery<InferSchemaData<T>>) {
     return new ReplaceOneQuery(this._collection, this._schema, filter);
   }
 
-  updateOne(filter?: Filter<InferSchemaData<T>>) {
+  updateOne(filter?: FilterQuery<InferSchemaData<T>>) {
     return new UpdateOneQuery(this._collection, this._schema, filter);
   }
 
-  updateMany(filter?: Filter<InferSchemaData<T>>) {
+  updateMany(filter?: FilterQuery<InferSchemaData<T>>) {
     return new UpdateManyQuery(this._collection, this._schema, filter);
   }
 

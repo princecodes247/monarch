@@ -1,5 +1,4 @@
 import type {
-    Filter,
     FindOptions,
     Collection as MongoDBCollection,
     OptionalUnlessRequiredId,
@@ -10,11 +9,12 @@ import {
     InferSchemaData,
     InferSchemaInput,
 } from "../../schema/type-helpers";
+import { FilterQuery } from "./pipeline/expressions";
 
 export type Projection<T> = {
     [K in keyof T]?: 1 | 0;
 };
-export type UpdateFilter<T> = {
+export type UpdateFilterQuery<T> = {
     $currentDate?: { [K in keyof T]?: true | { $type: "date" | "timestamp" } };
     $inc?: { [K in keyof T]?: number };
     $min?: { [K in keyof T]?: T[K] };
@@ -39,14 +39,14 @@ export type UpdateFilter<T> = {
     };
     $pullAll?: { [K in keyof T]?: T[K][] };
 } & {
-        // [K in keyof T]?: T[K] | { $each: T[K][] } | { $position?: number; $slice?: number; $sort?: 1 | -1 | { [key: string]: 1 | -1 } } | { $each: T[K][] } | UpdateFilter<T>;
-        [K in keyof T]?: T[K] | UpdateFilter<T[K]>;
-    };
+    // [K in keyof T]?: T[K] | { $each: T[K][] } | { $position?: number; $slice?: number; $sort?: 1 | -1 | { [key: string]: 1 | -1 } } | { $each: T[K][] } | UpdateFilterQuery<T>;
+    [K in keyof T]?: T[K] | UpdateFilterQuery<T[K]>;
+};
 
 
 // Define a base query class
 export class Query<T extends AnySchema> {
-    protected filters: Filter<InferSchemaData<T>> = {};
+    protected filters: FilterQuery<InferSchemaData<T>> = {};
     protected projection: Projection<WithId<InferSchemaData<T>>> = {};
     protected _options: FindOptions = {};
 
@@ -87,13 +87,13 @@ export class BaseFindQuery<T extends AnySchema> extends Query<T> {
     constructor(
         _collection: MongoDBCollection<InferSchemaData<T>>,
         protected _schema: T,
-        _filters?: Filter<InferSchemaData<T>>,
+        _filters?: FilterQuery<InferSchemaData<T>>,
     ) {
         super(_collection, _schema);
         Object.assign(this.filters, _filters);
     }
 
-    where(filter: Filter<InferSchemaData<T>>): this {
+    where(filter: FilterQuery<InferSchemaData<T>>): this {
         Object.assign(this.filters, filter);
         return this;
     }
@@ -106,12 +106,12 @@ export class BaseMutationQuery<T extends AnySchema> extends BaseFindQuery<T> {
     constructor(
         _collection: MongoDBCollection<InferSchemaData<T>>,
         protected _schema: T,
-        _filters?: Filter<InferSchemaData<T>>,
+        _filters?: FilterQuery<InferSchemaData<T>>,
     ) {
         super(_collection, _schema, _filters);
     }
 
-    values(data: UpdateFilter<InferSchemaData<T>>): this {
+    values(data: UpdateFilterQuery<InferSchemaData<T>>): this {
         Object.assign(this.data, data);
         // this.data = parseSchema(this._schema, data) as OptionalUnlessRequiredId<InferSchemaData<T>>;
         return this;
@@ -121,11 +121,11 @@ export class BaseMutationQuery<T extends AnySchema> extends BaseFindQuery<T> {
 export class BaseUpdateQuery<T extends AnySchema> extends BaseMutationQuery<T> {
     protected data = {} as OptionalUnlessRequiredId<InferSchemaData<T>>;
 
-    values(values: UpdateFilter<InferSchemaData<T>>): this {
+    values(values: UpdateFilterQuery<InferSchemaData<T>>): this {
         Object.assign(this.data, values);
         return this;
     }
-    set(values: UpdateFilter<InferSchemaData<T>>): this {
+    set(values: UpdateFilterQuery<InferSchemaData<T>>): this {
         Object.assign(this.data, { $set: values });
         return this;
     }
