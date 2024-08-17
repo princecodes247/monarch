@@ -2,31 +2,12 @@ import { MongoClient, ObjectId } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { boolean, createDatabase, createSchema, number, string } from "../src";
+import { mockUsers } from "./mock";
 
 const mongod = await MongoMemoryServer.create();
 const uri = mongod.getUri();
 const client = new MongoClient(uri);
 
-const mockUsers = [
-  {
-    name: "anon",
-    email: "anon@gmail.com",
-    age: 17,
-    isVerified: true,
-  },
-  {
-    name: "anon1",
-    email: "anon1@gmail.com",
-    age: 20,
-    isVerified: false,
-  },
-  {
-    name: "anon2",
-    email: "anon2@gmail.com",
-    age: 25,
-    isVerified: true,
-  },
-];
 
 const UserSchema = createSchema("users", {
   name: string().optional(),
@@ -232,6 +213,7 @@ describe("Query methods Tests", () => {
       expect(users2[2].email).toBe("anon@gmail.com");
     });
   });
+
 
   it("finds one and updates", async () => {
     await collections.users.insert().values(mockUsers[0]).exec();

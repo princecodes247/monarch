@@ -1,10 +1,9 @@
 import type {
-    Filter,
-    Flatten,
-    Collection as MongoDBCollection
+    Flatten
 } from "mongodb";
 import { AnySchema } from "../../schema/schema";
 import { InferSchemaData, InferSchemaOutput } from "../../schema/type-helpers";
+import { MongoDBCollection } from "../collection";
 import { BaseFindQuery } from "./base";
 import { FilterQuery } from "./expressions";
 
@@ -22,7 +21,7 @@ export class DistinctQuery<T extends AnySchema, K extends keyof InferSchemaOutpu
 
 
     async exec(): Promise<Flatten<InferSchemaOutput<T>[K]>[]> {
-        return this._collection.distinct(this._field, this.filters as Filter<InferSchemaData<T>>);
+        return this._collection.distinct(this._field, this.filters);
     }
 }
 

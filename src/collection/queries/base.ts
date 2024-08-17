@@ -1,14 +1,15 @@
 import type {
     FindOptions,
-    Collection as MongoDBCollection,
+    // Collection as MongoDBCollection,
     OptionalUnlessRequiredId,
-    WithId
 } from "mongodb";
 import { AnySchema } from "../../schema/schema";
 import {
     InferSchemaData,
     InferSchemaInput,
 } from "../../schema/type-helpers";
+import { WithOptionalId, WithRequiredId } from "../../type-helpers";
+import { MongoDBCollection } from "../collection";
 import { FilterQuery } from "./expressions";
 
 export type Projection<T> = {
@@ -47,7 +48,7 @@ export type UpdateFilterQuery<T> = {
 // Define a base query class
 export class Query<T extends AnySchema> {
     protected filters: FilterQuery<InferSchemaData<T>> = {};
-    protected projection: Projection<WithId<InferSchemaData<T>>> = {};
+    protected projection: Projection<WithRequiredId<InferSchemaData<T>>> = {};
     protected _options: FindOptions = {};
 
     constructor(
@@ -56,19 +57,19 @@ export class Query<T extends AnySchema> {
     ) { }
 
 
-    select(...fields: (keyof WithId<InferSchemaData<T>>)[]): this {
+    select(...fields: (keyof WithRequiredId<InferSchemaData<T>>)[]): this {
         this.projection = fields.reduce((acc, field) => {
             acc[field] = 1;
             return acc;
-        }, {} as Projection<WithId<InferSchemaData<T>>>);
+        }, {} as Projection<WithRequiredId<InferSchemaData<T>>>);
         return this;
     }
 
-    omit(...fields: (keyof WithId<InferSchemaData<T>>)[]): this {
+    omit(...fields: (keyof WithRequiredId<InferSchemaData<T>>)[]): this {
         this.projection = fields.reduce((acc, field) => {
             acc[field] = 0;
             return acc;
-        }, {} as Projection<WithId<InferSchemaData<T>>>);
+        }, {} as Projection<WithRequiredId<InferSchemaData<T>>>);
         return this;
     }
 
@@ -101,7 +102,7 @@ export class BaseFindQuery<T extends AnySchema> extends Query<T> {
 }
 
 export class BaseMutationQuery<T extends AnySchema> extends BaseFindQuery<T> {
-    protected data = {} as OptionalUnlessRequiredId<InferSchemaData<T>>;
+    protected data = {} as WithOptionalId<InferSchemaData<T>>;
 
     constructor(
         _collection: MongoDBCollection<InferSchemaData<T>>,

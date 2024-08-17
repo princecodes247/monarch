@@ -6,7 +6,7 @@ import type {
   IndexInformationOptions,
   IndexSpecification,
   MongoClient,
-  Collection as MongoDBCollection,
+
   OperationOptions,
   OptionalUnlessRequiredId,
   RenameOptions,
@@ -24,6 +24,7 @@ import { InsertManyQuery } from "./queries/insert-many";
 import { AggregationPipeline, WatchPipeline } from "./queries/pipeline";
 import { PipelineStage } from "./queries/pipeline/pipeline-stage";
 
+import { MongoDBCollection } from "./collection";
 import { CountQuery } from "./queries/count";
 import { DeleteManyQuery } from "./queries/delete-many";
 import { DeleteOneQuery } from "./queries/delete-one";
@@ -77,7 +78,7 @@ export class Collection<T extends AnySchema> {
         });
       }
     }
-    this._collection = db.collection<InferSchemaData<T>>(this._schema.name);
+    this._collection = db.collection<InferSchemaData<T>>(this._schema.name) as any as MongoDBCollection<InferSchemaData<T>>;
   }
 
   aggregate(pipeline?: PipelineStage<OptionalUnlessRequiredId<InferSchemaData<T>>>[]): AggregationPipeline<T> {
@@ -236,4 +237,3 @@ export class Collection<T extends AnySchema> {
     return this._collection.updateSearchIndex(name, description);
   }
 }
-

@@ -2,20 +2,49 @@
 // Mongoose is licensed under the MIT License.
 // Original source: https://github.com/Automattic/mongoose/blob/master/types/expressions.d.ts
 
+import { BSON } from "mongodb";
+import { WithRequiredId } from "../../type-helpers";
+
 // The following types and interfaces are derived from Mongoose's aggregate pipeline stages
 // with modifications to fit our project's needs.
 
 export interface NativeDate extends Date { }
+type RegExpOrString<T> = T extends string ? RegExp | BSON.BSONRegExp | T : T
+export type AlternativeType<T> = T extends ReadonlyArray<infer U> ? T | RegExpOrString<U> : RegExpOrString<T>;
 
-export type Condition<T> = T | RootQuerySelector<T>;
+export type Condition<T> = AlternativeType<T> | ComparisonOperator<T>
+// export type Condition<T> = T | RootQuerySelector<T> | ComparisonOperator<T>
+// export type Condition<T> = RootQuerySelector<T> | ComparisonOperator<T>
 
-type RootQuerySelector<T> = {
+
+// export declare type Condition<T> = AlternativeType<T> | FilterOperators<AlternativeType<T>>;
+// export declare type FilterOperations<T> = T extends Record<string, any> ? {
+//   [key in keyof T]?: FilterOperators<T[key]>;
+// } : FilterOperators<T>;
+
+type ComparisonOperator<T> = {
+  $eq?: T
+  $ne?: T
+  $gt?: T
+  $lt?: T
+  $gte?: T
+  $lte?: T
+  $in?: ReadonlyArray<T>
+  $nin?: ReadonlyArray<T>
+}
+
+
+
+interface RootQuerySelector<T> {
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/and/#op._S_and */
-  $and?: Array<FilterQuery<T>>;
+  $and?: FilterQuery<T>[];
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/nor/#op._S_nor */
-  $nor?: Array<FilterQuery<T>>;
+  $nor?: FilterQuery<T>[];
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/or/#op._S_or */
-  $or?: Array<FilterQuery<T>>;
+  $or?: FilterQuery<T>[];
+  // /** @see https://www.mongodb.com/docs/manual/reference/operator/query/not/ */
+  // $not?: FilterQuery<T>
+
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/text */
   $text?: {
     $search: string;
@@ -24,15 +53,14 @@ type RootQuerySelector<T> = {
     $diacriticSensitive?: boolean;
   };
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/where/#op._S_where */
-  $where?: string | Function;
+  $where?: string | ((this: WithRequiredId<T>) => boolean);
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/comment/#op._S_comment */
   $comment?: string;
-
-
 };
 
 export type FilterQuery<T> = {
-  [P in keyof T]?: Condition<T[P]>;
+  // [P in keyof WithRequiredId<T>]?: WithRequiredId<T>[P] | undefined;
+  [P in keyof WithRequiredId<T>]?: Condition<WithRequiredId<T>[P]> | undefined;
 } & RootQuerySelector<T>;
 
 export interface AnyObject {
