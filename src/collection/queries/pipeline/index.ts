@@ -1,14 +1,13 @@
 import type {
     AggregateOptions,
     ChangeStreamOptions,
-
-    Collection as MongoDBCollection,
     OptionalUnlessRequiredId,
 } from "mongodb";
 import { AnySchema } from "../../../schema/schema";
 import {
     InferSchemaData
 } from "../../../schema/type-helpers";
+import { MongoDBCollection } from "../../collection";
 import { PipelineStage } from "./pipeline-stage";
 
 

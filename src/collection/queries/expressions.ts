@@ -2,20 +2,49 @@
 // Mongoose is licensed under the MIT License.
 // Original source: https://github.com/Automattic/mongoose/blob/master/types/expressions.d.ts
 
+import { BSON } from "mongodb";
+import { WithRequiredId } from "../../type-helpers";
+
 // The following types and interfaces are derived from Mongoose's aggregate pipeline stages
 // with modifications to fit our project's needs.
 
 export interface NativeDate extends Date { }
+type RegExpOrString<T> = T extends string ? RegExp | BSON.BSONRegExp | T : T
+export type AlternativeType<T> = T extends ReadonlyArray<infer U> ? T | RegExpOrString<U> : RegExpOrString<T>;
 
-export type Condition<T> = T | RootQuerySelector<T>;
+export type Condition<T> = AlternativeType<T> | ComparisonOperator<T>
+// export type Condition<T> = T | RootQuerySelector<T> | ComparisonOperator<T>
+// export type Condition<T> = RootQuerySelector<T> | ComparisonOperator<T>
 
-type RootQuerySelector<T> = {
+
+// export declare type Condition<T> = AlternativeType<T> | FilterOperators<AlternativeType<T>>;
+// export declare type FilterOperations<T> = T extends Record<string, any> ? {
+//   [key in keyof T]?: FilterOperators<T[key]>;
+// } : FilterOperators<T>;
+
+type ComparisonOperator<T> = {
+  $eq?: T
+  $ne?: T
+  $gt?: T
+  $lt?: T
+  $gte?: T
+  $lte?: T
+  $in?: ReadonlyArray<T>
+  $nin?: ReadonlyArray<T>
+}
+
+
+
+interface RootQuerySelector<T> {
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/and/#op._S_and */
-  $and?: Array<FilterQuery<T>>;
+  $and?: FilterQuery<T>[];
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/nor/#op._S_nor */
-  $nor?: Array<FilterQuery<T>>;
+  $nor?: FilterQuery<T>[];
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/or/#op._S_or */
-  $or?: Array<FilterQuery<T>>;
+  $or?: FilterQuery<T>[];
+  // /** @see https://www.mongodb.com/docs/manual/reference/operator/query/not/ */
+  // $not?: FilterQuery<T>
+
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/text */
   $text?: {
     $search: string;
@@ -24,15 +53,14 @@ type RootQuerySelector<T> = {
     $diacriticSensitive?: boolean;
   };
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/where/#op._S_where */
-  $where?: string | Function;
+  $where?: string | ((this: WithRequiredId<T>) => boolean);
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/comment/#op._S_comment */
   $comment?: string;
-
-
 };
 
 export type FilterQuery<T> = {
-  [P in keyof T]?: Condition<T[P]>;
+  // [P in keyof WithRequiredId<T>]?: WithRequiredId<T>[P] | undefined;
+  [P in keyof WithRequiredId<T>]?: Condition<WithRequiredId<T>[P]> | undefined;
 } & RootQuerySelector<T>;
 
 export interface AnyObject {
@@ -434,7 +462,28 @@ export interface DateDiff {
   };
 }
 
-// TODO: Can be done better
+type DateFromPartsCommon = {
+  hour?: NumberExpression;
+  minute?: NumberExpression;
+  second?: NumberExpression;
+  millisecond?: NumberExpression;
+  timezone?: tzExpression;
+}
+
+type DateFromPartsWithYear = {
+  isoWeekYear?: undefined
+  year: NumberExpression;
+  month?: NumberExpression;
+  day?: NumberExpression;
+}
+
+type DateFromPartsWithIsoWeekYear = {
+  year?: undefined;
+  isoWeekYear: NumberExpression;
+  isoWeek?: NumberExpression;
+  isoDayOfWeek?: NumberExpression;
+}
+
 export interface DateFromParts {
   /**
    * Constructs a BSON Date object given the date's constituent parts.
@@ -442,106 +491,7 @@ export interface DateFromParts {
    * @version 3.6
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateFromParts/#mongodb-expression-exp.-dateFromParts
    */
-  $dateFromParts: {
-    /**
-     * ISO Week Date Year. Can be any expression that evaluates to a number.
-     *
-     * Value range: 1-9999
-     *
-     * If the number specified is outside this range, $dateFromParts errors. Starting in MongoDB 4.4, the lower bound for this value is 1. In previous versions of MongoDB, the lower bound was 0.
-     */
-    isoWeekYear?: NumberExpression;
-    /**
-     * Week of year. Can be any expression that evaluates to a number.
-     *
-     * Defaults to 1.
-     *
-     * Value range: 1-53
-     *
-     * Starting in MongoDB 4.0, if the number specified is outside this range, $dateFromParts incorporates the difference in the date calculation. See Value Range for examples.
-     */
-    isoWeek?: NumberExpression;
-    /**
-     * Day of week (Monday 1 - Sunday 7). Can be any expression that evaluates to a number.
-     *
-     * Defaults to 1.
-     *
-     * Value range: 1-7
-     *
-     * Starting in MongoDB 4.0, if the number specified is outside this range, $dateFromParts incorporates the difference in the date calculation. See Value Range for examples.
-     */
-    isoDayOfWeek?: NumberExpression;
-    /**
-     * Calendar year. Can be any expression that evaluates to a number.
-     *
-     * Value range: 1-9999
-     *
-     * If the number specified is outside this range, $dateFromParts errors. Starting in MongoDB 4.4, the lower bound for this value is 1. In previous versions of MongoDB, the lower bound was 0.
-     */
-    year?: NumberExpression;
-    /**
-     * Month. Can be any expression that evaluates to a number.
-     *
-     * Defaults to 1.
-     *
-     * Value range: 1-12
-     *
-     * Starting in MongoDB 4.0, if the number specified is outside this range, $dateFromParts incorporates the difference in the date calculation. See Value Range for examples.
-     */
-    month?: NumberExpression;
-    /**
-     * Day of month. Can be any expression that evaluates to a number.
-     *
-     * Defaults to 1.
-     *
-     * Value range: 1-31
-     *
-     * Starting in MongoDB 4.0, if the number specified is outside this range, $dateFromParts incorporates the difference in the date calculation. See Value Range for examples.
-     */
-    day?: NumberExpression;
-    /**
-     * Hour. Can be any expression that evaluates to a number.
-     *
-     * Defaults to 0.
-     *
-     * Value range: 0-23
-     *
-     * Starting in MongoDB 4.0, if the number specified is outside this range, $dateFromParts incorporates the difference in the date calculation. See Value Range for examples.
-     */
-    hour?: NumberExpression;
-    /**
-     * Minute. Can be any expression that evaluates to a number.
-     *
-     * Defaults to 0.
-     *
-     * Value range: 0-59 Starting in MongoDB 4.0, if the number specified is outside this range, $dateFromParts incorporates the difference in the date calculation. See Value Range for examples.
-     */
-    minute?: NumberExpression;
-    /**
-     * Second. Can be any expression that evaluates to a number.
-     *
-     * Defaults to 0.
-     *
-     * Value range: 0-59
-     *
-     * Starting in MongoDB 4.0, if the number specified is outside this range, $dateFromParts incorporates the difference in the date calculation. See Value Range for examples.
-     */
-    second?: NumberExpression;
-    /**
-     * Millisecond. Can be any expression that evaluates to a number.
-     *
-     * Defaults to 0.
-     *
-     * Value range: 0-999
-     *
-     * Starting in MongoDB 4.0, if the number specified is outside this range, $dateFromParts incorporates the difference in the date calculation. See Value Range for examples.
-     */
-    millisecond?: NumberExpression;
-    /**
-     * The timezone to carry out the operation. <tzExpression> must be a valid expression that resolves to a string formatted as either an Olson Timezone Identifier or a UTC Offset. If no timezone is provided, the result is displayed in UTC.
-     */
-    timezone?: tzExpression;
-  };
+  $dateFromParts: (DateFromPartsWithYear | DateFromPartsWithIsoWeekYear) & DateFromPartsCommon;
 }
 
 export interface DateFromString {
