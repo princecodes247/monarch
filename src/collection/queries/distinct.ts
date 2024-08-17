@@ -1,11 +1,11 @@
 import type {
-    Filter,
-    Flatten,
-    Collection as MongoDBCollection
+    Flatten
 } from "mongodb";
 import { AnySchema } from "../../schema/schema";
 import { InferSchemaData, InferSchemaOutput } from "../../schema/type-helpers";
+import { MongoDBCollection } from "../collection";
 import { BaseFindQuery } from "./base";
+import { FilterQuery } from "./expressions";
 
 export class DistinctQuery<T extends AnySchema, K extends keyof InferSchemaOutput<T>> extends BaseFindQuery<T> {
 
@@ -13,7 +13,7 @@ export class DistinctQuery<T extends AnySchema, K extends keyof InferSchemaOutpu
         _collection: MongoDBCollection<InferSchemaData<T>>,
         protected _schema: T,
         private _field: K,
-        _filters?: Filter<InferSchemaData<T>>,
+        _filters?: FilterQuery<InferSchemaData<T>>,
     ) {
         super(_collection, _schema);
     }
