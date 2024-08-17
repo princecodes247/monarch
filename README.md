@@ -3,7 +3,7 @@
 
 <!-- ![Logo](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/th5xamgrr6se0x5ro4g6.png) -->
 
-**Monarch ORM** is a strong, type-safe Object Document Mapper (ODM) for MongoDB, designed to provide a seamless and efficient way to interact with your MongoDB database in a type-safe manner. Monarch ensures that your data models are strictly enforced, reducing the risk of runtime errors and enhancing code maintainability.
+**Monarch ORM** is a type-safe ORM for MongoDB, designed to provide a seamless and efficient way to interact with your MongoDB database in a type-safe manner. Monarch ensures that your data models are strictly enforced, reducing the risk of runtime errors and enhancing code maintainability.
 
 
 <!-- > Inspired by Drizzle and Mongoose. -->
