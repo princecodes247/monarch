@@ -1,5 +1,12 @@
 # monarch-orm
 
+## 0.1.4
+
+### Patch Changes
+
+- 6dd7a2c: support basic operators and improve filter types
+- e2686df: fix collection types
+
 ## 0.1.3
 
 ### Patch Changes
