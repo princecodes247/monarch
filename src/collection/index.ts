@@ -78,7 +78,7 @@ export class Collection<T extends AnySchema> {
         });
       }
     }
-    this._collection = db.collection<InferSchemaData<T>>(this._schema.name) as any as MongoDBCollection<InferSchemaData<T>>;
+    this._collection = db.collection<InferSchemaData<T>>(this._schema.name);
   }
 
   aggregate(pipeline?: PipelineStage<OptionalUnlessRequiredId<InferSchemaData<T>>>[]): AggregationPipeline<T> {

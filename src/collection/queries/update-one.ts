@@ -1,5 +1,6 @@
-import { UpdateOptions, UpdateResult } from "mongodb";
+import { Filter, UpdateOptions, UpdateResult } from "mongodb";
 import { AnySchema } from "../../schema/schema";
+import { InferSchemaData } from "../../schema/type-helpers";
 import { BaseUpdateQuery } from "./base";
 
 
@@ -13,7 +14,7 @@ export class UpdateOneQuery<T extends AnySchema> extends BaseUpdateQuery<T> {
 
     async exec() {
         const result: UpdateResult = await this._collection.updateOne(
-            this.filters,
+            this.filters as unknown as Filter<InferSchemaData<T>>,
             this.data,
             this._options
         );
