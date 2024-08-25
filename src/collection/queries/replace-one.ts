@@ -1,5 +1,6 @@
-import { ReplaceOptions } from "mongodb";
+import { Filter, ReplaceOptions } from "mongodb";
 import { AnySchema } from "../../schema/schema";
+import { InferSchemaData } from "../../schema/type-helpers";
 import { BaseMutationQuery } from "./base";
 
 export class ReplaceOneQuery<T extends AnySchema> extends BaseMutationQuery<T> {
@@ -12,7 +13,7 @@ export class ReplaceOneQuery<T extends AnySchema> extends BaseMutationQuery<T> {
 
     async exec(): Promise<boolean> {
         const result = await this._collection.replaceOne(
-            this.filters,
+            this.filters as unknown as Filter<InferSchemaData<T>>,
             this.data,
             this._options
         );

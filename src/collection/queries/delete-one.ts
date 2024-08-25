@@ -1,8 +1,10 @@
 import type {
     DeleteOptions,
-    DeleteResult
+    DeleteResult,
+    Filter
 } from "mongodb";
 import { AnySchema } from "../../schema/schema";
+import { InferSchemaData } from "../../schema/type-helpers";
 import { BaseFindQuery } from "./base";
 
 
@@ -16,7 +18,7 @@ export class DeleteOneQuery<T extends AnySchema> extends BaseFindQuery<T> {
 
     async exec(): Promise<DeleteResult> {
         const result = await this._collection.deleteOne(
-            this.filters,
+            this.filters as unknown as Filter<InferSchemaData<T>>,
             this._options
         );
         return result;
