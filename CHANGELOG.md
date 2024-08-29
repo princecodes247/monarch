@@ -1,5 +1,11 @@
 # monarch-orm
 
+## 0.2.1
+
+### Patch Changes
+
+- a75821a: fix incorrect options for collection methods
+
 ## 0.2.0
 
 ### Minor Changes
