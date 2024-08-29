@@ -67,6 +67,18 @@ export class Schema<
     }
     return parsed;
   }
+
+  fieldUpdates(): Partial<InferSchemaOutput<this>> {
+    const updates = {} as Partial<InferSchemaOutput<this>>;
+    // omit fields
+    for (const [key, type] of Object.entries(this.types)) {
+      if (type._updateFn) {
+        updates[key as keyof Partial<InferSchemaOutput<this>>] =
+          type._updateFn();
+      }
+    }
+    return updates;
+  }
 }
 
 export type AnySchema = Schema<any, any, any, any>;

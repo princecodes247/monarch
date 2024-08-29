@@ -14,6 +14,8 @@ export const type = <TInput, TOutput>(parser: Parser<TInput, TOutput>) =>
   new MonarchType(parser);
 
 export class MonarchType<TInput, TOutput = TInput> {
+  public _updateFn: (() => TOutput) | null = null;
+
   constructor(public _parser: Parser<TInput, TOutput>) {}
 
   public nullable() {
@@ -33,6 +35,12 @@ export class MonarchType<TInput, TOutput = TInput> {
       this._parser as Parser<InferTypeInput<this>, InferTypeOutput<this>>,
       defaultInput as InferTypeInput<this> | (() => InferTypeInput<this>)
     );
+  }
+
+  public onUpdate(updateFn: () => TOutput) {
+    const clone = type(this._parser);
+    clone._updateFn = updateFn;
+    return clone;
   }
 
   public pipe<T extends MonarchType<TOutput, any>>(type: T) {
