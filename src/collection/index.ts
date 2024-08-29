@@ -6,18 +6,14 @@ import type {
   IndexInformationOptions,
   IndexSpecification,
   MongoClient,
-
   OperationOptions,
   OptionalUnlessRequiredId,
   RenameOptions,
-  SearchIndexDescription
+  SearchIndexDescription,
 } from "mongodb";
 import { MonarchError } from "../errors";
-import { AnySchema } from "../schema/schema";
-import {
-  InferSchemaData,
-  InferSchemaOutput
-} from "../schema/type-helpers";
+import { AnySchema, makeIndexes } from "../schema/schema";
+import { InferSchemaData, InferSchemaOutput } from "../schema/type-helpers";
 import { BulkWriteQuery } from "./queries/bulk-write";
 
 import { InsertManyQuery } from "./queries/insert-many";
@@ -40,7 +36,6 @@ import { ReplaceOneQuery } from "./queries/replace-one";
 import { UpdateManyQuery } from "./queries/update-many";
 import { UpdateOneQuery } from "./queries/update-one";
 
-
 type IndexType = "2d" | "2dsphere" | "hashed" | "text";
 
 // Index operations
@@ -56,7 +51,6 @@ type IndexDefinitionOptions<T> = {
 
 type IndexDefinitionKey<T> = { [K in keyof T]: IndexDirection | IndexType };
 
-
 export class Collection<T extends AnySchema> {
   private _collection: MongoDBCollection<InferSchemaData<T>>;
 
@@ -64,10 +58,7 @@ export class Collection<T extends AnySchema> {
     const db = _client.db();
     // create indexes
     if (_schema.options?.indexes) {
-      const indexes = _schema.options.indexes({
-        createIndex: (fields, options) => [fields, options],
-        unique: (field) => [{ [field]: 1 as const }, { unique: true }],
-      });
+      const indexes = makeIndexes(_schema.options.indexes);
       for (const [key, [fields, options]] of Object.entries(indexes)) {
         db.createIndex(
           _schema.name,
@@ -81,7 +72,9 @@ export class Collection<T extends AnySchema> {
     this._collection = db.collection<InferSchemaData<T>>(this._schema.name);
   }
 
-  aggregate(pipeline?: PipelineStage<OptionalUnlessRequiredId<InferSchemaData<T>>>[]): AggregationPipeline<T> {
+  aggregate(
+    pipeline?: PipelineStage<OptionalUnlessRequiredId<InferSchemaData<T>>>[]
+  ): AggregationPipeline<T> {
     return new AggregationPipeline(this._collection, pipeline);
   }
 
@@ -101,7 +94,10 @@ export class Collection<T extends AnySchema> {
     return new DeleteManyQuery(this._collection, this._schema, filter);
   }
 
-  distinct(field: keyof InferSchemaOutput<T>, filter?: FilterQuery<InferSchemaData<T>>) {
+  distinct(
+    field: keyof InferSchemaOutput<T>,
+    filter?: FilterQuery<InferSchemaData<T>>
+  ) {
     return new DistinctQuery(this._collection, this._schema, field, filter);
   }
 
@@ -206,9 +202,11 @@ export class Collection<T extends AnySchema> {
     return this._collection.indexExists(name, options);
   }
 
-  indexInformation(options: IndexInformationOptions & {
-    full?: boolean;
-  }) {
+  indexInformation(
+    options: IndexInformationOptions & {
+      full?: boolean;
+    }
+  ) {
     return this._collection.indexInformation(options);
   }
 

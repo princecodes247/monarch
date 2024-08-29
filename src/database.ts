@@ -3,19 +3,14 @@ import { Collection } from "./collection";
 import { MonarchError } from "./errors";
 import { AnySchema } from "./schema/schema";
 
-type DbCollectionManager = <T extends AnySchema>(schema: T) => Collection<T>;
-type Collections<T extends Record<string, AnySchema>> = {
-  [K in keyof T]: Collection<T[K]>;
-};
-
-type Database<T extends Record<string, AnySchema>> = {
-  db: DbCollectionManager;
-  collections: Collections<T>;
+export type Database<T extends Record<string, AnySchema>> = {
+  db: <S extends AnySchema>(schema: S) => Collection<S>;
+  collections: { [K in keyof T]: Collection<T[K]> };
 };
 
 export function createDatabase<T extends Record<string, AnySchema>>(
   client: MongoClient,
-  schemas = {} as T
+  schemas: T
 ): Database<T> {
   const collections = {} as { [K in keyof T]: Collection<T[K]> };
   const collectionNames = new Set<string>();
@@ -27,14 +22,10 @@ export function createDatabase<T extends Record<string, AnySchema>>(
       );
     }
     collectionNames.add(schema.name);
-
-    collections[key as keyof T] = new Collection(
-      client,
-      schema as T[keyof T]
-    );
+    collections[key as keyof T] = new Collection(client, schema as T[keyof T]);
   }
 
-  // TODO: Implement additional methods like   listCollections() 
+  // TODO: Implement additional methods like   listCollections()
 
   return {
     db: (schema) => new Collection(client, schema),
@@ -43,6 +34,5 @@ export function createDatabase<T extends Record<string, AnySchema>>(
 }
 
 export function createClient(uri: string, options?: MongoClientOptions) {
-  const client = new MongoClient(uri, options);
-  return client;
+  return new MongoClient(uri, options);
 }

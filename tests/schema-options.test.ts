@@ -98,8 +98,9 @@ describe("Schema options", () => {
       },
       {
         omit: {
+          // @ts-expect-error
           role: true,
-        } as {},
+        },
         virtuals(values) {
           return {
             role: values.isAdmin ? "admin" : "user",
@@ -129,7 +130,7 @@ describe("Schema options", () => {
     });
   });
 
-  it("replaces fields with extras", async () => {
+  it("replaces fields with virtuals", async () => {
     const schema = createSchema(
       "users",
       {
