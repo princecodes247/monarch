@@ -15,6 +15,7 @@
   },
   "scripts": {
     "build": "npm run check && shx rm -rf dist && tsup src/index.ts --format esm,cjs --dts",
+    "changeset": "changeset",
     "release": "npm run build && changeset publish",
     "check": "tsc --noEmit",
     "watch": "vitest",
