@@ -15,7 +15,10 @@ export class FindOneAndReplaceQuery<
 
     async exec(): Promise<InferSchemaOutput<T> | null> {
         return this._collection
-            .findOneAndReplace(this.filters as unknown as Filter<InferSchemaData<T>>, this.data, this._options)
+            .findOneAndReplace(this.filters as unknown as Filter<InferSchemaData<T>>, this.data, {
+                ...this._options,
+                projection: this.projection,
+            })
             .then((res) => (res ? this._schema.fromData(res) : res));
     }
 }

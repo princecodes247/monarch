@@ -14,7 +14,10 @@ export class FindOneAndUpdateQuery<T extends AnySchema> extends BaseMutationQuer
 
     async exec(): Promise<InferSchemaOutput<T> | null> {
         return await this._collection
-            .findOneAndUpdate(this.filters as unknown as Filter<InferSchemaData<T>>, this.data, this._options)
+            .findOneAndUpdate(this.filters as unknown as Filter<InferSchemaData<T>>, this.data, {
+                ...this._options,
+                projection: this.projection,
+            })
             .then((res) => (res ? this._schema.fromData(res) : res));
     }
 }
