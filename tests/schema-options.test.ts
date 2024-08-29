@@ -98,8 +98,9 @@ describe("Schema options", () => {
       },
       {
         omit: {
+          // @ts-expect-error
           role: true,
-        } as {},
+        },
         virtuals(values) {
           return {
             role: values.isAdmin ? "admin" : "user",
@@ -129,7 +130,7 @@ describe("Schema options", () => {
     });
   });
 
-  it("replaces fields with extras", async () => {
+  it("replaces fields with virtuals", async () => {
     const schema = createSchema(
       "users",
       {
@@ -237,5 +238,46 @@ describe("Schema options", () => {
         })
         .exec();
     }).rejects.toThrow("E11000 duplicate key error");
+  });
+
+  it("updates after initial save", async () => {
+    const schema = createSchema("users", {
+      name: string(),
+      age: number().onUpdate(() => 100),
+      isAdmin: boolean(),
+    });
+    const db = createDatabase(client, { users: schema });
+    const res = await db.collections.users
+      .insert()
+      .values({
+        name: "tom",
+        age: 0,
+        isAdmin: true,
+      })
+      .exec();
+    const doc = await db.collections.users
+      .findOne()
+      .where({ _id: res._id })
+      .exec();
+    expect(doc).toStrictEqual({
+      _id: res._id,
+      name: "tom",
+      age: 0,
+      isAdmin: true,
+    });
+    const updatedDoc = await db.collections.users
+      .findOneAndUpdate()
+      .where({ _id: res._id })
+      .values({ $set: { name: "jerry" } })
+      .options({
+        returnDocument: "after",
+      })
+      .exec();
+    expect(updatedDoc).toStrictEqual({
+      _id: res._id,
+      name: "jerry",
+      age: 100,
+      isAdmin: true,
+    });
   });
 });
