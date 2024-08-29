@@ -16,11 +16,11 @@ import { AnySchema, Schema } from "./schema";
 export type InferSchemaInput<T extends AnySchema> = Pretty<
   WithOptionalId<InferTypeObjectInput<T["types"]>>
 >;
-export type InferSchemaData<T extends AnySchema> = WithOptionalId<
-  InferTypeObjectOutput<T["types"]>
+export type InferSchemaData<T extends AnySchema> = Pretty<
+  WithRequiredId<InferTypeObjectOutput<T["types"]>>
 >;
 export type InferSchemaOutput<T extends AnySchema> = Pretty<
-  Omit<WithRequiredId<{}>, InferSchemaOptions<T>["omit"]> &
+  Omit<WithRequiredId<{}>, InferSchemaOptions<T>["omit"]> & // places _id as the first field in the object if it is not ommitted
     Merge<
       Omit<InferSchemaData<T>, InferSchemaOptions<T>["omit"]>,
       KnownObjectKeys<InferSchemaOptions<T>["virtuals"]>
