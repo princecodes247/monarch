@@ -7,7 +7,8 @@ export class ReplaceOneQuery<T extends AnySchema> extends BaseMutationQuery<T> {
     protected _options: ReplaceOptions = {};
 
     options(options: ReplaceOptions): this {
-        Object.assign(this._options, options);
+        this._options = { ...this._options, ...options };
+
         return this;
     }
 

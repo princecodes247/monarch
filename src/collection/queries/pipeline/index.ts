@@ -26,7 +26,8 @@ export class Pipeline<T extends AnySchema> {
 
 
     options(options: AggregateOptions): this {
-        Object.assign(this._options, options);
+        this._options = { ...this._options, ...options };
+
         return this;
     }
 
@@ -43,7 +44,8 @@ export class Pipeline<T extends AnySchema> {
 export class AggregationPipeline<T extends AnySchema> extends Pipeline<T> {
 
     options(options: AggregateOptions): this {
-        Object.assign(this._options, options);
+        this._options = { ...this._options, ...options };
+
         return this;
     }
 
@@ -58,7 +60,8 @@ export class WatchPipeline<T extends AnySchema> extends Pipeline<T> {
     protected _options: ChangeStreamOptions = {};
 
     options(options: ChangeStreamOptions): this {
-        Object.assign(this._options, options);
+        this._options = { ...this._options, ...options };
+
         return this;
     }
 

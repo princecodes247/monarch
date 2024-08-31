@@ -10,7 +10,8 @@ export class FindOneAndDeleteQuery<T extends AnySchema> extends BaseFindQuery<T>
     protected _options: FindOneAndDeleteOptions = {};
 
     options(options: FindOneAndDeleteOptions): this {
-        Object.assign(this._options, options);
+        this._options = { ...this._options, ...options };
+
         return this;
     }
 

@@ -7,7 +7,7 @@ export class UpdateOneQuery<T extends AnySchema> extends BaseUpdateQuery<T> {
   protected _options: UpdateOptions = {};
 
   options(options: UpdateOptions): this {
-    Object.assign(this._options, options);
+    this._options = { ...this._options, ...options };
     return this;
   }
 

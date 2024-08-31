@@ -9,7 +9,8 @@ export class FindOneAndUpdateQuery<
   protected _options: FindOneAndUpdateOptions = {};
 
   options(options: FindOneAndUpdateOptions): this {
-    Object.assign(this._options, options);
+    this._options = { ...this._options, ...options };
+
     return this;
   }
 
