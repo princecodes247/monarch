@@ -1,5 +1,18 @@
 # monarch-orm
 
+## 0.2.1
+
+### Patch Changes
+
+- a75821a: fix incorrect options for collection methods
+
+## 0.2.0
+
+### Minor Changes
+
+- 8a1f87b: Add schema onUpdate method
+- 8a1f87b: Add createdAtDate and updatedAtDate types
+
 ## 0.1.4
 
 ### Patch Changes

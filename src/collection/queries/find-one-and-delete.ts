@@ -16,7 +16,10 @@ export class FindOneAndDeleteQuery<T extends AnySchema> extends BaseFindQuery<T>
 
     async exec(): Promise<InferSchemaOutput<T> | null> {
         return this._collection
-            .findOneAndDelete(this.filters as unknown as Filter<InferSchemaData<T>>, this._options)
+            .findOneAndDelete(this.filters as unknown as Filter<InferSchemaData<T>>, {
+                ...this._options,
+                projection: this.projection,
+            })
             .then((res) => (res ? this._schema.fromData(res) : res));
     }
 }
