@@ -7,9 +7,9 @@ import { ObjectId } from "mongodb";
  * @param id - The string to convert to ObjectId.
  * @returns A valid ObjectId or null if the input is invalid.
  */
-export const toObjectId = (id: string): ObjectId | null => {
-    if (ObjectId.isValid(id)) {
-        return new ObjectId(id);
+export const toObjectId = (id: string | ObjectId | null): ObjectId | null => {
+    if (ObjectId.isValid(id ?? "")) {
+        return new ObjectId(id ?? "");
     }
     return null;
 };
@@ -20,8 +20,8 @@ export const toObjectId = (id: string): ObjectId | null => {
  * @param id - The string to check.
  * @returns True if the string is a valid ObjectId, false otherwise.
  */
-export const isValidObjectId = (id: string): boolean => {
-    return ObjectId.isValid(id);
+export const isValidObjectId = (id: string | ObjectId | null): boolean => {
+    return ObjectId.isValid(id ?? "");
 };
 
 /**

@@ -1,3 +1,4 @@
+import { ObjectId as MongoDBObjectId } from "mongodb";
 import { Pretty } from "../type-helpers";
 import { MonarchType } from "./type";
 
@@ -10,12 +11,12 @@ export type InferTypeObjectInput<T extends Record<string, MonarchType<any>>> =
   Pretty<
     {
       [K in keyof T as undefined extends InferTypeInput<T[K]>
-        ? never
-        : K]: InferTypeInput<T[K]>; // required keys
+      ? never
+      : K]: InferTypeInput<T[K]>; // required keys
     } & {
       [K in keyof T as undefined extends InferTypeInput<T[K]>
-        ? K
-        : never]?: InferTypeInput<T[K]>; // optional keys
+      ? K
+      : never]?: InferTypeInput<T[K]>; // optional keys
     }
   >;
 export type InferTypeObjectOutput<T extends Record<string, MonarchType<any>>> =
@@ -26,13 +27,13 @@ export type InferTypeObjectOutput<T extends Record<string, MonarchType<any>>> =
 export type InferTypeTupleInput<
   T extends [MonarchType<any>, ...MonarchType<T>[]]
 > = {
-  [K in keyof T]: InferTypeInput<T[K]>;
-};
+    [K in keyof T]: InferTypeInput<T[K]>;
+  };
 export type InferTypeTupleOutput<
   T extends [MonarchType<any>, ...MonarchType<T>[]]
 > = {
-  [K in keyof T]: InferTypeOutput<T[K]>;
-};
+    [K in keyof T]: InferTypeOutput<T[K]>;
+  };
 
 export type InferTypeTaggedUnionInput<
   T extends Record<string, MonarchType<any>>
@@ -44,3 +45,8 @@ export type InferTypeTaggedUnionOutput<
 > = {
   [K in keyof T]: { tag: K; value: InferTypeOutput<T[K]> };
 }[keyof T];
+
+export type ObjectId = MongoDBObjectId | null
+export type ValidObjectId = MongoDBObjectId
+
+export type IsObjectId<T> = T extends ValidObjectId ? true : false;

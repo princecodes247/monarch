@@ -2,6 +2,7 @@ import type { FindOptions } from "mongodb";
 import { AnySchema } from "../../schema/schema";
 import { InferSchemaData, InferSchemaInput } from "../../schema/type-helpers";
 import { WithOptionalId, WithRequiredId } from "../../type-helpers";
+import { ExtractReferences } from "../../types/ref";
 import { MongoDBCollection } from "../collection";
 import { FilterQuery } from "./expressions";
 
@@ -23,13 +24,13 @@ export type UpdateFilterQuery<T> = {
   $pull?: { [K in keyof T]?: T[K] | { [key: string]: any } };
   $push?: {
     [K in keyof T]?:
-      | T[K]
-      | {
-          $each: T[K][];
-          $position?: number;
-          $slice?: number;
-          $sort?: 1 | -1 | { [key: string]: 1 | -1 };
-        };
+    | T[K]
+    | {
+      $each: T[K][];
+      $position?: number;
+      $slice?: number;
+      $sort?: 1 | -1 | { [key: string]: 1 | -1 };
+    };
   };
   $pullAll?: { [K in keyof T]?: T[K][] };
 } & {
@@ -37,16 +38,20 @@ export type UpdateFilterQuery<T> = {
   [K in keyof T]?: T[K] | UpdateFilterQuery<T[K]>;
 };
 
-// Define a base query class
+
+export type PopulationKey<T extends AnySchema> = Record<ExtractReferences<T["types"]>, boolean>;
+export type PopulationOptions<T extends InferSchemaData<AnySchema>> = Record<keyof T, boolean>;
+
 export class Query<T extends AnySchema> {
   protected filters: FilterQuery<InferSchemaData<T>> = {};
   protected projection: Projection<WithRequiredId<InferSchemaData<T>>> = {};
   protected _options: FindOptions = {};
+  protected _population: PopulationKey<T["types"]> | null = null;
 
   constructor(
     protected readonly _collection: MongoDBCollection<InferSchemaData<T>>,
     protected _schema: T
-  ) {}
+  ) { }
 
   select(...fields: (keyof WithRequiredId<InferSchemaData<T>>)[]): this {
     this.projection = fields.reduce((acc, field) => {
@@ -66,6 +71,11 @@ export class Query<T extends AnySchema> {
 
   options(options: FindOptions): this {
     Object.assign(this._options, options);
+    return this;
+  }
+
+  populate(key: PopulationKey<T>): this {
+    this._population = key;
     return this;
   }
 

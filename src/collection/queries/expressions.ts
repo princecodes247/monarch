@@ -13,14 +13,6 @@ type RegExpOrString<T> = T extends string ? RegExp | BSON.BSONRegExp | T : T
 export type AlternativeType<T> = T extends ReadonlyArray<infer U> ? T | RegExpOrString<U> : RegExpOrString<T>;
 
 export type Condition<T> = AlternativeType<T> | ComparisonOperator<T>
-// export type Condition<T> = T | RootQuerySelector<T> | ComparisonOperator<T>
-// export type Condition<T> = RootQuerySelector<T> | ComparisonOperator<T>
-
-
-// export declare type Condition<T> = AlternativeType<T> | FilterOperators<AlternativeType<T>>;
-// export declare type FilterOperations<T> = T extends Record<string, any> ? {
-//   [key in keyof T]?: FilterOperators<T[key]>;
-// } : FilterOperators<T>;
 
 type ComparisonOperator<T> = {
   $eq?: T
@@ -56,12 +48,27 @@ interface RootQuerySelector<T> {
   $where?: string | ((this: WithRequiredId<T>) => boolean);
   /** @see https://www.mongodb.com/docs/manual/reference/operator/query/comment/#op._S_comment */
   $comment?: string;
+
 };
+
+type AggregationComparisonOperator<T> = {
+  $eq?: [Expression, Expression]
+  $ne?: [Expression, Expression]
+  $gt?: [Expression, Expression]
+  $lt?: [Expression, Expression]
+  $gte?: [Expression, Expression]
+  $lte?: [Expression, Expression]
+  $in?: [Expression, Array<Expression>]
+}
+
+export type AggregateQuerySelector<T> = {
+  $expr?: AggregationComparisonOperator<T>
+}
 
 export type FilterQuery<T> = {
   // [P in keyof WithRequiredId<T>]?: WithRequiredId<T>[P] | undefined;
   [P in keyof WithRequiredId<T>]?: Condition<WithRequiredId<T>[P]> | undefined;
-} & RootQuerySelector<T>;
+} & RootQuerySelector<T> | AggregateQuerySelector<T>;
 
 export interface AnyObject {
   [k: string]: any;
