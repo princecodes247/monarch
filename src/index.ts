@@ -14,4 +14,9 @@ export { taggedUnion } from "./types/tagged-union";
 export { tuple } from "./types/tuple";
 export { MonarchType, type } from "./types/type";
 export { InferTypeInput, InferTypeOutput } from "./types/type-helpers";
-export { generateObjectId, isValidObjectId, objectIdToString, toObjectId } from "./utils";
+export {
+  generateObjectId,
+  isValidObjectId,
+  objectIdToString,
+  toObjectId,
+} from "./utils";

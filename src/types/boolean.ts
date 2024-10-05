@@ -5,7 +5,7 @@ export const boolean = () => {
   return new MonarchBoolean((input) => {
     if (typeof input === "boolean") return input;
     throw new MonarchParseError(
-      `expected 'boolean' received '${typeof input}'`
+      `expected 'boolean' received '${typeof input}'`,
     );
   });
 };

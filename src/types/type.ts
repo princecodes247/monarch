@@ -1,11 +1,11 @@
 import { MonarchParseError } from "../errors";
-import { InferTypeInput, InferTypeOutput } from "./type-helpers";
+import type { InferTypeInput, InferTypeOutput } from "./type-helpers";
 
 export type Parser<Input, Output> = (input: Input) => Output;
 
 export function applyParser<Input, InterOutput, Output>(
   prevParser: Parser<Input, InterOutput>,
-  parser: Parser<InterOutput, Output>
+  parser: Parser<InterOutput, Output>,
 ): Parser<Input, Output> {
   return (input) => parser(prevParser(input));
 }
@@ -20,20 +20,20 @@ export class MonarchType<TInput, TOutput = TInput> {
 
   public nullable() {
     return new MonarchNullable(
-      this._parser as Parser<InferTypeInput<this>, InferTypeOutput<this>>
+      this._parser as Parser<InferTypeInput<this>, InferTypeOutput<this>>,
     );
   }
 
   public optional() {
     return new MonarchOptional(
-      this._parser as Parser<InferTypeInput<this>, InferTypeOutput<this>>
+      this._parser as Parser<InferTypeInput<this>, InferTypeOutput<this>>,
     );
   }
 
   public default(defaultInput: TInput | (() => TInput)) {
     return new MonarchDefaulted(
       this._parser as Parser<InferTypeInput<this>, InferTypeOutput<this>>,
-      defaultInput as InferTypeInput<this> | (() => InferTypeInput<this>)
+      defaultInput as InferTypeInput<this> | (() => InferTypeInput<this>),
     );
   }
 
@@ -70,14 +70,14 @@ export class MonarchType<TInput, TOutput = TInput> {
         const valid = fn(input);
         if (!valid) throw new MonarchParseError(message);
         return input;
-      })
+      }),
     );
   }
 }
 
 export class MonarchPipe<
   TPipeIn extends MonarchType<any>,
-  TPipeOut extends MonarchType<InferTypeOutput<TPipeIn>, any>
+  TPipeOut extends MonarchType<InferTypeOutput<TPipeIn>, any>,
 > extends MonarchType<InferTypeInput<TPipeIn>, InferTypeOutput<TPipeOut>> {
   constructor(pipeIn: TPipeIn, pipeOut: TPipeOut) {
     super((input) => {
@@ -117,7 +117,7 @@ export class MonarchDefaulted<T extends MonarchType<any>> extends MonarchType<
 > {
   constructor(
     parser: Parser<InferTypeInput<T>, InferTypeOutput<T>>,
-    defaultInput: InferTypeInput<T> | (() => InferTypeInput<T>)
+    defaultInput: InferTypeInput<T> | (() => InferTypeInput<T>),
   ) {
     super((input) => {
       if (input === undefined) {

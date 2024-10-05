@@ -8,7 +8,6 @@ const mongod = await MongoMemoryServer.create();
 const uri = mongod.getUri();
 const client = new MongoClient(uri);
 
-
 const UserSchema = createSchema("users", {
   name: string().optional(),
   email: string().lowercase().optional(),
@@ -198,22 +197,27 @@ describe("Query methods Tests", () => {
 
     it("query sort", async () => {
       await collections.users.insertMany().values(mockUsers).exec();
-      const users = await collections.users.find().sort({
-        age: -1
-      }).exec();
+      const users = await collections.users
+        .find()
+        .sort({
+          age: -1,
+        })
+        .exec();
       expect(users[0].age).toBe(25);
       expect(users[1].age).toBe(20);
       expect(users[2].age).toBe(17);
 
-      const users2 = await collections.users.find().sort({
-        email: 'asc'
-      }).exec();
+      const users2 = await collections.users
+        .find()
+        .sort({
+          email: "asc",
+        })
+        .exec();
       expect(users2[0].email).toBe("anon1@gmail.com");
       expect(users2[1].email).toBe("anon2@gmail.com");
       expect(users2[2].email).toBe("anon@gmail.com");
     });
   });
-
 
   it("finds one and updates", async () => {
     await collections.users.insert().values(mockUsers[0]).exec();
@@ -292,20 +296,19 @@ describe("Query methods Tests", () => {
   it("distinct method", async () => {
     await collections.users
       .insertMany()
-      .values([{ name: "John", email: "john@example.com" }, { name: "Jane", email: "jane@example.com" }, { name: "John", email: "john@example.com" }])
+      .values([
+        { name: "John", email: "john@example.com" },
+        { name: "Jane", email: "jane@example.com" },
+        { name: "John", email: "john@example.com" },
+      ])
       .exec();
-    const distinctEmails = await collections.users
-      .distinct("email")
-      .exec();
+    const distinctEmails = await collections.users.distinct("email").exec();
 
     expect(distinctEmails).toEqual(["jane@example.com", "john@example.com"]);
   });
 
   it("estimatedDocumentCount", async () => {
-    await collections.users
-      .insertMany()
-      .values(mockUsers)
-      .exec();
+    await collections.users.insertMany().values(mockUsers).exec();
     const estimatedCount = await collections.users.estimatedDocumentCount();
 
     expect(estimatedCount).toBe(3);
@@ -392,10 +395,8 @@ describe("Query methods Tests", () => {
 
   it("gets index information", async () => {
     await collections.users.createIndex({ email: 1 }, { unique: true });
-    const indexInformation = await collections.users.indexInformation({
-
-    });
-    console.log({ indexInformation })
+    const indexInformation = await collections.users.indexInformation({});
+    console.log({ indexInformation });
     expect(indexInformation).toHaveProperty("email_1");
   });
 
@@ -430,7 +431,6 @@ describe("Query methods Tests", () => {
   //   expect(updateSearchIndexResult).toBeTruthy();
   // });
 
-
   it("aggregates data", async () => {
     await collections.users.insertMany().values(mockUsers).exec();
 
@@ -438,23 +438,28 @@ describe("Query methods Tests", () => {
       { $match: { isVerified: true } },
       { $group: { _id: "$isVerified", count: { $sum: 1 } } },
     ];
-    const result = await collections.users.aggregate().addStage(pipeline[0]).addStage(pipeline[1]).exec();
+    const result = await collections.users
+      .aggregate()
+      .addStage(pipeline[0])
+      .addStage(pipeline[1])
+      .exec();
 
-    console.log({ aggregatedData: result })
+    console.log({ aggregatedData: result });
     expect(result).toBeInstanceOf(Array);
     expect(result.length).toBeGreaterThanOrEqual(1);
   });
 
   it("watches for changes", async () => {
-    const pipeline = [
-      { $match: { operationType: "insert" } },
-    ];
-    const watchStream = collections.users.watch(pipeline).addStage({
-      $match: { operationType: "insert" }
-
-    }).exec().on("change", (change) => {
-      expect(change.operationType).toBe("insert");
-    });
+    const pipeline = [{ $match: { operationType: "insert" } }];
+    const watchStream = collections.users
+      .watch(pipeline)
+      .addStage({
+        $match: { operationType: "insert" },
+      })
+      .exec()
+      .on("change", (change) => {
+        expect(change.operationType).toBe("insert");
+      });
     await collections.users.insertOne().values({ name: "Test User" }).exec();
     watchStream.close();
   });

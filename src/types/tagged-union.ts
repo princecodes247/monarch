@@ -1,12 +1,12 @@
 import { MonarchParseError } from "../errors";
 import { MonarchType } from "./type";
-import {
+import type {
   InferTypeTaggedUnionInput,
   InferTypeTaggedUnionOutput,
 } from "./type-helpers";
 
 export const taggedUnion = <T extends Record<string, MonarchType<any>>>(
-  variants: T
+  variants: T,
 ) => {
   return new MonarchTaggedUnion<T>((input) => {
     if (typeof input === "object" && input !== null) {
@@ -20,7 +20,7 @@ export const taggedUnion = <T extends Record<string, MonarchType<any>>>(
         for (const key of Object.keys(input)) {
           if (key !== "tag" && key !== "value") {
             throw new MonarchParseError(
-              `unknown field '${key}', tagged union may only specify 'tag' and 'value' fields`
+              `unknown field '${key}', tagged union may only specify 'tag' and 'value' fields`,
             );
           }
         }
@@ -35,7 +35,7 @@ export const taggedUnion = <T extends Record<string, MonarchType<any>>>(
       } catch (error) {
         if (error instanceof MonarchParseError) {
           throw new MonarchParseError(
-            `invalid value for tag '${input.tag.toString()}' ${error.message}'`
+            `invalid value for tag '${input.tag.toString()}' ${error.message}'`,
           );
         }
         throw error;
@@ -46,7 +46,7 @@ export const taggedUnion = <T extends Record<string, MonarchType<any>>>(
 };
 
 class MonarchTaggedUnion<
-  T extends Record<string, MonarchType<any>>
+  T extends Record<string, MonarchType<any>>,
 > extends MonarchType<
   InferTypeTaggedUnionInput<T>,
   InferTypeTaggedUnionOutput<T>

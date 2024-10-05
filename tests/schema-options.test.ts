@@ -32,7 +32,7 @@ describe("Schema options", () => {
         omit: {
           isAdmin: true,
         },
-      }
+      },
     );
     const db = createDatabase(client, { users: schema });
     const res = await db.collections.users
@@ -64,7 +64,7 @@ describe("Schema options", () => {
             role: values.isAdmin ? "admin" : "user",
           };
         },
-      }
+      },
     );
     const db = createDatabase(client, { users: schema });
     const res = await db.collections.users
@@ -106,7 +106,7 @@ describe("Schema options", () => {
             role: values.isAdmin ? "admin" : "user",
           };
         },
-      }
+      },
     );
     const db = createDatabase(client, { users: schema });
     const res = await db.collections.users
@@ -145,7 +145,7 @@ describe("Schema options", () => {
             role: values.isAdmin ? "admin" : "user",
           };
         },
-      }
+      },
     );
     const db = createDatabase(client, { users: schema });
     const res = await db.collections.users
@@ -185,11 +185,11 @@ describe("Schema options", () => {
             username: unique("username"),
             fullname: createIndex(
               { firstname: 1, surname: 1 },
-              { unique: true }
+              { unique: true },
             ),
           };
         },
-      }
+      },
     );
     const db = createDatabase(client, { users: schema });
     // TODO: wait for indexes

@@ -8,11 +8,11 @@ export const literal = <T extends (string | number | boolean)[]>(
     const _values = new Set(values);
     if (_values.has(input)) return input;
     throw new MonarchParseError(
-      `unknown value '${input}', literal may only specify known values`
+      `unknown value '${input}', literal may only specify known values`,
     );
   });
 };
 
 class MonarchLiteral<
-  T extends string | number | boolean
+  T extends string | number | boolean,
 > extends MonarchType<T> {}

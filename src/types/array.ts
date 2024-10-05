@@ -1,6 +1,6 @@
 import { MonarchParseError } from "../errors";
 import { MonarchType } from "./type";
-import { InferTypeInput, InferTypeOutput } from "./type-helpers";
+import type { InferTypeInput, InferTypeOutput } from "./type-helpers";
 
 export const array = <T extends MonarchType<any>>(type: T) => {
   return new MonarchArray<T>((input) => {
@@ -12,7 +12,7 @@ export const array = <T extends MonarchType<any>>(type: T) => {
         } catch (error) {
           if (error instanceof MonarchParseError) {
             throw new MonarchParseError(
-              `element at index '${index}' ${error.message}'`
+              `element at index '${index}' ${error.message}'`,
             );
           }
           throw error;

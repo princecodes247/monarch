@@ -14,7 +14,7 @@ class MonarchDate extends MonarchType<Date, string> {
       applyParser((input) => {
         if (input > date) return input;
         throw new MonarchParseError(`date must be after ${date}`);
-      }, this._parser)
+      }, this._parser),
     );
   }
 }

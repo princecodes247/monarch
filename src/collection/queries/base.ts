@@ -1,9 +1,12 @@
 import type { FindOptions } from "mongodb";
-import { AnySchema } from "../../schema/schema";
-import { InferSchemaData, InferSchemaInput } from "../../schema/type-helpers";
-import { WithOptionalId, WithRequiredId } from "../../type-helpers";
-import { MongoDBCollection } from "../collection";
-import { FilterQuery } from "./expressions";
+import type { AnySchema } from "../../schema/schema";
+import type {
+  InferSchemaData,
+  InferSchemaInput,
+} from "../../schema/type-helpers";
+import type { WithOptionalId, WithRequiredId } from "../../type-helpers";
+import type { MongoDBCollection } from "../collection";
+import type { FilterQuery } from "./expressions";
 
 export type Projection<T> = {
   [K in keyof T]?: 1 | 0;
@@ -45,22 +48,28 @@ export class Query<T extends AnySchema> {
 
   constructor(
     protected readonly _collection: MongoDBCollection<InferSchemaData<T>>,
-    protected _schema: T
+    protected _schema: T,
   ) {}
 
   select(...fields: (keyof WithRequiredId<InferSchemaData<T>>)[]): this {
-    this.projection = fields.reduce((acc, field) => {
-      acc[field] = 1;
-      return acc;
-    }, {} as Projection<WithRequiredId<InferSchemaData<T>>>);
+    this.projection = fields.reduce(
+      (acc, field) => {
+        acc[field] = 1;
+        return acc;
+      },
+      {} as Projection<WithRequiredId<InferSchemaData<T>>>,
+    );
     return this;
   }
 
   omit(...fields: (keyof WithRequiredId<InferSchemaData<T>>)[]): this {
-    this.projection = fields.reduce((acc, field) => {
-      acc[field] = 0;
-      return acc;
-    }, {} as Projection<WithRequiredId<InferSchemaData<T>>>);
+    this.projection = fields.reduce(
+      (acc, field) => {
+        acc[field] = 0;
+        return acc;
+      },
+      {} as Projection<WithRequiredId<InferSchemaData<T>>>,
+    );
     return this;
   }
 
@@ -78,7 +87,7 @@ export class BaseFindQuery<T extends AnySchema> extends Query<T> {
   constructor(
     _collection: MongoDBCollection<InferSchemaData<T>>,
     protected _schema: T,
-    _filters?: FilterQuery<InferSchemaData<T>>
+    _filters?: FilterQuery<InferSchemaData<T>>,
   ) {
     super(_collection, _schema);
     Object.assign(this.filters, _filters);
@@ -96,7 +105,7 @@ export class BaseMutationQuery<T extends AnySchema> extends BaseFindQuery<T> {
   constructor(
     _collection: MongoDBCollection<InferSchemaData<T>>,
     protected _schema: T,
-    _filters?: FilterQuery<InferSchemaData<T>>
+    _filters?: FilterQuery<InferSchemaData<T>>,
   ) {
     super(_collection, _schema, _filters);
   }

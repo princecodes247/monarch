@@ -1,6 +1,6 @@
 import { MonarchParseError } from "../errors";
 import { MonarchType } from "./type";
-import { InferTypeInput, InferTypeOutput } from "./type-helpers";
+import type { InferTypeInput, InferTypeOutput } from "./type-helpers";
 
 export const record = <T extends MonarchType<any>>(type: T) => {
   return new MonarchRecord<T>((input) => {

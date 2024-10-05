@@ -1,15 +1,15 @@
 import { MonarchParseError } from "../errors";
 import { MonarchType } from "./type";
-import { InferTypeTupleInput, InferTypeTupleOutput } from "./type-helpers";
+import type { InferTypeTupleInput, InferTypeTupleOutput } from "./type-helpers";
 
 export const tuple = <T extends [MonarchType<any>, ...MonarchType<any>[]]>(
-  types: T
+  types: T,
 ) => {
   return new MonarchTuple<T>((input) => {
     if (Array.isArray(input)) {
       if (input.length > types.length) {
         throw new MonarchParseError(
-          `expected array with ${types.length} elements received ${input.length} elements`
+          `expected array with ${types.length} elements received ${input.length} elements`,
         );
       }
       const parsed = [] as InferTypeTupleOutput<T>;
@@ -19,7 +19,7 @@ export const tuple = <T extends [MonarchType<any>, ...MonarchType<any>[]]>(
         } catch (error) {
           if (error instanceof MonarchParseError) {
             throw new MonarchParseError(
-              `element at index '${index}' ${error.message}'`
+              `element at index '${index}' ${error.message}'`,
             );
           }
           throw error;
@@ -32,5 +32,5 @@ export const tuple = <T extends [MonarchType<any>, ...MonarchType<any>[]]>(
 };
 
 class MonarchTuple<
-  T extends [MonarchType<any>, ...MonarchType<any>[]]
+  T extends [MonarchType<any>, ...MonarchType<any>[]],
 > extends MonarchType<InferTypeTupleInput<T>, InferTypeTupleOutput<T>> {}

@@ -1,7 +1,7 @@
-import { Pretty, WithRequiredId } from "../type-helpers";
-import { MonarchType } from "../types/type";
-import { InferTypeObjectOutput } from "../types/type-helpers";
-import {
+import type { Pretty, WithRequiredId } from "../type-helpers";
+import type { MonarchType } from "../types/type";
+import type { InferTypeObjectOutput } from "../types/type-helpers";
+import type {
   CreateIndex,
   InferSchemaData,
   InferSchemaInput,
@@ -14,7 +14,7 @@ type SchemaOmit<K extends keyof any> = Record<K, true>;
 
 type SchemaVirtuals<
   T extends Record<string, MonarchType<any>>,
-  U extends Record<string, any>
+  U extends Record<string, any>,
 > = (values: Pretty<WithRequiredId<InferTypeObjectOutput<T>>>) => U;
 
 type SchemaIndexes<T extends Record<string, MonarchType<any>>> = (options: {
@@ -28,7 +28,7 @@ export class Schema<
   TName extends string,
   TTypes extends Record<string, MonarchType<any>>,
   TVirtuals extends Record<string, any>,
-  TOmit extends keyof TTypes | "_id"
+  TOmit extends keyof TTypes | "_id",
 > {
   constructor(
     public name: TName,
@@ -37,7 +37,7 @@ export class Schema<
       omit?: SchemaOmit<TOmit>;
       virtuals?: SchemaVirtuals<TTypes, TVirtuals>;
       indexes?: SchemaIndexes<TTypes>;
-    }
+    },
   ) {}
 
   toData(data: InferSchemaInput<this>): InferSchemaData<this> {
@@ -47,7 +47,7 @@ export class Schema<
     // parse fields
     for (const [key, type] of Object.entries(this.types)) {
       parsed[key as keyof TTypes] = type._parser(
-        data[key as keyof InferSchemaInput<this>]
+        data[key as keyof InferSchemaInput<this>],
       );
     }
     return parsed;
@@ -87,7 +87,7 @@ export function createSchema<
   TName extends string,
   TTypes extends Record<string, MonarchType<any>>,
   TVirtuals extends Record<string, any> = {},
-  TOmit extends keyof TTypes | "_id" = keyof TTypes | "_id"
+  TOmit extends keyof TTypes | "_id" = keyof TTypes | "_id",
 >(
   name: TName,
   types: TTypes,
@@ -95,7 +95,7 @@ export function createSchema<
     omit?: SchemaOmit<TOmit>;
     virtuals?: SchemaVirtuals<TTypes, TVirtuals>;
     indexes?: SchemaIndexes<TTypes>;
-  }
+  },
 ): Schema<
   TName,
   TTypes,
@@ -106,7 +106,7 @@ export function createSchema<
 }
 
 export function makeIndexes<T extends Record<string, MonarchType<any>>>(
-  indexesFn: SchemaIndexes<T>
+  indexesFn: SchemaIndexes<T>,
 ) {
   return indexesFn({
     createIndex: (fields, options) => [fields, options],

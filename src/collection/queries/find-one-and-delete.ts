@@ -1,25 +1,27 @@
+import type { Filter, FindOneAndDeleteOptions } from "mongodb";
+import type { AnySchema } from "../../schema/schema";
 import type {
-    Filter,
-    FindOneAndDeleteOptions
-} from "mongodb";
-import { AnySchema } from "../../schema/schema";
-import { InferSchemaData, InferSchemaOutput } from "../../schema/type-helpers";
+  InferSchemaData,
+  InferSchemaOutput,
+} from "../../schema/type-helpers";
 import { BaseFindQuery } from "./base";
 
-export class FindOneAndDeleteQuery<T extends AnySchema> extends BaseFindQuery<T> {
-    protected _options: FindOneAndDeleteOptions = {};
+export class FindOneAndDeleteQuery<
+  T extends AnySchema,
+> extends BaseFindQuery<T> {
+  protected _options: FindOneAndDeleteOptions = {};
 
-    options(options: FindOneAndDeleteOptions): this {
-        Object.assign(this._options, options);
-        return this;
-    }
+  options(options: FindOneAndDeleteOptions): this {
+    Object.assign(this._options, options);
+    return this;
+  }
 
-    async exec(): Promise<InferSchemaOutput<T> | null> {
-        return this._collection
-            .findOneAndDelete(this.filters as unknown as Filter<InferSchemaData<T>>, {
-                ...this._options,
-                projection: this.projection,
-            })
-            .then((res) => (res ? this._schema.fromData(res) : res));
-    }
+  async exec(): Promise<InferSchemaOutput<T> | null> {
+    return this._collection
+      .findOneAndDelete(this.filters as unknown as Filter<InferSchemaData<T>>, {
+        ...this._options,
+        projection: this.projection,
+      })
+      .then((res) => (res ? this._schema.fromData(res) : res));
+  }
 }
