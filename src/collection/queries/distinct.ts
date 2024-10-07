@@ -25,6 +25,6 @@ export class DistinctQuery<
     return this._collection.distinct(
       this._field,
       this.filters as unknown as Filter<InferSchemaData<T>>,
-    );
+    ) as Promise<Flatten<InferSchemaOutput<T>[K]>>;
   }
 }
