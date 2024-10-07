@@ -1,43 +1,64 @@
 import { MonarchParseError } from "../errors";
-import { MonarchDefaulted, MonarchType, applyParser } from "./type";
+import { MonarchDefaulted, MonarchType, Scopes, applyParser } from "./type";
 
-export const date = () => {
-  return new MonarchDate((input) => {
-    if (input instanceof Date) return input.toISOString();
-    throw new MonarchParseError(`expected 'Date' received '${typeof input}'`);
-  });
-};
+export const date = () => new MonarchDate();
 
-class MonarchDate extends MonarchType<Date, string> {
+export class MonarchDate extends MonarchType<
+  Date,
+  string,
+  typeof Scopes.Default
+> {
+  constructor() {
+    super((input) => {
+      if (input instanceof Date) return input.toISOString();
+      throw new MonarchParseError(`expected 'Date' received '${typeof input}'`);
+    }, Scopes.Default);
+  }
+
   public after(date: Date) {
-    return new MonarchDate(
-      applyParser((input) => {
-        if (input > date) return input;
-        throw new MonarchParseError(`date must be after ${date}`);
-      }, this._parser),
-    );
+    const clone = new MonarchDate();
+    clone._parser = applyParser((input) => {
+      if (input > date) return input;
+      throw new MonarchParseError(`date must be after ${date}`);
+    }, this._parser);
+    return clone;
   }
 }
 
-export const dateString = () => {
-  return new MonarchDateString((input) => {
-    if (input instanceof Date) return input.toISOString();
-    throw new MonarchParseError(`expected 'Date' received '${typeof input}'`);
-  });
-};
+export const dateString = () => new MonarchDateString();
 
-class MonarchDateString extends MonarchType<Date, string> {}
+export class MonarchDateString extends MonarchType<
+  Date,
+  string,
+  typeof Scopes.Default
+> {
+  constructor() {
+    super((input) => {
+      if (input instanceof Date) return input.toISOString();
+      throw new MonarchParseError(`expected 'Date' received '${typeof input}'`);
+    }, Scopes.Default);
+  }
+}
 
-export const createdAtDate = () => {
-  return new MonarchCreatedAtDate(date()._parser, () => new Date());
-};
+export const createdAtDate = () => new MonarchCreatedAtDate();
 
-class MonarchCreatedAtDate extends MonarchDefaulted<MonarchDate> {}
+export class MonarchCreatedAtDate extends MonarchDefaulted<
+  MonarchDate,
+  typeof Scopes.Default
+> {
+  constructor() {
+    super(() => new Date(), new MonarchDate()._parser, Scopes.Default);
+  }
+}
 
-export const updatedAtDate = () => {
-  const type = new MonarchUpdatedAtDate(date()._parser, () => new Date());
-  type._updateFn = () => new Date().toISOString();
-  return type;
-};
+export const updatedAtDate = () => new MonarchUpdatedAtDate();
 
-class MonarchUpdatedAtDate extends MonarchDefaulted<MonarchDate> {}
+export class MonarchUpdatedAtDate extends MonarchDefaulted<
+  MonarchDate,
+  typeof Scopes.Default
+> {
+  constructor() {
+    super(() => new Date(), new MonarchDate()._parser, Scopes.Default);
+    this._updateFn = () => this._parser(new Date());
+  }
+}

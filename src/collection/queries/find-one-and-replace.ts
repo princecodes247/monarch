@@ -1,5 +1,5 @@
 import type { Filter, FindOneAndReplaceOptions } from "mongodb";
-import type { AnySchema } from "../../schema/schema";
+import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
   InferSchemaOutput,
@@ -26,6 +26,6 @@ export class FindOneAndReplaceQuery<
           projection: this.projection,
         },
       )
-      .then((res) => (res ? this._schema.fromData(res) : res));
+      .then((res) => (res ? Schema.fromData(this._schema, res) : res));
   }
 }

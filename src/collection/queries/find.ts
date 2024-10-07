@@ -1,5 +1,5 @@
 import type { Filter, Sort as MongoSort } from "mongodb";
-import type { AnySchema } from "../../schema/schema";
+import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
   InferSchemaOutput,
@@ -46,6 +46,6 @@ export class FindQuery<T extends AnySchema> extends BaseFindQuery<T> {
         projection: this.projection,
       })
       .toArray()
-      .then((res) => res.map((res) => this._schema.fromData(res)));
+      .then((res) => res.map((res) => Schema.fromData(this._schema, res)));
   }
 }

@@ -1,5 +1,5 @@
 import type { Filter, FindOneAndUpdateOptions } from "mongodb";
-import type { AnySchema } from "../../schema/schema";
+import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
   InferSchemaOutput,
@@ -17,7 +17,7 @@ export class FindOneAndUpdateQuery<
   }
 
   async exec(): Promise<InferSchemaOutput<T> | null> {
-    const fieldUpdates = this._schema.fieldUpdates();
+    const fieldUpdates = Schema.getFieldUpdates(this._schema);
     const data = this.data;
     // @ts-ignore
     data.$set = { ...fieldUpdates, ...data.$set };
@@ -27,6 +27,6 @@ export class FindOneAndUpdateQuery<
         data,
         this._options,
       )
-      .then((res) => (res ? this._schema.fromData(res) : res));
+      .then((res) => (res ? Schema.fromData(this._schema, res) : res));
   }
 }

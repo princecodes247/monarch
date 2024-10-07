@@ -1,13 +1,19 @@
 import { MonarchParseError } from "../errors";
-import { MonarchType } from "./type";
+import { MonarchType, Scopes } from "./type";
 
-export const boolean = () => {
-  return new MonarchBoolean((input) => {
-    if (typeof input === "boolean") return input;
-    throw new MonarchParseError(
-      `expected 'boolean' received '${typeof input}'`,
-    );
-  });
-};
+export const boolean = () => new MonarchBoolean();
 
-class MonarchBoolean extends MonarchType<boolean> {}
+export class MonarchBoolean extends MonarchType<
+  boolean,
+  boolean,
+  typeof Scopes.Default
+> {
+  constructor() {
+    super((input) => {
+      if (typeof input === "boolean") return input;
+      throw new MonarchParseError(
+        `expected 'boolean' received '${typeof input}'`,
+      );
+    }, Scopes.Default);
+  }
+}

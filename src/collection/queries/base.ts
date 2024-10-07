@@ -1,10 +1,15 @@
 import type { FindOptions } from "mongodb";
-import type { AnySchema } from "../../schema/schema";
+import type { SchemaRelationSelect } from "../../schema/refs";
+import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
   InferSchemaInput,
 } from "../../schema/type-helpers";
-import type { WithOptionalId, WithRequiredId } from "../../type-helpers";
+import type {
+  Pretty,
+  WithOptionalId,
+  WithRequiredId,
+} from "../../type-helpers";
 import type { MongoDBCollection } from "../collection";
 import type { FilterQuery } from "./expressions";
 
@@ -43,6 +48,7 @@ export type UpdateFilterQuery<T> = {
 // Define a base query class
 export class Query<T extends AnySchema> {
   protected filters: FilterQuery<InferSchemaData<T>> = {};
+  protected populations: SchemaRelationSelect<T> = {};
   protected projection: Projection<WithRequiredId<InferSchemaData<T>>> = {};
   protected _options: FindOptions = {};
 
@@ -97,6 +103,11 @@ export class BaseFindQuery<T extends AnySchema> extends Query<T> {
     Object.assign(this.filters, filter);
     return this;
   }
+
+  populate(population: Pretty<SchemaRelationSelect<T>>): this {
+    Object.assign(this.populations, population);
+    return this;
+  }
 }
 
 export class BaseMutationQuery<T extends AnySchema> extends BaseFindQuery<T> {
@@ -134,7 +145,7 @@ export class BaseInsertQuery<T extends AnySchema> extends Query<T> {
   protected data = {} as InferSchemaData<T>;
 
   values(data: InferSchemaInput<T>): this {
-    this.data = this._schema.toData(data);
+    this.data = Schema.toData(this._schema, data);
     return this;
   }
 }
@@ -143,7 +154,7 @@ export class BaseInsertManyQuery<T extends AnySchema> extends Query<T> {
   protected data = [] as InferSchemaData<T>[];
 
   values(data: InferSchemaInput<T>[]): this {
-    this.data = data.map((value) => this._schema.toData(value));
+    this.data = data.map((value) => Schema.toData(this._schema, value));
     return this;
   }
 }

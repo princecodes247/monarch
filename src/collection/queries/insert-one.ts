@@ -1,5 +1,5 @@
 import type { InsertOneOptions, OptionalUnlessRequiredId } from "mongodb";
-import type { AnySchema } from "../../schema/schema";
+import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
   InferSchemaOutput,
@@ -18,6 +18,9 @@ export class InsertOneQuery<T extends AnySchema> extends BaseInsertQuery<T> {
     const result = await this._collection.insertOne(
       this.data as OptionalUnlessRequiredId<InferSchemaData<T>>,
     );
-    return this._schema.fromData({ ...this.data, _id: result.insertedId });
+    return Schema.fromData(this._schema, {
+      ...this.data,
+      _id: result.insertedId,
+    });
   }
 }

@@ -1,5 +1,5 @@
 import type { Filter, UpdateOptions, UpdateResult } from "mongodb";
-import type { AnySchema } from "../../schema/schema";
+import { type AnySchema, Schema } from "../../schema/schema";
 import type { InferSchemaData } from "../../schema/type-helpers";
 import { BaseUpdateQuery } from "./base";
 
@@ -12,7 +12,7 @@ export class UpdateOneQuery<T extends AnySchema> extends BaseUpdateQuery<T> {
   }
 
   async exec() {
-    const fieldUpdates = this._schema.fieldUpdates();
+    const fieldUpdates = Schema.getFieldUpdates(this._schema);
     const data = this.data;
     // @ts-ignore
     data.$set = { ...fieldUpdates, ...data.$set };

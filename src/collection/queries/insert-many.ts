@@ -1,5 +1,5 @@
 import type { BulkWriteOptions, OptionalUnlessRequiredId } from "mongodb";
-import type { AnySchema } from "../../schema/schema";
+import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
   InferSchemaOutput,
@@ -22,7 +22,10 @@ export class InsertManyQuery<
     );
 
     return this.data.map((data, index) =>
-      this._schema.fromData({ ...data, _id: result.insertedIds[index] }),
+      Schema.fromData(this._schema, {
+        ...data,
+        _id: result.insertedIds[index],
+      }),
     );
   }
 }

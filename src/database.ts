@@ -3,8 +3,9 @@ import { Collection } from "./collection";
 import { MonarchError } from "./errors";
 import type { AnySchema } from "./schema/schema";
 
+type DbGetter = <S extends AnySchema>(schema: S) => Collection<S>;
 export type Database<T extends Record<string, AnySchema>> = {
-  db: <S extends AnySchema>(schema: S) => Collection<S>;
+  db: DbGetter;
   collections: { [K in keyof T]: Collection<T[K]> };
 };
 

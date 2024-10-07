@@ -8,6 +8,7 @@ export { createdAtDate, date, dateString, updatedAtDate } from "./types/date";
 export { literal } from "./types/literal";
 export { number } from "./types/number";
 export { object } from "./types/object";
+export { objectId } from "./types/objectId";
 export { record } from "./types/record";
 export { string } from "./types/string";
 export { taggedUnion } from "./types/tagged-union";
