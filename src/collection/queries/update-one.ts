@@ -1,6 +1,6 @@
-import { Filter, UpdateOptions, UpdateResult } from "mongodb";
-import { AnySchema } from "../../schema/schema";
-import { InferSchemaData } from "../../schema/type-helpers";
+import type { Filter, UpdateOptions, UpdateResult } from "mongodb";
+import { type AnySchema, Schema } from "../../schema/schema";
+import type { InferSchemaData } from "../../schema/type-helpers";
 import { BaseUpdateQuery } from "./base";
 
 export class UpdateOneQuery<T extends AnySchema> extends BaseUpdateQuery<T> {
@@ -12,14 +12,14 @@ export class UpdateOneQuery<T extends AnySchema> extends BaseUpdateQuery<T> {
   }
 
   async exec() {
-    const fieldUpdates = this._schema.fieldUpdates();
+    const fieldUpdates = Schema.getFieldUpdates(this._schema);
     const data = this.data;
     // @ts-ignore
-    data["$set"] = { ...fieldUpdates, ...data["$set"] };
+    data.$set = { ...fieldUpdates, ...data.$set };
     const result: UpdateResult = await this._collection.updateOne(
       this.filters as unknown as Filter<InferSchemaData<T>>,
       data,
-      this._options
+      this._options,
     );
     return result;
   }

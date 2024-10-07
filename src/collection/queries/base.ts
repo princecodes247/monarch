@@ -1,9 +1,17 @@
 import type { FindOptions } from "mongodb";
-import { AnySchema } from "../../schema/schema";
-import { InferSchemaData, InferSchemaInput } from "../../schema/type-helpers";
-import { WithOptionalId, WithRequiredId } from "../../type-helpers";
-import { MongoDBCollection } from "../collection";
-import { FilterQuery } from "./expressions";
+import type { SchemaRelationSelect } from "../../schema/refs";
+import { type AnySchema, Schema } from "../../schema/schema";
+import type {
+  InferSchemaData,
+  InferSchemaInput,
+} from "../../schema/type-helpers";
+import type {
+  Pretty,
+  WithOptionalId,
+  WithRequiredId,
+} from "../../type-helpers";
+import type { MongoDBCollection } from "../collection";
+import type { FilterQuery } from "./expressions";
 
 export type Projection<T> = {
   [K in keyof T]?: 1 | 0;
@@ -40,27 +48,34 @@ export type UpdateFilterQuery<T> = {
 // Define a base query class
 export class Query<T extends AnySchema> {
   protected filters: FilterQuery<InferSchemaData<T>> = {};
+  protected populations: SchemaRelationSelect<T> = {};
   protected projection: Projection<WithRequiredId<InferSchemaData<T>>> = {};
   protected _options: FindOptions = {};
 
   constructor(
     protected readonly _collection: MongoDBCollection<InferSchemaData<T>>,
-    protected _schema: T
+    protected _schema: T,
   ) {}
 
   select(...fields: (keyof WithRequiredId<InferSchemaData<T>>)[]): this {
-    this.projection = fields.reduce((acc, field) => {
-      acc[field] = 1;
-      return acc;
-    }, {} as Projection<WithRequiredId<InferSchemaData<T>>>);
+    this.projection = fields.reduce(
+      (acc, field) => {
+        acc[field] = 1;
+        return acc;
+      },
+      {} as Projection<WithRequiredId<InferSchemaData<T>>>,
+    );
     return this;
   }
 
   omit(...fields: (keyof WithRequiredId<InferSchemaData<T>>)[]): this {
-    this.projection = fields.reduce((acc, field) => {
-      acc[field] = 0;
-      return acc;
-    }, {} as Projection<WithRequiredId<InferSchemaData<T>>>);
+    this.projection = fields.reduce(
+      (acc, field) => {
+        acc[field] = 0;
+        return acc;
+      },
+      {} as Projection<WithRequiredId<InferSchemaData<T>>>,
+    );
     return this;
   }
 
@@ -78,7 +93,7 @@ export class BaseFindQuery<T extends AnySchema> extends Query<T> {
   constructor(
     _collection: MongoDBCollection<InferSchemaData<T>>,
     protected _schema: T,
-    _filters?: FilterQuery<InferSchemaData<T>>
+    _filters?: FilterQuery<InferSchemaData<T>>,
   ) {
     super(_collection, _schema);
     Object.assign(this.filters, _filters);
@@ -86,6 +101,11 @@ export class BaseFindQuery<T extends AnySchema> extends Query<T> {
 
   where(filter: FilterQuery<InferSchemaData<T>>): this {
     Object.assign(this.filters, filter);
+    return this;
+  }
+
+  populate(population: Pretty<SchemaRelationSelect<T>>): this {
+    Object.assign(this.populations, population);
     return this;
   }
 }
@@ -96,7 +116,7 @@ export class BaseMutationQuery<T extends AnySchema> extends BaseFindQuery<T> {
   constructor(
     _collection: MongoDBCollection<InferSchemaData<T>>,
     protected _schema: T,
-    _filters?: FilterQuery<InferSchemaData<T>>
+    _filters?: FilterQuery<InferSchemaData<T>>,
   ) {
     super(_collection, _schema, _filters);
   }
@@ -125,7 +145,7 @@ export class BaseInsertQuery<T extends AnySchema> extends Query<T> {
   protected data = {} as InferSchemaData<T>;
 
   values(data: InferSchemaInput<T>): this {
-    this.data = this._schema.toData(data);
+    this.data = Schema.toData(this._schema, data);
     return this;
   }
 }
@@ -134,7 +154,7 @@ export class BaseInsertManyQuery<T extends AnySchema> extends Query<T> {
   protected data = [] as InferSchemaData<T>[];
 
   values(data: InferSchemaInput<T>[]): this {
-    this.data = data.map((value) => this._schema.toData(value));
+    this.data = data.map((value) => Schema.toData(this._schema, value));
     return this;
   }
 }

@@ -12,20 +12,23 @@ import type {
   SearchIndexDescription,
 } from "mongodb";
 import { MonarchError } from "../errors";
-import { AnySchema, makeIndexes } from "../schema/schema";
-import { InferSchemaData, InferSchemaOutput } from "../schema/type-helpers";
+import { type AnySchema, makeIndexes } from "../schema/schema";
+import type {
+  InferSchemaData,
+  InferSchemaOutput,
+} from "../schema/type-helpers";
 import { BulkWriteQuery } from "./queries/bulk-write";
 
 import { InsertManyQuery } from "./queries/insert-many";
 import { AggregationPipeline, WatchPipeline } from "./queries/pipeline";
-import { PipelineStage } from "./queries/pipeline/pipeline-stage";
+import type { PipelineStage } from "./queries/pipeline/pipeline-stage";
 
-import { MongoDBCollection } from "./collection";
+import type { MongoDBCollection } from "./collection";
 import { CountQuery } from "./queries/count";
 import { DeleteManyQuery } from "./queries/delete-many";
 import { DeleteOneQuery } from "./queries/delete-one";
 import { DistinctQuery } from "./queries/distinct";
-import { FilterQuery } from "./queries/expressions";
+import type { FilterQuery } from "./queries/expressions";
 import { FindQuery } from "./queries/find";
 import { FindOneQuery } from "./queries/find-one";
 import { FindOneAndDeleteQuery } from "./queries/find-one-and-delete";
@@ -54,7 +57,10 @@ type IndexDefinitionKey<T> = { [K in keyof T]: IndexDirection | IndexType };
 export class Collection<T extends AnySchema> {
   private _collection: MongoDBCollection<InferSchemaData<T>>;
 
-  constructor(_client: MongoClient, private _schema: T) {
+  constructor(
+    _client: MongoClient,
+    private _schema: T,
+  ) {
     const db = _client.db();
     // create indexes
     if (_schema.options?.indexes) {
@@ -63,7 +69,7 @@ export class Collection<T extends AnySchema> {
         db.createIndex(
           _schema.name,
           fields as IndexSpecification,
-          options
+          options,
         ).catch((error) => {
           throw new MonarchError(`failed to create index '${key}': ${error}`);
         });
@@ -73,7 +79,7 @@ export class Collection<T extends AnySchema> {
   }
 
   aggregate(
-    pipeline?: PipelineStage<OptionalUnlessRequiredId<InferSchemaData<T>>>[]
+    pipeline?: PipelineStage<OptionalUnlessRequiredId<InferSchemaData<T>>>[],
   ): AggregationPipeline<T> {
     return new AggregationPipeline(this._collection, pipeline);
   }
@@ -96,7 +102,7 @@ export class Collection<T extends AnySchema> {
 
   distinct(
     field: keyof InferSchemaOutput<T>,
-    filter?: FilterQuery<InferSchemaData<T>>
+    filter?: FilterQuery<InferSchemaData<T>>,
   ) {
     return new DistinctQuery(this._collection, this._schema, field, filter);
   }
@@ -175,18 +181,18 @@ export class Collection<T extends AnySchema> {
   // Indexing
   createIndex(
     key: IndexDefinitionKey<Partial<InferSchemaData<T>>>,
-    options?: IndexDefinitionOptions<InferSchemaData<T>>
+    options?: IndexDefinitionOptions<InferSchemaData<T>>,
   ) {
     return this._collection.createIndex(key, options);
   }
 
   createIndexes(
     keys: IndexDefinitionKey<Partial<InferSchemaData<T>>>[],
-    options?: IndexDefinitionOptions<InferSchemaData<T>>
+    options?: IndexDefinitionOptions<InferSchemaData<T>>,
   ) {
     return this._collection.createIndexes(
       keys.map((key) => ({ key, ...options })),
-      options
+      options,
     );
   }
 
@@ -205,7 +211,7 @@ export class Collection<T extends AnySchema> {
   indexInformation(
     options: IndexInformationOptions & {
       full?: boolean;
-    }
+    },
   ) {
     return this._collection.indexInformation(options);
   }

@@ -37,7 +37,7 @@ describe("test for transformations", () => {
     expect(newUser).toStrictEqual(
       expect.objectContaining({
         name: "prince",
-      })
+      }),
     );
 
     const users = await collections.users
@@ -50,7 +50,7 @@ describe("test for transformations", () => {
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
         name: "prince",
-      })
+      }),
     );
   });
 
@@ -73,7 +73,7 @@ describe("test for transformations", () => {
     expect(newUser).toStrictEqual(
       expect.objectContaining({
         name: "ERIIC",
-      })
+      }),
     );
 
     const users = await collections.users
@@ -86,7 +86,7 @@ describe("test for transformations", () => {
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
         name: "ERIIC",
-      })
+      }),
     );
   });
 
@@ -108,7 +108,7 @@ describe("test for transformations", () => {
     expect(newUser).toStrictEqual(
       expect.objectContaining({
         name: "mon-go",
-      })
+      }),
     );
 
     const users = await collections.users.find().where({}).exec();
@@ -118,7 +118,7 @@ describe("test for transformations", () => {
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
         name: "mon-go",
-      })
+      }),
     );
   });
 });

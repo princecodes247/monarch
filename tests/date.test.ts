@@ -52,7 +52,7 @@ describe("test for date", () => {
     expect(newUser).toStrictEqual(
       expect.objectContaining({
         currentDate: markedDate.toISOString(),
-      })
+      }),
     );
 
     // db query builder
@@ -66,7 +66,7 @@ describe("test for date", () => {
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
         currentDate: markedDate.toISOString(),
-      })
+      }),
     );
   });
 
@@ -90,7 +90,7 @@ describe("test for date", () => {
     expect(newUser).toStrictEqual(
       expect.objectContaining({
         currentDate: markedDate.toISOString(),
-      })
+      }),
     );
 
     // db query builder
@@ -104,7 +104,7 @@ describe("test for date", () => {
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
         currentDate: markedDate.toISOString(),
-      })
+      }),
     );
   });
 
@@ -124,10 +124,10 @@ describe("test for date", () => {
     const afterInsert = new Date();
     expect(newUser).not.toBe(null);
     expect(new Date(newUser.createdAt).getTime()).toBeGreaterThan(
-      beforeInsert.getTime()
+      beforeInsert.getTime(),
     );
     expect(new Date(newUser.createdAt).getTime()).toBeLessThan(
-      afterInsert.getTime()
+      afterInsert.getTime(),
     );
 
     // check existing document date is in between beforeInsert and afterInsert
@@ -137,10 +137,10 @@ describe("test for date", () => {
     const existingUser = users[0];
     expect(existingUser).not.toBe(null);
     expect(new Date(existingUser.createdAt).getTime()).toBeGreaterThan(
-      beforeInsert.getTime()
+      beforeInsert.getTime(),
     );
     expect(new Date(existingUser.createdAt).getTime()).toBeLessThan(
-      afterInsert.getTime()
+      afterInsert.getTime(),
     );
   });
 
@@ -160,10 +160,10 @@ describe("test for date", () => {
     const afterInsert = new Date();
     expect(newUser).not.toBe(null);
     expect(new Date(newUser.updatedAt).getTime()).toBeGreaterThan(
-      beforeInsert.getTime()
+      beforeInsert.getTime(),
     );
     expect(new Date(newUser.updatedAt).getTime()).toBeLessThan(
-      afterInsert.getTime()
+      afterInsert.getTime(),
     );
 
     // check existing document date is in between beforeInsert and afterInsert
@@ -173,10 +173,10 @@ describe("test for date", () => {
     const existingUser = users[0];
     expect(existingUser).not.toBe(null);
     expect(new Date(existingUser.updatedAt).getTime()).toBeGreaterThan(
-      beforeInsert.getTime()
+      beforeInsert.getTime(),
     );
     expect(new Date(existingUser.updatedAt).getTime()).toBeLessThan(
-      afterInsert.getTime()
+      afterInsert.getTime(),
     );
 
     // update user
@@ -193,16 +193,16 @@ describe("test for date", () => {
     const updatedUser = updatedUsers[0];
     expect(updatedUser).not.toBe(null);
     expect(new Date(updatedUser.updatedAt).getTime()).toBeGreaterThan(
-      beforeInsert.getTime()
+      beforeInsert.getTime(),
     );
     expect(new Date(updatedUser.updatedAt).getTime()).toBeGreaterThan(
-      afterInsert.getTime()
+      afterInsert.getTime(),
     );
     expect(new Date(updatedUser.updatedAt).getTime()).toBeGreaterThan(
-      beforeUpdate.getTime()
+      beforeUpdate.getTime(),
     );
     expect(new Date(updatedUser.updatedAt).getTime()).toBeLessThan(
-      afterUpdate.getTime()
+      afterUpdate.getTime(),
     );
   });
 });
