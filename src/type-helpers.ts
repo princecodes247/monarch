@@ -11,6 +11,12 @@ export type KnownKey<T> = string extends T
       : T;
 export type KnownObjectKeys<T> = { [K in keyof T as KnownKey<K>]: T[K] };
 
-export type WithRequiredId<T> = { _id: ObjectId } & T;
-export type WithOptionalId<T> = { _id?: ObjectId } & T;
-export type WithoutId<T> = Omit<T, "_id">;
+export type IdFirst<T> = "_id" extends keyof T
+  ? { _id: T["_id"] } & Omit<T, "_id">
+  : T;
+export type WithRequiredId<T> = "_id" extends keyof T
+  ? T
+  : { _id: ObjectId } & T;
+export type WithOptionalId<T> = "_id" extends keyof T
+  ? T
+  : { _id?: ObjectId } & T;

@@ -1,5 +1,6 @@
 import type { CreateIndexesOptions, IndexDirection, ObjectId } from "mongodb";
 import type {
+  IdFirst,
   KnownObjectKeys,
   Merge,
   Pretty,
@@ -30,11 +31,12 @@ export type InferSchemaData<T extends AnySchema> = Pretty<
   >
 >;
 export type InferSchemaOutput<T extends AnySchema> = Pretty<
-  Omit<WithRequiredId<{}>, InferSchemaOmit<T>> & // places _id as the first field in the object if it is not ommitted
+  IdFirst<
     Merge<
       Omit<InferSchemaData<T>, InferSchemaOmit<T>>,
       KnownObjectKeys<InferSchemaVirtuals<T>>
     >
+  >
 >;
 type InferSchemaOmit<T extends AnySchema> = T extends Schema<
   any,
