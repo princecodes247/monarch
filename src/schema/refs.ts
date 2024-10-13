@@ -2,6 +2,7 @@ import type { ObjectId } from "mongodb";
 import { MonarchParseError } from "../errors";
 import type { AnySchema, AnySchemaWithoutRelations } from "../schema/schema";
 import type { InferSchemaInput } from "../schema/type-helpers";
+import { objectId } from "../types/objectId";
 import { MonarchMany, MonarchOne, MonarchRef } from "../types/refs";
 import type { AnyMonarchRelationType, AnyMonarchType } from "../types/type";
 import type { InferTypeInput, InferTypeOutput } from "../types/type-helpers";
@@ -34,18 +35,39 @@ export class RelationsProvider<TSchema extends AnySchema>
 
   public one: RelationsOne<TSchema> = (target, options) => {
     return new MonarchOne(this.schema, target, options, (input) => {
-      if (typeof input === "string") return input;
-      throw new MonarchParseError(
-        `expected 'string' received '${typeof input}'`,
-      );
+      const type =
+        options.field === "_id"
+          ? (target.types[options.field] ?? objectId())
+          : target.types[options.field];
+      const parsed = type._parser(input);
+      return parsed;
     });
   };
 
   public many: RelationsMany<TSchema> = (target, options) => {
     return new MonarchMany(this.schema, target, options, (input) => {
-      if (typeof input === "string") return input;
+      if (Array.isArray(input)) {
+        const type =
+          options.field === "_id"
+            ? (target.types[options.field] ?? objectId())
+            : target.types[options.field];
+        const parsed = [];
+        for (const [index, value] of input.entries()) {
+          try {
+            parsed[index] = type._parser(value);
+          } catch (error) {
+            if (error instanceof MonarchParseError) {
+              throw new MonarchParseError(
+                `element at index '${index}' ${error.message}'`,
+              );
+            }
+            throw error;
+          }
+        }
+        return parsed;
+      }
       throw new MonarchParseError(
-        `expected 'string' received '${typeof input}'`,
+        `expected 'array' received '${typeof input}'`,
       );
     });
   };
