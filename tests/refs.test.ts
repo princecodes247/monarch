@@ -53,7 +53,7 @@ describe("test for refs", () => {
       contributors: many(_UserSchema, { field: "_id" }),
     }));
 
-    const { collections } = createDatabase(client, {
+    const { collections } = createDatabase(client.db(), {
       users: UserSchema,
       posts: PostSchema,
     });

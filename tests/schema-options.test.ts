@@ -28,7 +28,7 @@ describe("Schema options", () => {
     }).omit({
       isAdmin: true,
     });
-    const db = createDatabase(client, { users: schema });
+    const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users
       .insert()
       .values({
@@ -52,7 +52,7 @@ describe("Schema options", () => {
     }).virtuals((values) => ({
       role: values.isAdmin ? "admin" : "user",
     }));
-    const db = createDatabase(client, { users: schema });
+    const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users
       .insert()
       .values({
@@ -87,7 +87,7 @@ describe("Schema options", () => {
       .virtuals((values) => ({
         role: values.isAdmin ? "admin" : "user",
       }));
-    const db = createDatabase(client, { users: schema });
+    const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users
       .insert()
       .values({
@@ -121,7 +121,7 @@ describe("Schema options", () => {
       .virtuals((values) => ({
         role: values.isAdmin !== undefined ? "known" : "unknown",
       }));
-    const db = createDatabase(client, { users: schema });
+    const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users
       .insert()
       .values({
@@ -151,7 +151,7 @@ describe("Schema options", () => {
     }).virtuals((values) => ({
       role: values.isAdmin ? "admin" : "user",
     }));
-    const db = createDatabase(client, { users: schema });
+    const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users
       .insert()
       .values({
@@ -184,7 +184,7 @@ describe("Schema options", () => {
       username: unique("username"),
       fullname: createIndex({ firstname: 1, surname: 1 }, { unique: true }),
     }));
-    const db = createDatabase(client, { users: schema });
+    const db = createDatabase(client.db(), { users: schema });
     // TODO: wait for indexes
     await new Promise((res) => setTimeout(res, 100));
 

@@ -28,7 +28,7 @@ const UserSchema = createSchema("users", {
   isVerified: boolean().default(false),
 });
 
-const { collections, db } = createDatabase(client, {
+const { collections, db } = createDatabase(client.db(), {
   users: UserSchema,
 });
 

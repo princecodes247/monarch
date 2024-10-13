@@ -23,7 +23,7 @@ describe("test for transformations", () => {
       name: string().lowercase(),
     });
 
-    const { collections } = createDatabase(client, {
+    const { collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
@@ -59,7 +59,7 @@ describe("test for transformations", () => {
       name: string().uppercase(),
     });
 
-    const { collections } = createDatabase(client, {
+    const { collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
@@ -94,7 +94,7 @@ describe("test for transformations", () => {
     const UserSchema = createSchema("userWithGo", {
       name: string().transform((value) => `${value}-go`),
     });
-    const { collections } = createDatabase(client, {
+    const { collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
     const newUser = await collections.users

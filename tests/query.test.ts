@@ -15,7 +15,7 @@ const UserSchema = createSchema("users", {
   isVerified: boolean().default(false),
 });
 
-const { collections, db } = createDatabase(client, {
+const { collections, db } = createDatabase(client.db(), {
   users: UserSchema,
 });
 
@@ -475,7 +475,7 @@ describe("Query methods Tests", () => {
       age: number().onUpdate(() => 100),
       isAdmin: boolean(),
     });
-    const db = createDatabase(client, { users: schema });
+    const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users
       .insert()
       .values({

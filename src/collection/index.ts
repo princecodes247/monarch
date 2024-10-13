@@ -1,11 +1,11 @@
 import type {
   AbstractCursorOptions,
+  Db,
   DropIndexesOptions,
   EstimatedDocumentCountOptions,
   IndexDirection,
   IndexInformationOptions,
   IndexSpecification,
-  MongoClient,
   OperationOptions,
   OptionalUnlessRequiredId,
   RenameOptions,
@@ -56,26 +56,35 @@ type IndexDefinitionKey<T> = { [K in keyof T]: IndexDirection | IndexType };
 
 export class Collection<T extends AnySchema> {
   private _collection: MongoDBCollection<InferSchemaData<T>>;
+  private _readyPromise: Promise<void>;
 
   constructor(
-    _client: MongoClient,
+    db: Db,
     private _schema: T,
   ) {
-    const db = _client.db();
     // create indexes
     if (_schema.options?.indexes) {
       const indexes = makeIndexes(_schema.options.indexes);
-      for (const [key, [fields, options]] of Object.entries(indexes)) {
-        db.createIndex(
-          _schema.name,
-          fields as IndexSpecification,
-          options,
-        ).catch((error) => {
-          throw new MonarchError(`failed to create index '${key}': ${error}`);
-        });
-      }
+      const indexesPromises = Object.entries(indexes).map(
+        async ([key, [fields, options]]) => {
+          await db
+            .createIndex(_schema.name, fields as IndexSpecification, options)
+            .catch((error) => {
+              throw new MonarchError(
+                `failed to create index '${key}': ${error}`,
+              );
+            });
+        },
+      );
+      this._readyPromise = Promise.all(indexesPromises).then(() => undefined);
+    } else {
+      this._readyPromise = Promise.resolve();
     }
     this._collection = db.collection<InferSchemaData<T>>(this._schema.name);
+  }
+
+  isReady() {
+    return this._readyPromise;
   }
 
   aggregate(

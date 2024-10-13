@@ -3,8 +3,8 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   createDatabase,
-  createdAtDate,
   createSchema,
+  createdAtDate,
   date,
   dateString,
   updatedAtDate,
@@ -37,7 +37,7 @@ describe("test for date", () => {
       currentDate: date(),
     });
     const markedDate = new Date();
-    const { db, collections } = createDatabase(client, {
+    const { db, collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
@@ -75,7 +75,7 @@ describe("test for date", () => {
       currentDate: dateString(),
     });
     const markedDate = new Date();
-    const { db, collections } = createDatabase(client, {
+    const { db, collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
@@ -113,7 +113,7 @@ describe("test for date", () => {
       createdAt: createdAtDate(),
     });
     const beforeInsert = new Date();
-    const { db, collections } = createDatabase(client, {
+    const { db, collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
@@ -149,7 +149,7 @@ describe("test for date", () => {
       updatedAt: updatedAtDate(),
     });
     const beforeInsert = new Date();
-    const { db, collections } = createDatabase(client, {
+    const { db, collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
