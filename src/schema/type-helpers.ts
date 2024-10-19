@@ -1,71 +1,88 @@
-import { CreateIndexesOptions, IndexDirection } from "mongodb";
-import {
-  KnownObjectKeys,
+import type { CreateIndexesOptions, IndexDirection, ObjectId } from "mongodb";
+import type {
+  IdFirst,
   Merge,
   Pretty,
+  TrueKeys,
   WithOptionalId,
   WithRequiredId,
 } from "../type-helpers";
-import { MonarchType } from "../types/type";
-import {
+import type { AnyMonarchType } from "../types/type";
+import type {
   InferTypeObjectInput,
   InferTypeObjectOutput,
 } from "../types/type-helpers";
-import { AnySchema, Schema } from "./schema";
+import type { AnySchema, Schema } from "./schema";
+import type { InferVirtualOutput } from "./virtuals";
 
 export type InferSchemaInput<T extends AnySchema> = Pretty<
-  WithOptionalId<InferTypeObjectInput<T["types"]>>
+  WithOptionalId<
+    Merge<
+      InferTypeObjectInput<T["types"]>,
+      InferTypeObjectInput<T["relations"]>
+    >
+  >
 >;
 export type InferSchemaData<T extends AnySchema> = Pretty<
-  WithRequiredId<InferTypeObjectOutput<T["types"]>>
+  WithRequiredId<
+    Merge<
+      InferTypeObjectOutput<T["types"]>,
+      InferTypeObjectOutput<T["relations"]>
+    >
+  >
 >;
 export type InferSchemaOutput<T extends AnySchema> = Pretty<
-  Omit<WithRequiredId<{}>, InferSchemaOptions<T>["omit"]> & // places _id as the first field in the object if it is not ommitted
-    Merge<
-      Omit<InferSchemaData<T>, InferSchemaOptions<T>["omit"]>,
-      KnownObjectKeys<InferSchemaOptions<T>["virtuals"]>
-    >
+  IdFirst<Merge<InferSchemaData<T>, InferVirtualOutput<InferSchemaVirtuals<T>>>>
 >;
-type InferSchemaOptions<T extends AnySchema> = T extends Schema<
-  infer _Name,
-  infer _Types,
-  infer Virtuals,
-  infer Omit
+export type InferSchemaOmit<T extends AnySchema> = T extends Schema<
+  any,
+  any,
+  any,
+  infer Omit,
+  any
 >
-  ? {
-      virtuals: Virtuals;
-      omit: Omit;
-    }
+  ? TrueKeys<Omit>
+  : never;
+export type InferSchemaVirtuals<T extends AnySchema> = T extends Schema<
+  any,
+  any,
+  any,
+  any,
+  infer Virtuals
+>
+  ? Virtuals
   : never;
 
-export type CreateIndexesFields<T extends Record<string, MonarchType<any>>> = {
+export type CreateIndexesFields<T extends Record<string, AnyMonarchType>> = {
   [K in IndexKeys<InferTypeObjectOutput<T>> | "_id"]?:
     | 1
     | -1
     | Exclude<IndexDirection, number>;
 };
-export type SchemaIndex<T extends Record<string, MonarchType<any>>> =
+export type SchemaIndex<T extends Record<string, AnyMonarchType>> =
   | [CreateIndexesFields<T>]
   | [CreateIndexesFields<T>, CreateIndexesOptions | undefined];
-export type CreateIndex<T extends Record<string, MonarchType<any>>> = (
+export type CreateIndex<T extends Record<string, AnyMonarchType>> = (
   fields: CreateIndexesFields<T>,
-  options?: CreateIndexesOptions
+  options?: CreateIndexesOptions,
 ) => SchemaIndex<T>;
-export type UniqueIndex<T extends Record<string, MonarchType<any>>> = (
-  field: IndexKeys<InferTypeObjectOutput<T>>
+export type UniqueIndex<T extends Record<string, AnyMonarchType>> = (
+  field: IndexKeys<InferTypeObjectOutput<T>>,
 ) => SchemaIndex<T>;
 
 type IndexKeys<T, Prefix extends string = ""> = T extends Array<infer U>
   ? IndexKeys<U, Prefix>
-  : T extends Record<string, any>
-  ? keyof T extends infer K extends string
-    ? KeysWithWildcard<K, Prefix> | SubKeys<T, K, Prefix>
-    : never
-  : never;
+  : T extends ObjectId
+    ? never
+    : T extends Record<string, any>
+      ? keyof T extends infer K extends string
+        ? KeysWithWildcard<K, Prefix> | SubKeys<T, K, Prefix>
+        : never
+      : never;
 type SubKeys<T, K, Prefix extends string> = K extends keyof T & string
   ? IndexKeys<T[K], `${Prefix}${K}.`>
   : never;
 type KeysWithWildcard<
   K extends string,
-  Prefix extends string
+  Prefix extends string,
 > = string extends K ? `${Prefix}$**` : `${Prefix}${K}` | `${Prefix}$**`;

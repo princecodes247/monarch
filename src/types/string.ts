@@ -1,23 +1,31 @@
 import { MonarchParseError } from "../errors";
-import { MonarchType, applyParser } from "./type";
+import { MonarchType, Scopes, applyParser } from "./type";
 
-export const string = () => {
-  return new MonarchString((input) => {
-    if (typeof input === "string") return input;
-    throw new MonarchParseError(`expected 'string' received '${typeof input}'`);
-  });
-};
+export const string = () => new MonarchString();
 
-class MonarchString extends MonarchType<string> {
+export class MonarchString extends MonarchType<
+  string,
+  string,
+  typeof Scopes.Default
+> {
+  constructor() {
+    super((input) => {
+      if (typeof input === "string") return input;
+      throw new MonarchParseError(
+        `expected 'string' received '${typeof input}'`,
+      );
+    }, Scopes.Default);
+  }
+
   public lowercase() {
-    return new MonarchString(
-      applyParser(this._parser, (input) => input.toLowerCase())
-    );
+    const clone = new MonarchString();
+    clone._parser = applyParser(this._parser, (input) => input.toLowerCase());
+    return clone;
   }
 
   public uppercase() {
-    return new MonarchString(
-      applyParser(this._parser, (input) => input.toUpperCase())
-    );
+    const clone = new MonarchString();
+    clone._parser = applyParser(this._parser, (input) => input.toUpperCase());
+    return clone;
   }
 }

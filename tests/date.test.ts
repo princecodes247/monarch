@@ -1,10 +1,18 @@
 import { MongoClient } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  assert,
+  beforeAll,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import {
   createDatabase,
-  createdAtDate,
   createSchema,
+  createdAtDate,
   date,
   dateString,
   updatedAtDate,
@@ -37,28 +45,24 @@ describe("test for date", () => {
       currentDate: date(),
     });
     const markedDate = new Date();
-    const { db, collections } = createDatabase(client, {
+    const { db, collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
     // collections query builder
     const newUser = await collections.users
-      .insert()
-      .values({
-        currentDate: markedDate,
-      })
+      .insertOne({ currentDate: markedDate })
       .exec();
     expect(newUser).not.toBe(null);
     expect(newUser).toStrictEqual(
       expect.objectContaining({
         currentDate: markedDate.toISOString(),
-      })
+      }),
     );
 
     // db query builder
     const users = await db(UserSchema)
-      .find()
-      .where({ currentDate: markedDate.toISOString() })
+      .find({ currentDate: markedDate.toISOString() })
       .exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
@@ -66,7 +70,7 @@ describe("test for date", () => {
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
         currentDate: markedDate.toISOString(),
-      })
+      }),
     );
   });
 
@@ -75,14 +79,13 @@ describe("test for date", () => {
       currentDate: dateString(),
     });
     const markedDate = new Date();
-    const { db, collections } = createDatabase(client, {
+    const { db, collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
     // collections query builder
     const newUser = await collections.users
-      .insert()
-      .values({
+      .insertOne({
         currentDate: markedDate,
       })
       .exec();
@@ -90,13 +93,12 @@ describe("test for date", () => {
     expect(newUser).toStrictEqual(
       expect.objectContaining({
         currentDate: markedDate.toISOString(),
-      })
+      }),
     );
 
     // db query builder
     const users = await db(UserSchema)
-      .find()
-      .where({ currentDate: markedDate.toISOString() })
+      .find({ currentDate: markedDate.toISOString() })
       .exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
@@ -104,7 +106,7 @@ describe("test for date", () => {
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
         currentDate: markedDate.toISOString(),
-      })
+      }),
     );
   });
 
@@ -113,34 +115,31 @@ describe("test for date", () => {
       createdAt: createdAtDate(),
     });
     const beforeInsert = new Date();
-    const { db, collections } = createDatabase(client, {
+    const { db, collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
     // check inserted document date is in between beforeInsert and afterInsert
     await delay(10);
-    const newUser = await collections.users.insert().values({}).exec();
+    const newUser = await collections.users.insertOne({}).exec();
     await delay(10);
     const afterInsert = new Date();
     expect(newUser).not.toBe(null);
     expect(new Date(newUser.createdAt).getTime()).toBeGreaterThan(
-      beforeInsert.getTime()
+      beforeInsert.getTime(),
     );
     expect(new Date(newUser.createdAt).getTime()).toBeLessThan(
-      afterInsert.getTime()
+      afterInsert.getTime(),
     );
 
     // check existing document date is in between beforeInsert and afterInsert
-    const users = await db(UserSchema).find().exec();
-    expect(users.length).toBeGreaterThanOrEqual(1);
-
-    const existingUser = users[0];
-    expect(existingUser).not.toBe(null);
+    const existingUser = await db(UserSchema).findOne({}).exec();
+    assert(existingUser);
     expect(new Date(existingUser.createdAt).getTime()).toBeGreaterThan(
-      beforeInsert.getTime()
+      beforeInsert.getTime(),
     );
     expect(new Date(existingUser.createdAt).getTime()).toBeLessThan(
-      afterInsert.getTime()
+      afterInsert.getTime(),
     );
   });
 
@@ -148,61 +147,54 @@ describe("test for date", () => {
     const UserSchema = createSchema("users", {
       updatedAt: updatedAtDate(),
     });
-    const beforeInsert = new Date();
-    const { db, collections } = createDatabase(client, {
+    const { db, collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
     // check inserted document date is in between beforeInsert and afterInsert
+    const beforeInsert = new Date();
     await delay(10);
-    const newUser = await collections.users.insert().values({}).exec();
+    const newUser = await collections.users.insertOne({}).exec();
     await delay(10);
     const afterInsert = new Date();
-    expect(newUser).not.toBe(null);
     expect(new Date(newUser.updatedAt).getTime()).toBeGreaterThan(
-      beforeInsert.getTime()
+      beforeInsert.getTime(),
     );
     expect(new Date(newUser.updatedAt).getTime()).toBeLessThan(
-      afterInsert.getTime()
+      afterInsert.getTime(),
     );
 
     // check existing document date is in between beforeInsert and afterInsert
-    const users = await db(UserSchema).find().exec();
-    expect(users.length).toBeGreaterThanOrEqual(1);
-
-    const existingUser = users[0];
-    expect(existingUser).not.toBe(null);
+    const existingUser = await db(UserSchema).findOne({}).exec();
+    assert(existingUser);
     expect(new Date(existingUser.updatedAt).getTime()).toBeGreaterThan(
-      beforeInsert.getTime()
+      beforeInsert.getTime(),
     );
     expect(new Date(existingUser.updatedAt).getTime()).toBeLessThan(
-      afterInsert.getTime()
+      afterInsert.getTime(),
     );
 
     // update user
     const beforeUpdate = new Date();
     await delay(10);
-    await db(UserSchema).updateOne().where({}).values({ $set: {} }).exec();
+    await db(UserSchema).updateOne({}, { $set: {} }).exec();
     await delay(10);
     const afterUpdate = new Date();
 
     // check updated document date is in between beforeInsert and afterInsert
-    const updatedUsers = await db(UserSchema).find().exec();
-    expect(users.length).toBeGreaterThanOrEqual(1);
-
-    const updatedUser = updatedUsers[0];
-    expect(updatedUser).not.toBe(null);
+    const updatedUser = await db(UserSchema).findOne({}).exec();
+    assert(updatedUser);
     expect(new Date(updatedUser.updatedAt).getTime()).toBeGreaterThan(
-      beforeInsert.getTime()
+      beforeInsert.getTime(),
     );
     expect(new Date(updatedUser.updatedAt).getTime()).toBeGreaterThan(
-      afterInsert.getTime()
+      afterInsert.getTime(),
     );
     expect(new Date(updatedUser.updatedAt).getTime()).toBeGreaterThan(
-      beforeUpdate.getTime()
+      beforeUpdate.getTime(),
     );
     expect(new Date(updatedUser.updatedAt).getTime()).toBeLessThan(
-      afterUpdate.getTime()
+      afterUpdate.getTime(),
     );
   });
 });

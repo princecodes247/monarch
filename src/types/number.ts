@@ -1,11 +1,19 @@
 import { MonarchParseError } from "../errors";
-import { MonarchType } from "./type";
+import { MonarchType, Scopes } from "./type";
 
-export const number = () => {
-  return new MonarchNumber((input) => {
-    if (typeof input === "number") return input;
-    throw new MonarchParseError(`expected 'number' received '${typeof input}'`);
-  });
-};
+export const number = () => new MonarchNumber();
 
-class MonarchNumber extends MonarchType<number> {}
+export class MonarchNumber extends MonarchType<
+  number,
+  number,
+  typeof Scopes.Default
+> {
+  constructor() {
+    super((input) => {
+      if (typeof input === "number") return input;
+      throw new MonarchParseError(
+        `expected 'number' received '${typeof input}'`,
+      );
+    }, Scopes.Default);
+  }
+}

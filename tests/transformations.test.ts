@@ -23,13 +23,12 @@ describe("test for transformations", () => {
       name: string().lowercase(),
     });
 
-    const { collections } = createDatabase(client, {
+    const { collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
     const newUser = await collections.users
-      .insert()
-      .values({
+      .insertOne({
         name: "PRINCE",
       })
       .exec();
@@ -37,20 +36,17 @@ describe("test for transformations", () => {
     expect(newUser).toStrictEqual(
       expect.objectContaining({
         name: "prince",
-      })
+      }),
     );
 
-    const users = await collections.users
-      .find()
-      .where({ _id: newUser?._id })
-      .exec();
+    const users = await collections.users.find({ _id: newUser?._id }).exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
         name: "prince",
-      })
+      }),
     );
   });
 
@@ -59,13 +55,12 @@ describe("test for transformations", () => {
       name: string().uppercase(),
     });
 
-    const { collections } = createDatabase(client, {
+    const { collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
     const newUser = await collections.users
-      .insert()
-      .values({
+      .insertOne({
         name: "EriiC",
       })
       .exec();
@@ -73,20 +68,17 @@ describe("test for transformations", () => {
     expect(newUser).toStrictEqual(
       expect.objectContaining({
         name: "ERIIC",
-      })
+      }),
     );
 
-    const users = await collections.users
-      .find()
-      .where({ _id: newUser?._id })
-      .exec();
+    const users = await collections.users.find({ _id: newUser?._id }).exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
         name: "ERIIC",
-      })
+      }),
     );
   });
 
@@ -94,12 +86,11 @@ describe("test for transformations", () => {
     const UserSchema = createSchema("userWithGo", {
       name: string().transform((value) => `${value}-go`),
     });
-    const { collections } = createDatabase(client, {
+    const { collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
     const newUser = await collections.users
-      .insert()
-      .values({
+      .insertOne({
         name: "mon",
       })
       .exec();
@@ -108,17 +99,17 @@ describe("test for transformations", () => {
     expect(newUser).toStrictEqual(
       expect.objectContaining({
         name: "mon-go",
-      })
+      }),
     );
 
-    const users = await collections.users.find().where({}).exec();
+    const users = await collections.users.find({}).exec();
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
         name: "mon-go",
-      })
+      }),
     );
   });
 });

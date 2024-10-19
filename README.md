@@ -60,16 +60,17 @@ Or Yarn:
 ## Basic Usage
 
 ```typescript
-import { boolean, createDatabase, createSchema, number, string } from "monarch-orm";
+import { boolean, createClient, createDatabase, createSchema, number, string } from "monarch-orm";
 
- const UserSchema = createSchema("users", {
+    const UserSchema = createSchema("users", {
       name: string().nullable(),
       email: string().lowercase().optional(),
       age: number().optional().default(10),
       isVerified: boolean(),
     });
 
-    const { collections } = createDatabase(client, {
+    const client = createClient(/** db uri **//)
+    const { collections } = createDatabase(client.db(), {
       users: UserSchema,
     });
 
@@ -106,7 +107,7 @@ Or you can use the built-in createClient function.
 Then you pass your schemas to the second arguement
 
 ```typescript
-const { collections } = createDatabase(client, {
+const { collections } = createDatabase(client.db(), {
   users: UserSchema,
 });
 ```
@@ -342,7 +343,7 @@ const UserSchema = createSchema("users", {
 
 
 // Example of inserting a user with grades
-const { collections } = createDatabase(client, {
+const { collections } = createDatabase(client.db(), {
   users: UserSchema,
 });
 
