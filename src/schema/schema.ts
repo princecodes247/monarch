@@ -144,7 +144,7 @@ export class Schema<
   virtuals<
     TVirtuals extends Record<
       string,
-      Virtual<Merge<TTypes, TRelations>, any, any>
+      Virtual<Pretty<Merge<TTypes, TRelations>>, any, any>
     >,
   >(virtuals: SchemaVirtuals<TTypes, TRelations, TVirtuals>) {
     const schema = this as unknown as Schema<
