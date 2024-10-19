@@ -14,7 +14,7 @@ import type {
   Meta,
   ObjectExpressionOperator,
   WindowOperator,
-} from "../expressions";
+} from "./expressions";
 
 export type PipelineStage<T> =
   | AddFields

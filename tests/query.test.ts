@@ -15,7 +15,7 @@ const UserSchema = createSchema("users", {
   isVerified: boolean().default(false),
 });
 
-const { collections, db } = createDatabase(client.db(), {
+const { collections } = createDatabase(client.db(), {
   users: UserSchema,
 });
 
@@ -35,32 +35,25 @@ describe("Query methods Tests", () => {
   });
 
   it("inserts one document", async () => {
-    const newUser1 = await collections.users
-      .insert()
-      .values(mockUsers[0])
-      .exec();
+    const newUser1 = await collections.users.insertOne(mockUsers[0]).exec();
 
     expect(newUser1).not.toBe(null);
 
-    const newUser2 = await collections.users
-      .insertOne()
-      .values(mockUsers[0])
-      .exec();
+    const newUser2 = await collections.users.insertOne(mockUsers[0]).exec();
 
     expect(newUser2).not.toBe(null);
 
     // insert with existing id
     const id3 = new ObjectId();
     const newUser3 = await collections.users
-      .insertOne()
-      .values({ _id: id3, ...mockUsers[0] })
+      .insertOne({ _id: id3, ...mockUsers[0] })
       .exec();
 
     expect(newUser3).not.toBe(null);
     expect(newUser3._id).toBe(id3);
 
     // Test edge case: Insert empty document
-    const emptyUser = await collections.users.insert().values({}).exec();
+    const emptyUser = await collections.users.insertOne({}).exec();
 
     expect(emptyUser).not.toBe(null);
     expect(emptyUser.age).toBe(10); // Should use default value
@@ -85,8 +78,7 @@ describe("Query methods Tests", () => {
 
     // Test edge case: Insert document with invalid email (should be lowercase)
     const invalidEmailUser = await collections.users
-      .insert()
-      .values({
+      .insertOne({
         name: "Test",
         email: "TEST@EXAMPLE.COM",
         age: 30,
@@ -99,8 +91,7 @@ describe("Query methods Tests", () => {
 
     // Test edge case: Insert document with extra fields
     const extraFieldsUser = await collections.users
-      .insert()
-      .values({
+      .insertOne({
         name: "Extra",
         email: "extra@example.com",
         age: 40,
@@ -114,89 +105,88 @@ describe("Query methods Tests", () => {
   });
 
   it("inserts many documents", async () => {
-    const newUsers = await collections.users
-      .insertMany()
-      .values(mockUsers)
-      .exec();
+    const newUsers = await collections.users.insertMany(mockUsers).exec();
 
-    expect(newUsers.length).toBe(mockUsers.length);
+    expect(newUsers.insertedCount).toBe(mockUsers.length);
   });
 
   it("finds documents", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
 
     const users = await collections.users.find().exec();
     expect(users.length).toBeGreaterThanOrEqual(3);
   });
 
   it("finds one document", async () => {
-    await collections.users.insert().values(mockUsers[0]).exec();
+    await collections.users.insertOne(mockUsers[0]).exec();
 
-    const user = await collections.users.findOne().exec();
+    const user = await collections.users.findOne({}).exec();
     expect(user).toStrictEqual(expect.objectContaining(mockUsers[0]));
   });
 
   describe("Base Query methods", () => {
     it("query where with single condition", async () => {
-      await collections.users.insertMany().values(mockUsers).exec();
-      const users = await collections.users.find().where({}).exec();
+      await collections.users.insertMany(mockUsers).exec();
+      const users = await collections.users.find().exec();
       expect(users.length).toBeGreaterThanOrEqual(mockUsers.length);
 
       const firstUser = await collections.users
-        .findOne()
-        .where({ name: "anon" })
+        .findOne({ name: "anon" })
         .exec();
       expect(firstUser?.name).toBe("anon");
     });
 
     it("query where with multiple conditions", async () => {
-      await collections.users.insertMany().values(mockUsers).exec();
+      await collections.users.insertMany(mockUsers).exec();
 
       const users = await collections.users
-        .find()
-        .where({ name: "anon", age: 17 })
+        .find({ name: "anon", age: 17 })
         .exec();
       expect(users.length).toBe(1);
     });
 
     it("query select/omit", async () => {
-      await collections.users.insertMany().values(mockUsers).exec();
+      await collections.users.insertMany(mockUsers).exec();
 
       const users1 = await collections.users
         .find()
-        .select("name", "email")
+        .select({ name: true, email: true })
         .exec();
       expect(users1[0].name).toBe("anon");
       expect(users1[0].email).toBe("anon@gmail.com");
+      // @ts-expect-error
       expect(users1[0].age).toBeUndefined();
+      // @ts-expect-error
       expect(users1[0].isVerified).toBeUndefined();
 
       const users2 = await collections.users
         .find()
-        .omit("name", "email")
+        .omit({ name: true, email: true })
         .exec();
+      // @ts-expect-error
       expect(users2[0].name).toBeUndefined();
+      // @ts-expect-error
       expect(users2[0].email).toBeUndefined();
       expect(users2[0].age).toBe(17);
       expect(users2[0].isVerified).toBe(true);
     });
 
     it("query limit", async () => {
-      await collections.users.insertMany().values(mockUsers).exec();
+      await collections.users.insertMany(mockUsers).exec();
       const limit = 2;
       const users = await collections.users.find().limit(limit).exec();
       expect(users.length).toBe(limit);
     });
 
     it("query skip", async () => {
-      await collections.users.insertMany().values(mockUsers).exec();
+      await collections.users.insertMany(mockUsers).exec();
       const skip = 2;
       const users = await collections.users.find().skip(skip).exec();
       expect(users.length).toBe(mockUsers.length - skip);
     });
 
     it("query sort", async () => {
-      await collections.users.insertMany().values(mockUsers).exec();
+      await collections.users.insertMany(mockUsers).exec();
       const users = await collections.users
         .find()
         .sort({
@@ -220,16 +210,17 @@ describe("Query methods Tests", () => {
   });
 
   it("finds one and updates", async () => {
-    await collections.users.insert().values(mockUsers[0]).exec();
+    await collections.users.insertOne(mockUsers[0]).exec();
 
     const updatedUser = await collections.users
-      .findOneAndUpdate()
-      .where({ email: "anon@gmail.com" })
-      .values({
-        $set: {
-          age: 30,
+      .findOneAndUpdate(
+        { email: "anon@gmail.com" },
+        {
+          $set: {
+            age: 30,
+          },
         },
-      })
+      )
       .options({
         returnDocument: "after",
       })
@@ -240,11 +231,10 @@ describe("Query methods Tests", () => {
   });
 
   it("finds one and deletes", async () => {
-    await collections.users.insert().values(mockUsers[0]).exec();
+    await collections.users.insertOne(mockUsers[0]).exec();
 
     const deletedUser = await collections.users
-      .findOneAndDelete()
-      .where({ email: "anon@gmail.com" })
+      .findOneAndDelete({ email: "anon@gmail.com" })
       .exec();
 
     expect(deletedUser).not.toBe(null);
@@ -252,73 +242,68 @@ describe("Query methods Tests", () => {
   });
 
   it("counts documents", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
-    const count = await collections.users.count().exec();
+    await collections.users.insertMany(mockUsers).exec();
+    const count = await collections.users.count();
     expect(count).toBeGreaterThanOrEqual(2);
   });
 
   it("updates one document", async () => {
-    await collections.users.insert().values(mockUsers[1]).exec();
+    await collections.users.insertOne(mockUsers[1]).exec();
     const updated = await collections.users
-      .updateOne()
-      .where({ email: "anon1@gmail.com" })
-      .set({ age: 35 })
+      .updateOne({ email: "anon1@gmail.com" }, { $set: { age: 35 } })
       .exec();
 
     expect(updated.acknowledged).toBe(true);
   });
 
   it("updates many documents", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const updated = await collections.users
-      .updateMany()
-      .where({ isVerified: false })
-      .set({ age: 40 })
+      .updateMany({ isVerified: false }, { $set: { age: 40 } })
       .exec();
 
     expect(updated.acknowledged).toBe(true);
   });
 
   it("replaces one document", async () => {
-    const firstUser = await collections.users
-      .insert()
-      .values(mockUsers[0])
-      .exec();
+    const original = await collections.users.insertOne(mockUsers[0]).exec();
     const replaced = await collections.users
-      .replaceOne()
-      .where({ email: "anon@gmail.com" })
-      .values({ name: "New Name" })
+      .replaceOne(
+        { email: "anon@gmail.com" },
+        {
+          ...original,
+          name: "New Name",
+        },
+      )
       .exec();
 
-    expect(replaced).toBe(true);
+    expect(replaced.modifiedCount).toBe(1);
   });
 
   it("distinct method", async () => {
     await collections.users
-      .insertMany()
-      .values([
+      .insertMany([
         { name: "John", email: "john@example.com" },
         { name: "Jane", email: "jane@example.com" },
         { name: "John", email: "john@example.com" },
       ])
       .exec();
-    const distinctEmails = await collections.users.distinct("email").exec();
+    const distinctEmails = await collections.users.distinct("email");
 
     expect(distinctEmails).toEqual(["jane@example.com", "john@example.com"]);
   });
 
   it("estimatedDocumentCount", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const estimatedCount = await collections.users.estimatedDocumentCount();
 
     expect(estimatedCount).toBe(3);
   });
 
   it("deletes one document", async () => {
-    await collections.users.insert().values(mockUsers[2]).exec();
+    await collections.users.insertOne(mockUsers[2]).exec();
     const deleted = await collections.users
-      .deleteOne()
-      .where({ email: "anon2@gmail.com" })
+      .deleteOne({ email: "anon2@gmail.com" })
       .exec();
 
     expect(deleted.deletedCount).toBe(1);
@@ -326,8 +311,7 @@ describe("Query methods Tests", () => {
 
   it("bulk writes", async () => {
     const bulkWriteResult = await collections.users
-      .bulkWrite()
-      .values([
+      .bulkWrite([
         {
           insertOne: {
             document: {
@@ -361,8 +345,8 @@ describe("Query methods Tests", () => {
 
   it("creates multiple indexes", async () => {
     const indexNames = await collections.users.createIndexes([
-      { name: 1 },
-      { age: -1 },
+      { key: { name: 1 } },
+      { key: { age: -1 } },
     ]);
     expect(indexNames).toBeDefined();
   });
@@ -370,7 +354,6 @@ describe("Query methods Tests", () => {
   it("drops an index", async () => {
     await collections.users.createIndex({ email: 1 });
     const indexes = await collections.users.listIndexes().toArray();
-    // console.log({ indexes })
 
     const dropIndexResult = await collections.users.dropIndex("email_1");
     expect(dropIndexResult).toBeTruthy();
@@ -396,7 +379,6 @@ describe("Query methods Tests", () => {
   it("gets index information", async () => {
     await collections.users.createIndex({ email: 1 }, { unique: true });
     const indexInformation = await collections.users.indexInformation({});
-    console.log({ indexInformation });
     expect(indexInformation).toHaveProperty("email_1");
   });
 
@@ -432,19 +414,13 @@ describe("Query methods Tests", () => {
   // });
 
   it("aggregates data", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
-
-    const pipeline = [
-      { $match: { isVerified: true } },
-      { $group: { _id: "$isVerified", count: { $sum: 1 } } },
-    ];
+    await collections.users.insertMany(mockUsers).exec();
     const result = await collections.users
       .aggregate()
-      .addStage(pipeline[0])
-      .addStage(pipeline[1])
+      .addStage({ $match: { isVerified: true } })
+      .addStage({ $group: { _id: "$isVerified", count: { $sum: 1 } } })
       .exec();
 
-    console.log({ aggregatedData: result });
     expect(result).toBeInstanceOf(Array);
     expect(result.length).toBeGreaterThanOrEqual(1);
   });
@@ -453,14 +429,10 @@ describe("Query methods Tests", () => {
     const pipeline = [{ $match: { operationType: "insert" } }];
     const watchStream = collections.users
       .watch(pipeline)
-      .addStage({
-        $match: { operationType: "insert" },
-      })
-      .exec()
       .on("change", (change) => {
         expect(change.operationType).toBe("insert");
       });
-    await collections.users.insertOne().values({ name: "Test User" }).exec();
+    await collections.users.insertOne({ name: "Test User" }).exec();
     watchStream.close();
   });
 
@@ -477,17 +449,13 @@ describe("Query methods Tests", () => {
     });
     const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users
-      .insert()
-      .values({
+      .insertOne({
         name: "tom",
         age: 0,
         isAdmin: true,
       })
       .exec();
-    const doc = await db.collections.users
-      .findOne()
-      .where({ _id: res._id })
-      .exec();
+    const doc = await db.collections.users.findOne({ _id: res._id }).exec();
     expect(doc).toStrictEqual({
       _id: res._id,
       name: "tom",
@@ -495,9 +463,7 @@ describe("Query methods Tests", () => {
       isAdmin: true,
     });
     const updatedDoc = await db.collections.users
-      .findOneAndUpdate()
-      .where({ _id: res._id })
-      .values({ $set: { name: "jerry" } })
+      .findOneAndUpdate({ _id: res._id }, { $set: { name: "jerry" } })
       .options({
         returnDocument: "after",
       })

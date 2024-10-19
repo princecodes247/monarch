@@ -1,26 +1,26 @@
-import type { FilterQuery } from "./collection/queries/expressions";
+import type { Filter } from "mongodb";
 import type { AnySchema } from "./schema/schema";
 import type { InferSchemaData } from "./schema/type-helpers";
 
 export function and<T extends AnySchema>(
-  ...expressions: FilterQuery<InferSchemaData<T>>[]
+  ...expressions: Filter<InferSchemaData<T>>[]
 ) {
   return { $and: expressions };
 }
 export function or<T extends AnySchema>(
-  ...expressions: FilterQuery<InferSchemaData<T>>[]
+  ...expressions: Filter<InferSchemaData<T>>[]
 ) {
   return { $or: expressions };
 }
 export function nor<T extends AnySchema>(
-  ...expressions: FilterQuery<InferSchemaData<T>>[]
+  ...expressions: Filter<InferSchemaData<T>>[]
 ) {
   return { $nor: expressions };
 }
 
 // Does not exist on root selector
 export function not<T extends AnySchema>(
-  expression: FilterQuery<InferSchemaData<T>>,
+  expression: Filter<InferSchemaData<T>>,
 ) {
   return { $not: expression };
 }

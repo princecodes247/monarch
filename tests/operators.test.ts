@@ -48,10 +48,9 @@ describe("Query operators", () => {
   });
 
   it("and operator", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const users = await collections.users
-      .find()
-      .where(
+      .find(
         and(
           {
             name: "anon",
@@ -70,10 +69,9 @@ describe("Query operators", () => {
   });
 
   it("or operator", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const users = await collections.users
-      .find()
-      .where(
+      .find(
         or(
           {
             name: "anon",
@@ -92,10 +90,9 @@ describe("Query operators", () => {
   });
 
   it("nor operator", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const users = await collections.users
-      .find()
-      .where(
+      .find(
         nor(
           {
             name: "anon",
@@ -111,10 +108,9 @@ describe("Query operators", () => {
   });
 
   it("eq operator", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const users = await collections.users
-      .find()
-      .where({
+      .find({
         name: eq("anon1"),
       })
       .exec();
@@ -123,10 +119,9 @@ describe("Query operators", () => {
   });
 
   it("ne operator", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const users = await collections.users
-      .find()
-      .where({
+      .find({
         name: neq("anon1"),
       })
       .exec();
@@ -135,10 +130,9 @@ describe("Query operators", () => {
   });
 
   it("gt operator", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const users = await collections.users
-      .find()
-      .where({
+      .find({
         age: gt(17),
       })
       .exec();
@@ -147,10 +141,9 @@ describe("Query operators", () => {
   });
 
   it("gte operator", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const users = await collections.users
-      .find()
-      .where({
+      .find({
         age: gte(17),
       })
       .exec();
@@ -161,10 +154,9 @@ describe("Query operators", () => {
   });
 
   it("lt operator", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const users = await collections.users
-      .find()
-      .where({
+      .find({
         age: lt(17),
       })
       .exec();
@@ -173,10 +165,9 @@ describe("Query operators", () => {
   });
 
   it("lte operator", async () => {
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const users = await collections.users
-      .find()
-      .where({
+      .find({
         age: lte(17),
       })
       .exec();
@@ -189,10 +180,9 @@ describe("Query operators", () => {
   it("in operator", async () => {
     const ageArray = [17];
 
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const users = await collections.users
-      .find()
-      .where({
+      .find({
         age: inArray(ageArray),
       })
       .exec();
@@ -205,10 +195,9 @@ describe("Query operators", () => {
   it("nin operator", async () => {
     const ageArray = [17, 20, 25];
 
-    await collections.users.insertMany().values(mockUsers).exec();
+    await collections.users.insertMany(mockUsers).exec();
     const users = await collections.users
-      .find()
-      .where({
+      .find({
         age: notInArray([17, 20, 25]),
         // age: 3
       })

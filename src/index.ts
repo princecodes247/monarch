@@ -2,6 +2,7 @@ export { createClient, createDatabase } from "./database";
 export { MonarchError, MonarchParseError } from "./errors";
 export { AnySchema, Schema, createSchema } from "./schema/schema";
 export { InferSchemaInput, InferSchemaOutput } from "./schema/type-helpers";
+export { Virtual, virtual } from "./schema/virtuals";
 export { array } from "./types/array";
 export { boolean } from "./types/boolean";
 export { createdAtDate, date, dateString, updatedAtDate } from "./types/date";

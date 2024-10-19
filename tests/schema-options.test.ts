@@ -2,6 +2,7 @@ import { MongoClient } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { boolean, createDatabase, createSchema, number, string } from "../src";
+import { virtual } from "../src/schema/virtuals";
 
 const server = await MongoMemoryServer.create();
 const client = new MongoClient(server.getUri());
@@ -30,17 +31,14 @@ describe("Schema options", () => {
     });
     const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users
-      .insert()
-      .values({
+      .insertOne({
         name: "tom",
         age: 0,
         isAdmin: true,
       })
       .exec();
-    const doc = await db.collections.users
-      .findOne()
-      .where({ _id: res._id })
-      .exec();
+    expect(res).toStrictEqual({ _id: res._id, name: "tom", age: 0 });
+    const doc = await db.collections.users.findOne({ _id: res._id }).exec();
     expect(doc).toStrictEqual({ _id: res._id, name: "tom", age: 0 });
   });
 
@@ -49,22 +47,18 @@ describe("Schema options", () => {
       name: string(),
       age: number(),
       isAdmin: boolean(),
-    }).virtuals((values) => ({
-      role: values.isAdmin ? "admin" : "user",
-    }));
+    }).virtuals({
+      role: virtual("isAdmin", ({ isAdmin }) => (isAdmin ? "admin" : "user")),
+    });
     const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users
-      .insert()
-      .values({
+      .insertOne({
         name: "tom cruise",
         age: 0,
         isAdmin: true,
       })
       .exec();
-    const doc = await db.collections.users
-      .findOne()
-      .where({ _id: res._id })
-      .exec();
+    const doc = await db.collections.users.findOne({ _id: res._id }).exec();
     expect(doc).toStrictEqual({
       _id: res._id,
       name: "tom cruise",
@@ -74,7 +68,7 @@ describe("Schema options", () => {
     });
   });
 
-  it("does not omit virtual fields", async () => {
+  it("omits virtual fields", async () => {
     const schema = createSchema("users", {
       name: string(),
       age: number(),
@@ -84,28 +78,23 @@ describe("Schema options", () => {
         // @ts-expect-error
         role: true,
       })
-      .virtuals((values) => ({
-        role: values.isAdmin ? "admin" : "user",
-      }));
+      .virtuals({
+        role: virtual("isAdmin", ({ isAdmin }) => (isAdmin ? "admin" : "user")),
+      });
     const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users
-      .insert()
-      .values({
+      .insertOne({
         name: "tom",
         age: 0,
         isAdmin: true,
       })
       .exec();
-    const doc = await db.collections.users
-      .findOne()
-      .where({ _id: res._id })
-      .exec();
+    const doc = await db.collections.users.findOne({ _id: res._id }).exec();
     expect(doc).toStrictEqual({
       _id: res._id,
       name: "tom",
       age: 0,
       isAdmin: true,
-      role: "admin",
     });
   });
 
@@ -118,26 +107,47 @@ describe("Schema options", () => {
       .omit({
         isAdmin: true,
       })
-      .virtuals((values) => ({
-        role: values.isAdmin !== undefined ? "known" : "unknown",
-      }));
+      .virtuals({
+        role: virtual("isAdmin", ({ isAdmin }) =>
+          isAdmin !== undefined ? "known" : "unknown",
+        ),
+      });
     const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users
-      .insert()
-      .values({
+      .insertOne({
         name: "tom",
         age: 0,
         isAdmin: true,
       })
       .exec();
-    const doc = await db.collections.users
-      .findOne()
-      .where({ _id: res._id })
-      .exec();
-    expect(doc).toStrictEqual({
+    expect(res).toStrictEqual({
       _id: res._id,
       name: "tom",
       age: 0,
+      role: "known",
+    });
+    const doc1 = await db.collections.users.findOne({ _id: res._id }).exec();
+    expect(doc1).toStrictEqual({
+      _id: res._id,
+      name: "tom",
+      age: 0,
+      role: "known",
+    });
+    const doc2 = await db.collections.users
+      .findOne({ _id: res._id })
+      .omit({ age: true, isAdmin: true })
+      .exec();
+    expect(doc2).toStrictEqual({
+      _id: res._id,
+      name: "tom",
+      role: "known",
+    });
+    const doc3 = await db.collections.users
+      .findOne({ _id: res._id })
+      .select({ role: true })
+      .exec();
+    expect(doc3).toStrictEqual({
+      _id: res._id,
       role: "known",
     });
   });
@@ -148,23 +158,19 @@ describe("Schema options", () => {
       age: number(),
       isAdmin: boolean(),
       role: number(), // manually added field to replace
-    }).virtuals((values) => ({
-      role: values.isAdmin ? "admin" : "user",
-    }));
+    }).virtuals({
+      role: virtual("isAdmin", ({ isAdmin }) => (isAdmin ? "admin" : "user")),
+    });
     const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users
-      .insert()
-      .values({
+      .insertOne({
         name: "tom",
         age: 0,
         isAdmin: true,
         role: 1,
       })
       .exec();
-    const doc = await db.collections.users
-      .findOne()
-      .where({ _id: res._id })
-      .exec();
+    const doc = await db.collections.users.findOne({ _id: res._id }).exec();
     expect(doc).toStrictEqual({
       _id: res._id,
       name: "tom",
@@ -185,13 +191,10 @@ describe("Schema options", () => {
       fullname: createIndex({ firstname: 1, surname: 1 }, { unique: true }),
     }));
     const db = createDatabase(client.db(), { users: schema });
-    // TODO: wait for indexes
-    await new Promise((res) => setTimeout(res, 100));
 
     // duplicate username
     await db.collections.users
-      .insert()
-      .values({
+      .insertOne({
         firstname: "bob",
         surname: "paul",
         username: "bobpaul",
@@ -200,8 +203,7 @@ describe("Schema options", () => {
       .exec();
     await expect(async () => {
       await db.collections.users
-        .insert()
-        .values({
+        .insertOne({
           firstname: "bobby",
           surname: "paul",
           username: "bobpaul",
@@ -212,8 +214,7 @@ describe("Schema options", () => {
 
     // duplicate firstname and lastname pair
     await db.collections.users
-      .insert()
-      .values({
+      .insertOne({
         firstname: "alice",
         surname: "wonder",
         username: "alicewonder",
@@ -222,8 +223,7 @@ describe("Schema options", () => {
       .exec();
     await expect(async () => {
       await db.collections.users
-        .insert()
-        .values({
+        .insertOne({
           firstname: "alice",
           surname: "wonder",
           username: "allywon",

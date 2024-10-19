@@ -1,10 +1,11 @@
-import type { Merge, Pretty, WithRequiredId } from "../type-helpers";
+import type { Projection } from "../collection/types/query-options";
+import { detectProjection } from "../collection/utils/projection";
+import type { Merge, Pretty, WithOptionalId } from "../type-helpers";
 import type {
   AnyMonarchRelationType,
   AnyMonarchRootType,
   AnyMonarchType,
 } from "../types/type";
-import type { InferTypeObjectOutput } from "../types/type-helpers";
 import {
   type Relations,
   RelationsProvider,
@@ -18,38 +19,38 @@ import type {
   SchemaIndex,
   UniqueIndex,
 } from "./type-helpers";
+import type { Virtual } from "./virtuals";
 
 type SchemaOmit<
-  T extends Record<string, AnyMonarchType>,
-  R extends Record<string, AnyMonarchRelationType>,
-> = { [K in keyof Merge<T, R>]?: true };
+  TTypes extends Record<string, AnyMonarchType>,
+  TRelations extends Record<string, AnyMonarchRelationType>,
+> = { [K in keyof Merge<WithOptionalId<TTypes>, TRelations>]?: true };
 
 type SchemaVirtuals<
-  T extends Record<string, AnyMonarchType>,
-  R extends Record<string, AnyMonarchRelationType>,
-  U extends Record<string, any>,
-> = (
-  values: Pretty<
-    WithRequiredId<Merge<InferTypeObjectOutput<T>, InferTypeObjectOutput<R>>>
+  TTypes extends Record<string, AnyMonarchType>,
+  TRelations extends Record<string, AnyMonarchRelationType>,
+  TVirtuals extends Record<
+    string,
+    Virtual<Merge<TTypes, TRelations>, any, any>
   >,
-) => U;
+> = TVirtuals;
 
 type SchemaIndexes<
-  T extends Record<string, AnyMonarchType>,
-  R extends Record<string, AnyMonarchRelationType>,
+  TTypes extends Record<string, AnyMonarchType>,
+  TRelations extends Record<string, AnyMonarchRelationType>,
 > = (options: {
-  createIndex: CreateIndex<Merge<T, R>>;
-  unique: UniqueIndex<Merge<T, R>>;
+  createIndex: CreateIndex<Merge<TTypes, TRelations>>;
+  unique: UniqueIndex<Merge<TTypes, TRelations>>;
 }) => {
-  [k: string]: SchemaIndex<Merge<T, R>>;
+  [k: string]: SchemaIndex<Merge<TTypes, TRelations>>;
 };
 
 export class Schema<
   TName extends string,
   TTypes extends Record<string, AnyMonarchType>,
-  TRelations extends SchemaRelationDef<TTypes>,
-  TVirtuals extends Record<string, any>,
-  TOmit extends SchemaOmit<TTypes, TRelations>,
+  TRelations extends SchemaRelationDef<TTypes> = {},
+  TOmit extends SchemaOmit<TTypes, TRelations> = {},
+  TVirtuals extends Record<string, Virtual<any, any, any>> = {},
 > {
   constructor(
     public name: TName,
@@ -84,19 +85,30 @@ export class Schema<
   public static fromData<T extends AnySchema>(
     schema: T,
     data: InferSchemaData<T>,
+    projection: Projection<InferSchemaOutput<T>>,
+    forceOmit: string[] | null,
   ) {
-    return schema.fromData(data);
+    return schema.fromData(data, projection, forceOmit);
   }
-  private fromData(data: InferSchemaData<this>): InferSchemaOutput<this> {
+  private fromData(
+    data: InferSchemaData<this>,
+    projection: Projection<InferSchemaOutput<this>>,
+    forceOmit: string[] | null,
+  ): InferSchemaOutput<this> {
     const output = data as unknown as InferSchemaOutput<this>;
-    // add virtual fields
-    const virtuals = this.options.virtuals?.({ ...data });
-    if (virtuals) Object.assign(output, virtuals);
-    // omit fields
-    if (this.options?.omit) {
-      for (const key of Object.keys(this.options.omit)) {
-        // skip omit on virtual fields
-        if (virtuals && key in virtuals) continue;
+    if (this.options.virtuals) {
+      const { isProjected } = detectProjection(projection);
+      for (const [key, virtual] of Object.entries(this.options.virtuals)) {
+        // skip omitted virtual field
+        if (isProjected(key)) {
+          // @ts-expect-error
+          output[key] = virtual.output(data);
+        }
+      }
+    }
+    // delete other fields that might have been added as input to a virtual or returned during insert
+    if (forceOmit) {
+      for (const key of forceOmit) {
         delete output[key as keyof InferSchemaOutput<this>];
       }
     }
@@ -111,8 +123,7 @@ export class Schema<
     // omit fields
     for (const [key, type] of Object.entries(this.types)) {
       if (type._updateFn) {
-        updates[key as keyof Partial<InferSchemaOutput<this>>] =
-          type._updateFn();
+        updates[key as keyof InferSchemaOutput<this>] = type._updateFn();
       }
     }
     return updates;
@@ -123,22 +134,25 @@ export class Schema<
       TName,
       TTypes,
       TRelations,
-      TVirtuals,
-      TOmit
+      TOmit,
+      TVirtuals
     >;
     schema.options.omit = omit;
     return schema;
   }
 
-  virtuals<TVirtuals extends Record<string, any>>(
-    virtuals: SchemaVirtuals<TTypes, TRelations, TVirtuals>,
-  ) {
+  virtuals<
+    TVirtuals extends Record<
+      string,
+      Virtual<Merge<TTypes, TRelations>, any, any>
+    >,
+  >(virtuals: SchemaVirtuals<TTypes, TRelations, TVirtuals>) {
     const schema = this as unknown as Schema<
       TName,
       TTypes,
       TRelations,
-      TVirtuals,
-      TOmit
+      TOmit,
+      TVirtuals
     >;
     schema.options.virtuals = virtuals;
     return schema;
@@ -156,8 +170,8 @@ export class Schema<
       TName,
       TTypes,
       Pretty<Merge<TRelations, T>>,
-      TVirtuals,
-      SchemaOmit<TTypes, Merge<TRelations, T>>
+      SchemaOmit<TTypes, Merge<TRelations, T>>,
+      TVirtuals
     >;
     schema.relations = {
       ...schema.relations,

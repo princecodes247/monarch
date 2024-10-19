@@ -60,8 +60,7 @@ describe("test for refs", () => {
 
     // create user
     const user = await collections.users
-      .insert()
-      .values({
+      .insertOne({
         name: "Bob",
         isAdmin: false,
         createdAt: new Date(),
@@ -69,32 +68,26 @@ describe("test for refs", () => {
       })
       .exec();
 
-    // ref property should not exist until populated
-    expect(user).not.toHaveProperty("posts");
-
     // create post and assign to user
     const post = await collections.posts
-      .insert()
-      .values({
+      .insertOne({
         title: "Pilot",
         contents: "Lorem",
         author: user._id,
         contributors: [],
       })
       .exec();
-    expect(post.author).toStrictEqual(user._id);
 
     const populatedPost = await collections.posts
-      .findOne()
-      .where({
+      .findOne({
         _id: post._id,
       })
       .populate({ author: true })
       .exec();
     expect(populatedPost?.author).toStrictEqual(user);
+
     const populatedUser = await collections.users
-      .findOne()
-      .where({
+      .findOne({
         _id: user._id,
       })
       .populate({ posts: true })

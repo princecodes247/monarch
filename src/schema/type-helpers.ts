@@ -1,9 +1,9 @@
 import type { CreateIndexesOptions, IndexDirection, ObjectId } from "mongodb";
 import type {
   IdFirst,
-  KnownObjectKeys,
   Merge,
   Pretty,
+  TrueKeys,
   WithOptionalId,
   WithRequiredId,
 } from "../type-helpers";
@@ -13,6 +13,7 @@ import type {
   InferTypeObjectOutput,
 } from "../types/type-helpers";
 import type { AnySchema, Schema } from "./schema";
+import type { InferVirtualOutput } from "./virtuals";
 
 export type InferSchemaInput<T extends AnySchema> = Pretty<
   WithOptionalId<
@@ -31,28 +32,23 @@ export type InferSchemaData<T extends AnySchema> = Pretty<
   >
 >;
 export type InferSchemaOutput<T extends AnySchema> = Pretty<
-  IdFirst<
-    Merge<
-      Omit<InferSchemaData<T>, InferSchemaOmit<T>>,
-      KnownObjectKeys<InferSchemaVirtuals<T>>
-    >
-  >
+  IdFirst<Merge<InferSchemaData<T>, InferVirtualOutput<InferSchemaVirtuals<T>>>>
 >;
-type InferSchemaOmit<T extends AnySchema> = T extends Schema<
+export type InferSchemaOmit<T extends AnySchema> = T extends Schema<
   any,
   any,
   any,
-  any,
-  infer Omit
->
-  ? keyof { [K in keyof Omit as Omit[K] extends true ? K : never]: unknown }
-  : never;
-type InferSchemaVirtuals<T extends AnySchema> = T extends Schema<
-  any,
-  any,
-  any,
-  infer Virtuals,
+  infer Omit,
   any
+>
+  ? TrueKeys<Omit>
+  : never;
+export type InferSchemaVirtuals<T extends AnySchema> = T extends Schema<
+  any,
+  any,
+  any,
+  any,
+  infer Virtuals
 >
   ? Virtuals
   : never;

@@ -2,6 +2,9 @@ import type { ObjectId } from "mongodb";
 
 export type Merge<First, Second> = Omit<First, keyof Second> & Second;
 export type Pretty<T> = { [K in keyof T]: T[K] } & {};
+export type TrueKeys<T> = keyof {
+  [K in keyof T as T[K] extends true ? K : never]: T[K];
+};
 export type KnownKey<T> = string extends T
   ? never
   : number extends T
