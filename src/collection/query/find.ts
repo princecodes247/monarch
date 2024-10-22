@@ -12,12 +12,14 @@ import type {
   InferSchemaOutput,
 } from "../../schema/type-helpers";
 import type { Pretty, TrueKeys } from "../../type-helpers";
+import { PipelineStage } from "../types/pipeline-stage";
 import type {
   BoolProjection,
   Projection,
   Sort,
   WithProjection,
 } from "../types/query-options";
+import { generatePopulatePipeline, generatePopulationMetas, getSortDirection } from "../utils/populate";
 import {
   addExtraInputsToProjection,
   makeProjection,
@@ -83,8 +85,16 @@ export class FindQuery<
     return this as FindQuery<T, InferSchemaOutput<T>>;
   }
 
+
   public async exec(): Promise<O[]> {
     await this._readyPromise;
+    if (Object.keys(this._population).length) {
+      return this._execWithPopulate();
+    }
+    return this._execWithoutPopulate();
+  }
+
+  private async _execWithoutPopulate(): Promise<O[]> {
     const extra = addExtraInputsToProjection(
       this._projection,
       this._schema.options.virtuals,
@@ -102,5 +112,41 @@ export class FindQuery<
       )
       .toArray();
     return res;
+  }
+
+  private async _execWithPopulate(): Promise<O[]> {
+    try {
+    const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
+      // @ts-expect-error
+      { $match: this._filter },
+    ];
+    for (const [relationKey, shouldPopulate] of Object.entries(this._population)) {
+      if (!shouldPopulate) continue;
+      const relation = this._schema.relations[relationKey];
+      pipeline.push(...generatePopulatePipeline(relation, relationKey))
+
+      pipeline.push(...generatePopulationMetas({
+        limit: this._options.limit,
+        skip: this._options.skip,
+        sort: getSortDirection(this._options.sort)
+      }));
+    }
+    const result = await this._collection.aggregate(pipeline).toArray();
+    return result.length > 0
+      ?  result.map(
+        (doc) =>
+          Schema.fromData(
+            this._schema,
+            doc as InferSchemaData<T>,
+            this._projection,
+            null,
+          ) as O,
+      )
+      : [];
+    } catch (error) {
+      console.error("Error executing population query:", error);
+      // throw new MonarchError("Error executing population query");
+      return [];
+    }
   }
 }

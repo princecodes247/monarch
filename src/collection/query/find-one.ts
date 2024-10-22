@@ -17,6 +17,7 @@ import type {
   Projection,
   WithProjection,
 } from "../types/query-options";
+import { generatePopulatePipeline } from "../utils/populate";
 import {
   addExtraInputsToProjection,
   makeProjection,
@@ -95,46 +96,18 @@ export class FindOneQuery<
   }
 
   private async _execWithPopulate(): Promise<O | null> {
+    try {
     const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
       // @ts-expect-error
       { $match: this._filter },
     ];
-    for (const [key, value] of Object.entries(this._population)) {
-      if (!value) continue;
-      const population = this._schema.relations[key];
-      const foreignCollectionName = population.target.name;
-      const foreignField = population.options.field;
-      const foreignFieldVariable = `monarch_${foreignField}_var`;
-      const foreignFieldData = `monarch_${key}_data`;
+    for (const [relationKey, shouldPopulate] of Object.entries(this._population)) {
+      if (!shouldPopulate) continue;
+      const relation = this._schema.relations[relationKey];
+      pipeline.push(...generatePopulatePipeline(relation, relationKey))
       pipeline.push({
-        $lookup: {
-          from: foreignCollectionName,
-          let: { [foreignFieldVariable]: `$${key}` },
-          pipeline: [
-            {
-              // @ts-expect-error
-              $match: {
-                $expr: {
-                  $eq: [`$${foreignField}`, `$$${foreignFieldVariable}`],
-                },
-              },
-            },
-          ],
-          as: foreignFieldData,
-        },
-      });
-      pipeline.push({ $unwind: `$${foreignFieldData}` }); // Unwind the populated field if it's an array
-      pipeline.push({
-        $unset: key,
-      });
-      pipeline.push({
-        $set: {
-          [key]: `$${foreignFieldData}`,
-        },
-      });
-      pipeline.push({
-        $unset: foreignFieldData,
-      });
+        $limit: 1
+      })
     }
     const result = await this._collection.aggregate(pipeline).toArray();
     return result.length > 0
@@ -145,5 +118,10 @@ export class FindOneQuery<
           null,
         ) as O)
       : null;
+    } catch (error) {
+      console.error("Error executing population query:", error);
+      // throw new MonarchError("Error executing population query");
+      return null;
+    }
   }
 }
