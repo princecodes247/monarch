@@ -1,20 +1,19 @@
 import { MonarchParseError } from "../errors";
-import { type AnyMonarchSubType, MonarchType, Scopes } from "./type";
+import { type AnyMonarchType, MonarchType } from "./type";
 import type {
   InferTypeTaggedUnionInput,
   InferTypeTaggedUnionOutput,
 } from "./type-helpers";
 
-export const taggedUnion = <T extends Record<string, AnyMonarchSubType>>(
+export const taggedUnion = <T extends Record<string, AnyMonarchType>>(
   variants: T,
 ) => new MonarchTaggedUnion(variants);
 
 export class MonarchTaggedUnion<
-  T extends Record<string, AnyMonarchSubType>,
+  T extends Record<string, AnyMonarchType>,
 > extends MonarchType<
   InferTypeTaggedUnionInput<T>,
-  InferTypeTaggedUnionOutput<T>,
-  typeof Scopes.Default
+  InferTypeTaggedUnionOutput<T>
 > {
   constructor(variants: T) {
     super((input) => {
@@ -53,6 +52,6 @@ export class MonarchTaggedUnion<
       throw new MonarchParseError(
         `expected 'object' received '${typeof input}'`,
       );
-    }, Scopes.Default);
+    });
   }
 }

@@ -1,14 +1,13 @@
 import { MonarchParseError } from "../errors";
-import { type AnyMonarchSubType, MonarchType, Scopes } from "./type";
+import { type AnyMonarchType, MonarchType } from "./type";
 import type { InferTypeInput, InferTypeOutput } from "./type-helpers";
 
-export const record = <T extends AnyMonarchSubType>(type: T) =>
+export const record = <T extends AnyMonarchType>(type: T) =>
   new MonarchRecord(type);
 
-export class MonarchRecord<T extends AnyMonarchSubType> extends MonarchType<
+export class MonarchRecord<T extends AnyMonarchType> extends MonarchType<
   Record<string, InferTypeInput<T>>,
-  Record<string, InferTypeOutput<T>>,
-  typeof Scopes.Default
+  Record<string, InferTypeOutput<T>>
 > {
   constructor(type: T) {
     super((input) => {
@@ -29,6 +28,6 @@ export class MonarchRecord<T extends AnyMonarchSubType> extends MonarchType<
       throw new MonarchParseError(
         `expected 'object' received '${typeof input}'`,
       );
-    }, Scopes.Default);
+    });
   }
 }

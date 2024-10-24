@@ -1,12 +1,12 @@
 import { MonarchParseError } from "../errors";
-import { MonarchType, Scopes } from "./type";
+import { MonarchType } from "./type";
 
 export const literal = <T extends string | number | boolean>(...values: T[]) =>
   new MonarchLiteral(values);
 
 export class MonarchLiteral<
   T extends string | number | boolean,
-> extends MonarchType<T, T, typeof Scopes.Default> {
+> extends MonarchType<T, T> {
   constructor(values: T[]) {
     super((input) => {
       const _values = new Set(values);
@@ -14,6 +14,6 @@ export class MonarchLiteral<
       throw new MonarchParseError(
         `unknown value '${input}', literal may only specify known values`,
       );
-    }, Scopes.Default);
+    });
   }
 }

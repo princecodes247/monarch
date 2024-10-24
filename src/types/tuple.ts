@@ -1,20 +1,16 @@
 import { MonarchParseError } from "../errors";
-import { type AnyMonarchSubType, MonarchType, Scopes } from "./type";
+import { type AnyMonarchType, MonarchType } from "./type";
 import type { InferTypeTupleInput, InferTypeTupleOutput } from "./type-helpers";
 
-export const tuple = <T extends [AnyMonarchSubType, ...AnyMonarchSubType[]]>(
+export const tuple = <T extends [AnyMonarchType, ...AnyMonarchType[]]>(
   types: T,
 ) => {
   return new MonarchTuple(types);
 };
 
 export class MonarchTuple<
-  T extends [AnyMonarchSubType, ...AnyMonarchSubType[]],
-> extends MonarchType<
-  InferTypeTupleInput<T>,
-  InferTypeTupleOutput<T>,
-  typeof Scopes.Default
-> {
+  T extends [AnyMonarchType, ...AnyMonarchType[]],
+> extends MonarchType<InferTypeTupleInput<T>, InferTypeTupleOutput<T>> {
   constructor(types: T) {
     super((input) => {
       if (Array.isArray(input)) {
@@ -41,6 +37,6 @@ export class MonarchTuple<
       throw new MonarchParseError(
         `expected 'array' received '${typeof input}'`,
       );
-    }, Scopes.Default);
+    });
   }
 }

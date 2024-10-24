@@ -2,14 +2,13 @@ import { type MonarchType, type as monarchType } from "../types/type";
 import type { InferRelationInput, InferRelationOutput } from "./type-helpers";
 
 export abstract class MonarchRelation<TInput, TOutput> {
-  constructor(public type: MonarchType<TInput, TOutput, any>) {}
+  constructor(public type: MonarchType<TInput, TOutput>) {}
 
   public nullable() {
     return new MonarchNullableRelation(
       this.type as MonarchType<
         InferRelationInput<this>,
-        InferRelationOutput<this>,
-        any
+        InferRelationOutput<this>
       >,
     );
   }
@@ -18,8 +17,7 @@ export abstract class MonarchRelation<TInput, TOutput> {
     return new MonarchOptionalRelation(
       this.type as MonarchType<
         InferRelationInput<this>,
-        InferRelationOutput<this>,
-        any
+        InferRelationOutput<this>
       >,
     );
   }
@@ -32,7 +30,7 @@ export class MonarchNullableRelation<
   InferRelationOutput<T> | null
 > {
   constructor(
-    type: MonarchType<InferRelationInput<T>, InferRelationOutput<T>, any>,
+    type: MonarchType<InferRelationInput<T>, InferRelationOutput<T>>,
   ) {
     super(
       monarchType((input) => {
@@ -50,7 +48,7 @@ export class MonarchOptionalRelation<
   InferRelationOutput<T> | undefined
 > {
   constructor(
-    type: MonarchType<InferRelationInput<T>, InferRelationOutput<T>, any>,
+    type: MonarchType<InferRelationInput<T>, InferRelationOutput<T>>,
   ) {
     super(
       monarchType((input) => {

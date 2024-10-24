@@ -3,7 +3,7 @@ import { detectProjection } from "../collection/utils/projection";
 import type { AnyMonarchRelation, MonarchRelation } from "../relations/base";
 import { type Relations, relations } from "../relations/relations";
 import type { Merge, Pretty, WithOptionalId } from "../type-helpers";
-import type { AnyMonarchRootType, AnyMonarchType } from "../types/type";
+import type { AnyMonarchType } from "../types/type";
 import type { InferTypeOutput } from "../types/type-helpers";
 import type {
   CreateIndex,
@@ -203,7 +203,7 @@ export class Schema<
 
 export function createSchema<
   TName extends string,
-  TTypes extends Record<string, AnyMonarchRootType>,
+  TTypes extends Record<string, AnyMonarchType>,
 >(name: TName, types: TTypes): Schema<TName, TTypes, {}, {}, {}> {
   return new Schema(name, types, {}, {});
 }
