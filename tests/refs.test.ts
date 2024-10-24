@@ -34,6 +34,7 @@ describe("test for refs", () => {
       name: string(),
       isAdmin: boolean(),
       createdAt: date(),
+      maybe: string().optional(),
     });
     const _PostSchema = createSchema("posts", {
       title: string(),
@@ -41,16 +42,14 @@ describe("test for refs", () => {
       author: objectId(),
     });
 
-    const UserSchema = _UserSchema.withRelations(({ one, ref }) => ({
-      tutor: one(_UserSchema, { field: "_id" }).nullable(),
-      posts: ref(_PostSchema, {
-        field: "author",
-        references: "_id",
-      }),
+    const UserSchema = _UserSchema.relations(({ one, ref }) => ({
+      tutor: one(_UserSchema, "_id").optional(),
+      posts: ref(_PostSchema, "author", "_id"),
     }));
-    const PostSchema = _PostSchema.withRelations(({ one, many }) => ({
-      author: one(_UserSchema, { field: "_id" }),
-      contributors: many(_UserSchema, { field: "_id" }),
+    const PostSchema = _PostSchema.relations(({ one, many }) => ({
+      author: one(_UserSchema, "_id"),
+      editor: one(_UserSchema, "_id"),
+      contributors: many(_UserSchema, "_id"),
     }));
 
     const { collections } = createDatabase(client.db(), {
@@ -64,7 +63,6 @@ describe("test for refs", () => {
         name: "Bob",
         isAdmin: false,
         createdAt: new Date(),
-        tutor: null,
       })
       .exec();
 
@@ -74,6 +72,7 @@ describe("test for refs", () => {
         title: "Pilot",
         contents: "Lorem",
         author: user._id,
+        editor: user._id,
         contributors: [],
       })
       .exec();
@@ -84,6 +83,8 @@ describe("test for refs", () => {
       })
       .populate({ author: true })
       .exec();
+    expect(populatedPost?.editor).toStrictEqual(user._id);
+    expect(populatedPost?.contributors).toStrictEqual([]);
     expect(populatedPost?.author).toStrictEqual(user);
 
     const populatedUser = await collections.users

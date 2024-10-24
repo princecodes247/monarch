@@ -2,12 +2,11 @@ import { MonarchParseError } from "../errors";
 import type { InferTypeInput, InferTypeOutput } from "./type-helpers";
 
 export type Parser<Input, Output> = (input: Input) => Output;
-export type Scope = Record<"sub" | "root" | "relation", boolean>;
+export type Scope = Record<"sub" | "root", boolean>;
 export const Scopes = {
-  Default: { sub: true, root: true, relation: false },
-  RootOnly: { sub: false, root: true, relation: false },
-  SubOnly: { sub: true, root: false, relation: false },
-  Relation: { sub: false, root: true, relation: true },
+  Default: { root: true, sub: true },
+  RootOnly: { root: true, sub: false },
+  SubOnly: { root: true, sub: false },
 } satisfies Record<string, Scope>;
 
 export function applyParser<Input, InterOutput, Output>(
@@ -17,8 +16,9 @@ export function applyParser<Input, InterOutput, Output>(
   return (input) => parser(prevParser(input));
 }
 
-export const type = <TInput, TOutput>(parser: Parser<TInput, TOutput>) =>
-  new MonarchType(parser, Scopes.Default);
+export const type = <TInput, TOutput = TInput>(
+  parser: Parser<TInput, TOutput>,
+) => new MonarchType(parser, Scopes.Default);
 
 export class MonarchType<TInput, TOutput, TScope extends Scope> {
   constructor(
@@ -143,18 +143,6 @@ export class MonarchOptional<
   }
 }
 
-export class MonarchPhantom<
-  THide extends { input: boolean; output: boolean },
-  TScope extends Scope,
-> extends MonarchType<undefined, undefined, TScope> {
-  constructor(
-    public hide: THide,
-    scope: TScope,
-  ) {
-    super((input) => input, scope);
-  }
-}
-
 export class MonarchDefaulted<
   T extends AnyMonarchType,
   TScope extends Scope,
@@ -192,14 +180,10 @@ export type AnyMonarchType<TInput = any, TOutput = TInput> = MonarchType<
 export type AnyMonarchSubType<TInput = any, TOutput = TInput> = MonarchType<
   TInput,
   TOutput,
-  { sub: true; root: any; relation: any }
+  { sub: true; root: any }
 >;
 export type AnyMonarchRootType<TInput = any, TOutput = TInput> = MonarchType<
   TInput,
   TOutput,
-  { sub: any; root: true; relation: any }
+  { sub: any; root: true }
 >;
-export type AnyMonarchRelationType<
-  TInput = any,
-  TOutput = TInput,
-> = MonarchType<TInput, TOutput, { sub: any; root: any; relation: true }>;

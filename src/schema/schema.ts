@@ -1,34 +1,36 @@
 import type { Projection } from "../collection/types/query-options";
 import { detectProjection } from "../collection/utils/projection";
+import type { AnyMonarchRelation, MonarchRelation } from "../relations/base";
+import { type Relations, relations } from "../relations/relations";
 import type { Merge, Pretty, WithOptionalId } from "../type-helpers";
-import type {
-  AnyMonarchRelationType,
-  AnyMonarchRootType,
-  AnyMonarchType,
-} from "../types/type";
-import {
-  type Relations,
-  RelationsProvider,
-  type SchemaRelationDef,
-} from "./refs";
+import type { AnyMonarchRootType, AnyMonarchType } from "../types/type";
+import type { InferTypeOutput } from "../types/type-helpers";
 import type {
   CreateIndex,
   InferSchemaData,
   InferSchemaInput,
   InferSchemaOutput,
+  InferSchemaRelations,
+  InferSchemaTypes,
   SchemaIndex,
   UniqueIndex,
 } from "./type-helpers";
 import type { Virtual } from "./virtuals";
 
+type SchemaRelation<T extends Record<string, AnyMonarchType>> = {
+  [k: string]: AnyMonarchRelation;
+} & {
+  [K in keyof T]?: MonarchRelation<any, InferTypeOutput<T[K]>>;
+};
+
 type SchemaOmit<
   TTypes extends Record<string, AnyMonarchType>,
-  TRelations extends Record<string, AnyMonarchRelationType>,
+  TRelations extends Record<string, AnyMonarchRelation>,
 > = { [K in keyof Merge<WithOptionalId<TTypes>, TRelations>]?: true };
 
 type SchemaVirtuals<
   TTypes extends Record<string, AnyMonarchType>,
-  TRelations extends Record<string, AnyMonarchRelationType>,
+  TRelations extends Record<string, AnyMonarchRelation>,
   TVirtuals extends Record<
     string,
     Virtual<Merge<TTypes, TRelations>, any, any>
@@ -37,7 +39,7 @@ type SchemaVirtuals<
 
 type SchemaIndexes<
   TTypes extends Record<string, AnyMonarchType>,
-  TRelations extends Record<string, AnyMonarchRelationType>,
+  TRelations extends Record<string, AnyMonarchRelation>,
 > = (options: {
   createIndex: CreateIndex<Merge<TTypes, TRelations>>;
   unique: UniqueIndex<Merge<TTypes, TRelations>>;
@@ -48,20 +50,30 @@ type SchemaIndexes<
 export class Schema<
   TName extends string,
   TTypes extends Record<string, AnyMonarchType>,
-  TRelations extends SchemaRelationDef<TTypes> = {},
+  TRelations extends SchemaRelation<TTypes> = {},
   TOmit extends SchemaOmit<TTypes, TRelations> = {},
   TVirtuals extends Record<string, Virtual<any, any, any>> = {},
 > {
   constructor(
     public name: TName,
-    public types: TTypes,
-    public relations: TRelations,
+    private _types: TTypes,
+    private _relations: TRelations,
     public options: {
       omit?: SchemaOmit<TTypes, TRelations>;
       virtuals?: SchemaVirtuals<TTypes, TRelations, TVirtuals>;
       indexes?: SchemaIndexes<TTypes, TRelations>;
     },
   ) {}
+
+  public static types<T extends AnySchema>(schema: T): InferSchemaTypes<T> {
+    return schema._types;
+  }
+
+  public static relations<T extends AnySchema>(
+    schema: T,
+  ): InferSchemaRelations<T> {
+    return schema._relations;
+  }
 
   public static toData<T extends AnySchema>(
     schema: T,
@@ -74,10 +86,18 @@ export class Schema<
     // @ts-ignore
     if (input._id) data._id = input._id;
     // parse fields
-    for (const [key, type] of Object.entries(this.types)) {
-      data[key as keyof typeof data] = type._parser(
+    for (const [key, type] of Object.entries(Schema.types(this))) {
+      const parsed = type._parser(input[key as keyof InferSchemaInput<this>]);
+      if (parsed === undefined) continue;
+      data[key as keyof typeof data] = parsed;
+    }
+    // add and optionally override with relation types
+    for (const [key, relation] of Object.entries(Schema.relations(this))) {
+      const parsed = relation.type._parser(
         input[key as keyof InferSchemaInput<this>],
       );
+      if (parsed === undefined) continue;
+      data[key as keyof typeof data] = parsed;
     }
     return data;
   }
@@ -121,7 +141,7 @@ export class Schema<
   private getFieldUpdates(): Partial<InferSchemaOutput<this>> {
     const updates = {} as Partial<InferSchemaOutput<this>>;
     // omit fields
-    for (const [key, type] of Object.entries(this.types)) {
+    for (const [key, type] of Object.entries(Schema.types(this))) {
       if (type._updateFn) {
         updates[key as keyof InferSchemaOutput<this>] = type._updateFn();
       }
@@ -163,7 +183,7 @@ export class Schema<
     return this;
   }
 
-  withRelations<T extends SchemaRelationDef<TTypes>>(
+  relations<T extends SchemaRelation<TTypes>>(
     fn: (relations: Relations<this>) => T,
   ) {
     const schema = this as unknown as Schema<
@@ -173,9 +193,9 @@ export class Schema<
       SchemaOmit<TTypes, Merge<TRelations, T>>,
       TVirtuals
     >;
-    schema.relations = {
-      ...schema.relations,
-      ...fn(new RelationsProvider(this)),
+    schema._relations = {
+      ...schema._relations,
+      ...fn(relations(this)),
     };
     return schema;
   }
@@ -190,7 +210,7 @@ export function createSchema<
 
 export function makeIndexes<
   T extends Record<string, AnyMonarchType>,
-  R extends Record<string, AnyMonarchRelationType>,
+  R extends Record<string, AnyMonarchRelation>,
 >(indexesFn: SchemaIndexes<T, R>) {
   return indexesFn({
     createIndex: (fields, options) => [fields, options],

@@ -3,7 +3,8 @@ import type {
   FindOptions,
   Collection as MongoCollection,
 } from "mongodb";
-import type { SchemaRelationSelect } from "../../schema/refs";
+import { MonarchOne } from "../../relations/one";
+import type { SchemaRelationSelect } from "../../relations/type-helpers";
 import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
@@ -101,41 +102,44 @@ export class FindOneQuery<
     ];
     for (const [key, value] of Object.entries(this._population)) {
       if (!value) continue;
-      const population = this._schema.relations[key];
-      const foreignCollectionName = population.target.name;
-      const foreignField = population.options.field;
-      const foreignFieldVariable = `monarch_${foreignField}_var`;
-      const foreignFieldData = `monarch_${key}_data`;
-      pipeline.push({
-        $lookup: {
-          from: foreignCollectionName,
-          let: { [foreignFieldVariable]: `$${key}` },
-          pipeline: [
-            {
-              // @ts-expect-error
-              $match: {
-                $expr: {
-                  $eq: [`$${foreignField}`, `$$${foreignFieldVariable}`],
+      const relation = Schema.relations(this._schema)[key];
+      if (relation instanceof MonarchOne) {
+        const foreignCollectionName = relation._target.name;
+        const foreignField = relation._field;
+        const foreignFieldVariable = `monarch_${foreignField}_var`;
+        const foreignFieldData = `monarch_${key}_data`;
+        pipeline.push({
+          $lookup: {
+            from: foreignCollectionName,
+            let: { [foreignFieldVariable]: `$${key}` },
+            pipeline: [
+              {
+                // @ts-expect-error
+                $match: {
+                  $expr: {
+                    $eq: [`$${foreignField}`, `$$${foreignFieldVariable}`],
+                  },
                 },
               },
-            },
-          ],
-          as: foreignFieldData,
-        },
-      });
-      pipeline.push({ $unwind: `$${foreignFieldData}` }); // Unwind the populated field if it's an array
-      pipeline.push({
-        $unset: key,
-      });
-      pipeline.push({
-        $set: {
-          [key]: `$${foreignFieldData}`,
-        },
-      });
-      pipeline.push({
-        $unset: foreignFieldData,
-      });
+            ],
+            as: foreignFieldData,
+          },
+        });
+        pipeline.push({ $unwind: `$${foreignFieldData}` }); // Unwind the populated field if it's an array
+        pipeline.push({
+          $unset: key,
+        });
+        pipeline.push({
+          $set: {
+            [key]: `$${foreignFieldData}`,
+          },
+        });
+        pipeline.push({
+          $unset: foreignFieldData,
+        });
+      }
     }
+
     const result = await this._collection.aggregate(pipeline).toArray();
     return result.length > 0
       ? (Schema.fromData(

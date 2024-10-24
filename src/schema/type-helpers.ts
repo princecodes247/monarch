@@ -1,5 +1,9 @@
 import type { CreateIndexesOptions, IndexDirection, ObjectId } from "mongodb";
 import type {
+  InferRelationObjectInput,
+  InferRelationObjectOutput,
+} from "../relations/type-helpers";
+import type {
   IdFirst,
   Merge,
   Pretty,
@@ -18,22 +22,41 @@ import type { InferVirtualOutput } from "./virtuals";
 export type InferSchemaInput<T extends AnySchema> = Pretty<
   WithOptionalId<
     Merge<
-      InferTypeObjectInput<T["types"]>,
-      InferTypeObjectInput<T["relations"]>
+      InferTypeObjectInput<InferSchemaTypes<T>>,
+      InferRelationObjectInput<InferSchemaRelations<T>>
     >
   >
 >;
 export type InferSchemaData<T extends AnySchema> = Pretty<
   WithRequiredId<
     Merge<
-      InferTypeObjectOutput<T["types"]>,
-      InferTypeObjectOutput<T["relations"]>
+      InferTypeObjectOutput<InferSchemaTypes<T>>,
+      InferRelationObjectOutput<InferSchemaRelations<T>>
     >
   >
 >;
 export type InferSchemaOutput<T extends AnySchema> = Pretty<
   IdFirst<Merge<InferSchemaData<T>, InferVirtualOutput<InferSchemaVirtuals<T>>>>
 >;
+
+export type InferSchemaTypes<T extends AnySchema> = T extends Schema<
+  any,
+  infer TTypes,
+  any,
+  any,
+  any
+>
+  ? TTypes
+  : never;
+export type InferSchemaRelations<T extends AnySchema> = T extends Schema<
+  any,
+  any,
+  infer TRelations,
+  any,
+  any
+>
+  ? TRelations
+  : never;
 export type InferSchemaOmit<T extends AnySchema> = T extends Schema<
   any,
   any,
