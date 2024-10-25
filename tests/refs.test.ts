@@ -160,7 +160,6 @@ describe("Tests for refs population", () => {
       .find()
       .populate({ contributors: true })
       .exec();
-      populatedPosts[0].contributors
 
     expect(populatedUsers.length).toBe(2);
     // expect(populatedUsers[0].posts.length).toBe(2);

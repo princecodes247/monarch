@@ -105,11 +105,10 @@ export class FindOneQuery<
       if (!shouldPopulate) continue;
       const relation = Schema.relations(this._schema)[relationKey]
       pipeline.push(...generatePopulatePipeline(relation, relationKey))
-      pipeline.push({
-        $limit: 1
-      })
-      ;
     }
+    pipeline.push({
+      $limit: 1
+    })
 
     const result = await this._collection.aggregate(pipeline).toArray();
     return result.length > 0
