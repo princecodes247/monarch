@@ -5,7 +5,7 @@ import {
 } from "../schema/schema";
 import type { InferSchemaData, InferSchemaTypes } from "../schema/type-helpers";
 import { objectId } from "../types/objectId";
-import { applyParser } from "../types/type";
+import { pipeParser } from "../types/type";
 import { MonarchRelation } from "./base";
 import type { SchemaInputWithId, SchemaRelatableField } from "./type-helpers";
 
@@ -31,7 +31,7 @@ export class MonarchOne<
     }
     // if field type is duplicated in current schema, validate first and pass the output to the target schema
     if (_field in schemaTypes) {
-      type = applyParser(schemaTypes[_field], type);
+      type = pipeParser(schemaTypes[_field], type);
     }
     super(type);
   }

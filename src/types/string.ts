@@ -1,5 +1,5 @@
 import { MonarchParseError } from "../errors";
-import { MonarchType, applyParser } from "./type";
+import { MonarchType, pipeParser } from "./type";
 
 export const string = () => new MonarchString();
 
@@ -15,13 +15,13 @@ export class MonarchString extends MonarchType<string, string> {
 
   public lowercase() {
     const clone = new MonarchString();
-    clone._parser = applyParser(this._parser, (input) => input.toLowerCase());
+    clone._parser = pipeParser(this._parser, (input) => input.toLowerCase());
     return clone;
   }
 
   public uppercase() {
     const clone = new MonarchString();
-    clone._parser = applyParser(this._parser, (input) => input.toUpperCase());
+    clone._parser = pipeParser(this._parser, (input) => input.toUpperCase());
     return clone;
   }
 }

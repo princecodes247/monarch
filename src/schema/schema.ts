@@ -142,8 +142,8 @@ export class Schema<
     const updates = {} as Partial<InferSchemaOutput<this>>;
     // omit fields
     for (const [key, type] of Object.entries(Schema.types(this))) {
-      if (type._updateFn) {
-        updates[key as keyof InferSchemaOutput<this>] = type._updateFn();
+      if (type._updater) {
+        updates[key as keyof InferSchemaOutput<this>] = type._updater();
       }
     }
     return updates;

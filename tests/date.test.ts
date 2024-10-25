@@ -40,7 +40,7 @@ describe("test for date", () => {
     await mongod.stop();
   });
 
-  it("insert's date object and find's it", async () => {
+  it("inserts date object and finds it", async () => {
     const UserSchema = createSchema("users", {
       currentDate: date(),
     });
@@ -74,7 +74,7 @@ describe("test for date", () => {
     );
   });
 
-  it("insert's date string and find's it", async () => {
+  it("inserts date string and finds it", async () => {
     const UserSchema = createSchema("users", {
       currentDate: dateString(),
     });

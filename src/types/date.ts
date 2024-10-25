@@ -1,5 +1,5 @@
 import { MonarchParseError } from "../errors";
-import { MonarchDefaulted, MonarchType, applyParser } from "./type";
+import { MonarchDefaulted, MonarchType, pipeParser } from "./type";
 
 export const date = () => new MonarchDate();
 
@@ -13,7 +13,7 @@ export class MonarchDate extends MonarchType<Date, string> {
 
   public after(date: Date) {
     const clone = new MonarchDate();
-    clone._parser = applyParser((input) => {
+    clone._parser = pipeParser((input) => {
       if (input > date) return input;
       throw new MonarchParseError(`date must be after ${date}`);
     }, this._parser);
@@ -36,7 +36,8 @@ export const createdAtDate = () => new MonarchCreatedAtDate();
 
 export class MonarchCreatedAtDate extends MonarchDefaulted<MonarchDate> {
   constructor() {
-    super(() => new Date(), new MonarchDate()._parser);
+    const base = new MonarchDate();
+    super(() => new Date(), base._parser);
   }
 }
 
@@ -44,7 +45,11 @@ export const updatedAtDate = () => new MonarchUpdatedAtDate();
 
 export class MonarchUpdatedAtDate extends MonarchDefaulted<MonarchDate> {
   constructor() {
-    super(() => new Date(), new MonarchDate()._parser);
-    this._updateFn = () => this._parser(new Date());
+    const base = new MonarchDate();
+    super(
+      () => new Date(),
+      base._parser,
+      () => base._parser(new Date()),
+    );
   }
 }
