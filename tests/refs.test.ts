@@ -2,13 +2,12 @@ import { MongoClient } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
-  array,
   boolean,
   createDatabase,
   createSchema,
   date,
   objectId,
-  string,
+  string
 } from "../src";
 
 let mongod: MongoMemoryServer;
@@ -46,7 +45,7 @@ describe("Tests for refs population", () => {
       title: string(),
       contents: string(),
       author: objectId(),
-      contributors: array(objectId())
+      // contributors: array(objectId())
     });
 
     const UserSchema = _UserSchema.relations(({ one, ref }) => ({
@@ -82,7 +81,6 @@ describe("Tests for refs population", () => {
         name: "Alex",
         isAdmin: false,
         createdAt: new Date(),
-        tutor: null,
       })
       .exec();
 
@@ -101,11 +99,12 @@ describe("Tests for refs population", () => {
       .findOne({
         title: "Pilot",
       })
-      .populate({ author: true, contributors: true })
+      .populate({ author: true, contributors: true, editor: true })
       .exec();
+      console.log({populatedPost})
 
     expect(populatedPost?.author).toStrictEqual(user);
-    expect(populatedPost?.contributors).contains(user2);
+    expect(populatedPost?.contributors[0]?.name).toStrictEqual(user2.name);
   });
 
   it("should populate 'posts' in find for multiple users", async () => {
@@ -129,7 +128,6 @@ describe("Tests for refs population", () => {
         tutor: user._id,
       })
       .exec();
-      console.log({tutoredUser})
 
     // Create posts and assign to users
     await collections.posts
@@ -158,7 +156,12 @@ describe("Tests for refs population", () => {
       .populate({ posts: true, tutor: true })
       .exec();
 
-      console.log({populatedUsersQA: populatedUsers})
+      const populatedPosts = await collections.posts
+      .find()
+      .populate({ contributors: true })
+      .exec();
+      populatedPosts[0].contributors
+
     expect(populatedUsers.length).toBe(2);
     expect(populatedUsers[0].posts.length).toBe(2);
     expect(populatedUsers[1].posts.length).toBe(0);

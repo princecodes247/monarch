@@ -122,15 +122,14 @@ export class FindQuery<
     ];
     for (const [relationKey, shouldPopulate] of Object.entries(this._population)) {
       if (!shouldPopulate) continue;
-      const relation = this._schema.relations[relationKey];
+      const relation = Schema.relations(this._schema)[relationKey]
       pipeline.push(...generatePopulatePipeline(relation, relationKey))
-
-      pipeline.push(...generatePopulationMetas({
-        limit: this._options.limit,
-        skip: this._options.skip,
-        sort: getSortDirection(this._options.sort)
-      }));
     }
+    pipeline.push(...generatePopulationMetas({
+      limit: this._options.limit,
+      skip: this._options.skip,
+      sort: this._options.sort ? getSortDirection(this._options.sort) : undefined
+    }));
     const result = await this._collection.aggregate(pipeline).toArray();
     return result.length > 0
       ?  result.map(

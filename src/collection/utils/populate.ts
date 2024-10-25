@@ -1,36 +1,22 @@
 import { Sort as MongoSort } from "mongodb";
-import { MonarchMany, MonarchRef } from "../../types/refs";
+import { MonarchMany } from "../../relations/many";
+import { MonarchRef } from "../../relations/ref";
 import { PipelineStage } from "../types/pipeline-stage";
 
 
 export const generatePopulatePipeline = (relation: any, relationKey: string): PipelineStage<any>[] => {
 
   if(!relation) return []
-  const foreignField = relation.options?.field;
-  const target = relation.options?.references  
-  const collectionName = relation.target?.name
-  // console.log({
-  //   options: relation.options,
-  //   target: relation.target,
-  // })
-  if(!target || !collectionName) return []
-
+  const collectionName = relation._target?.name
+  
+  if(!collectionName) return []
+  const type = inferRelationType(relation)
+  
+  const foreignField = relation._field;
   const fieldVariable = `monarch_${relationKey}_${foreignField}_var`
   const fieldData = `monarch_${relationKey}_data`
-  const type = inferRelationType(relation)
-
+  const target = relation._references
   const pipeline: PipelineStage<any>[] = [];
-
-  // console.log({
-  //   // relation,
-  //   fieldVariable,
-  //   opts: {
-  //     from: collectionName,
-  //     localField: relationKey,
-  //     foreignField: "_id",
-  //     as: relationKey,
-  //   },
-  // });
 
   if (type === "many") {
     // Lookup for "many" relations
@@ -88,15 +74,13 @@ export const generatePopulationMetas = ({
   skip,
   limit
 }: {
-  sort?: Record<string, 1 | -1 | Meta>,
+  sort?: Record<string, 1 | Meta | -1>,
   skip?: number,
   limit?: number
 }) => {
   const metas: PipelineStage<any>[] = [];
   if (sort) {
-    metas.push({ $sort: {
-      anyone: 1
-    } });
+    metas.push({ $sort: sort });
   }
   if (skip !== undefined) {
     metas.push({ $skip: skip });
@@ -107,7 +91,7 @@ export const generatePopulationMetas = ({
   return metas;
 };
 
-type Meta = { $meta: string }; // Define the Meta type based on your specific use case
+type Meta = { $meta: any };
 
 
 export const getSortDirection = (
@@ -122,10 +106,6 @@ export const getSortDirection = (
 
     for (const key in order) {
       const value = order[key as keyof typeof order];
-
-
-  
-
  
       if (value === "asc" || value === "ascending" || value === 1) {
         sortDirections[key] = 1;
