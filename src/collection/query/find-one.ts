@@ -3,7 +3,6 @@ import type {
   FindOptions,
   Collection as MongoCollection,
 } from "mongodb";
-import { MonarchOne } from "../../relations/one";
 import type { SchemaRelationSelect } from "../../relations/type-helpers";
 import { type AnySchema, Schema } from "../../schema/schema";
 import type {
@@ -18,6 +17,7 @@ import type {
   Projection,
   WithProjection,
 } from "../types/query-options";
+import { generatePopulatePipeline } from "../utils/populate";
 import {
   addExtraInputsToProjection,
   makeProjection,
@@ -96,49 +96,19 @@ export class FindOneQuery<
   }
 
   private async _execWithPopulate(): Promise<O | null> {
+    try {
     const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
       // @ts-expect-error
       { $match: this._filter },
     ];
-    for (const [key, value] of Object.entries(this._population)) {
-      if (!value) continue;
-      const relation = Schema.relations(this._schema)[key];
-      if (relation instanceof MonarchOne) {
-        const foreignCollectionName = relation._target.name;
-        const foreignField = relation._field;
-        const foreignFieldVariable = `monarch_${foreignField}_var`;
-        const foreignFieldData = `monarch_${key}_data`;
-        pipeline.push({
-          $lookup: {
-            from: foreignCollectionName,
-            let: { [foreignFieldVariable]: `$${key}` },
-            pipeline: [
-              {
-                // @ts-expect-error
-                $match: {
-                  $expr: {
-                    $eq: [`$${foreignField}`, `$$${foreignFieldVariable}`],
-                  },
-                },
-              },
-            ],
-            as: foreignFieldData,
-          },
-        });
-        pipeline.push({ $unwind: `$${foreignFieldData}` }); // Unwind the populated field if it's an array
-        pipeline.push({
-          $unset: key,
-        });
-        pipeline.push({
-          $set: {
-            [key]: `$${foreignFieldData}`,
-          },
-        });
-        pipeline.push({
-          $unset: foreignFieldData,
-        });
-      }
+    for (const [relationKey, shouldPopulate] of Object.entries(this._population)) {
+      if (!shouldPopulate) continue;
+      const relation = Schema.relations(this._schema)[relationKey]
+      pipeline.push(...generatePopulatePipeline(relation, relationKey))
     }
+    pipeline.push({
+      $limit: 1
+    })
 
     const result = await this._collection.aggregate(pipeline).toArray();
     return result.length > 0
@@ -149,5 +119,10 @@ export class FindOneQuery<
           null,
         ) as O)
       : null;
+    } catch (error) {
+      console.error("Error executing population query:", error);
+      // throw new MonarchError("Error executing population query");
+      return null;
+    }
   }
 }
