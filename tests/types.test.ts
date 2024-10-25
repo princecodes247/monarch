@@ -67,7 +67,7 @@ describe("Types", () => {
       age: numberString().optional(),
     });
     const data1 = Schema.toData(schema1, {});
-    expect(data1).toStrictEqual({ age: undefined });
+    expect(data1).toStrictEqual({});
 
     // transform is applied when value is not undefined
     const schema2 = createSchema("users", {

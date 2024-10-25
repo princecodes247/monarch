@@ -3,7 +3,7 @@ import type {
   FindOptions,
   Collection as MongoCollection,
 } from "mongodb";
-import type { SchemaRelationSelect } from "../../schema/refs";
+import type { SchemaRelationSelect } from "../../relations/type-helpers";
 import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
@@ -103,12 +103,14 @@ export class FindOneQuery<
     ];
     for (const [relationKey, shouldPopulate] of Object.entries(this._population)) {
       if (!shouldPopulate) continue;
-      const relation = this._schema.relations[relationKey];
+      const relation = Schema.relations(this._schema)[relationKey]
       pipeline.push(...generatePopulatePipeline(relation, relationKey))
       pipeline.push({
         $limit: 1
       })
+      ;
     }
+
     const result = await this._collection.aggregate(pipeline).toArray();
     return result.length > 0
       ? (Schema.fromData(

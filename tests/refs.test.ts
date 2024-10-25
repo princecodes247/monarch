@@ -39,7 +39,8 @@ describe("Tests for refs population", () => {
       name: string(),
       isAdmin: boolean(),
       createdAt: date(),
-      tutor: objectId().nullable(),
+      tutor: objectId().optional(),
+      maybe: string().optional(),
     });
     const _PostSchema = createSchema("posts", {
       title: string(),
@@ -48,17 +49,14 @@ describe("Tests for refs population", () => {
       contributors: array(objectId())
     });
 
-    // Define relations
-    const UserSchema = _UserSchema.withRelations(({ one, ref }) => ({
-      tutor: one(_UserSchema, { field: "_id" }).nullable(),
-      posts: ref(_PostSchema, {
-        field: "author",
-        references: "_id",
-      }),
+    const UserSchema = _UserSchema.relations(({ one, ref }) => ({
+      tutor: one(_UserSchema, "_id").optional(),
+      posts: ref(_PostSchema, "author", "_id"),
     }));
-    const PostSchema = _PostSchema.withRelations(({ one, many }) => ({
-      author: one(_UserSchema, { field: "_id" }),
-      contributors: many(_UserSchema, { field: "_id" }),
+    const PostSchema = _PostSchema.relations(({ one, many }) => ({
+      author: one(_UserSchema, "_id"),
+      editor: one(_UserSchema, "_id"),
+      contributors: many(_UserSchema, "_id"),
     }));
 
     // Create database collections
@@ -76,7 +74,6 @@ describe("Tests for refs population", () => {
         name: "Bob",
         isAdmin: false,
         createdAt: new Date(),
-        tutor: null,
       })
       .exec();
 
@@ -94,6 +91,7 @@ describe("Tests for refs population", () => {
         title: "Pilot",
         contents: "Lorem",
         author: user._id,
+        editor: user._id,
         contributors: [user2._id],
       })
       .exec();
@@ -119,7 +117,7 @@ describe("Tests for refs population", () => {
         name: "Bob",
         isAdmin: false,
         createdAt: new Date(),
-        tutor: null,
+        tutor: undefined,
       })
       .exec();
 
@@ -139,6 +137,7 @@ describe("Tests for refs population", () => {
         title: "Pilot",
         contents: "Lorem",
         author: user._id,
+        editor: user._id,
         contributors: [tutoredUser._id],
       })
       .exec();
@@ -148,6 +147,7 @@ describe("Tests for refs population", () => {
         title: "Pilot 2",
         contents: "Lorem2",
         author: user._id,
+        editor: user._id,
         contributors: [],
       })
       .exec();

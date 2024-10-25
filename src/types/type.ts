@@ -1,43 +1,39 @@
 import { MonarchParseError } from "../errors";
 import type { InferTypeInput, InferTypeOutput } from "./type-helpers";
 
-export type Parser<Input, Output> = (input: Input) => Output;
-export type Scope = Record<"sub" | "root" | "relation", boolean>;
-export const Scopes = {
-  Default: { sub: true, root: true, relation: false },
-  RootOnly: { sub: false, root: true, relation: false },
-  SubOnly: { sub: true, root: false, relation: false },
-  Relation: { sub: false, root: true, relation: true },
-} satisfies Record<string, Scope>;
+export const phantom: unique symbol = Symbol("monarch phantom");
+export type MonarchPhantom = typeof phantom;
 
-export function applyParser<Input, InterOutput, Output>(
+export type Parser<Input, Output> = (input: Input) => Output;
+
+export function pipeParser<Input, InterOutput, Output>(
   prevParser: Parser<Input, InterOutput>,
-  parser: Parser<InterOutput, Output>,
+  nextParser: Parser<InterOutput, Output>,
 ): Parser<Input, Output> {
-  return (input) => parser(prevParser(input));
+  return (input) => nextParser(prevParser(input));
 }
 
-export const type = <TInput, TOutput>(parser: Parser<TInput, TOutput>) =>
-  new MonarchType(parser, Scopes.Default);
+export const type = <TInput, TOutput = TInput>(
+  parser: Parser<TInput, TOutput>,
+) => new MonarchType(parser);
 
-export class MonarchType<TInput, TOutput, TScope extends Scope> {
+export class MonarchType<TInput, TOutput> {
   constructor(
     public _parser: Parser<TInput, TOutput>,
-    public _scope: TScope,
+    public readonly _updater?: Parser<void, TOutput>,
   ) {}
-  public _updateFn: (() => TOutput) | null = null;
 
   public nullable() {
     return new MonarchNullable(
       this._parser as Parser<InferTypeInput<this>, InferTypeOutput<this>>,
-      this._scope,
+      this._updater as Parser<void, InferTypeOutput<this>>,
     );
   }
 
   public optional() {
     return new MonarchOptional(
       this._parser as Parser<InferTypeInput<this>, InferTypeOutput<this>>,
-      this._scope,
+      this._updater as Parser<void, InferTypeOutput<this>>,
     );
   }
 
@@ -45,18 +41,16 @@ export class MonarchType<TInput, TOutput, TScope extends Scope> {
     return new MonarchDefaulted(
       defaultInput as InferTypeInput<this> | (() => InferTypeInput<this>),
       this._parser as Parser<InferTypeInput<this>, InferTypeOutput<this>>,
-      this._scope,
+      this._updater as Parser<void, InferTypeOutput<this>>,
     );
   }
 
   public onUpdate(updateFn: () => TInput) {
-    const clone = type(this._parser);
-    clone._updateFn = () => this._parser(updateFn());
-    return clone;
+    return new MonarchType(this._parser, pipeParser(updateFn, this._parser));
   }
 
-  public pipe<T extends AnyMonarchType>(type: T) {
-    return new MonarchPipe(this, type, this._scope);
+  public pipe<T extends AnyMonarchType<TOutput, any>>(type: T) {
+    return new MonarchPipe(this, type);
   }
 
   /**
@@ -66,7 +60,10 @@ export class MonarchType<TInput, TOutput, TScope extends Scope> {
    * @param fn function that returns a transformed input.
    */
   public transform<TTransformOutput>(fn: (input: TOutput) => TTransformOutput) {
-    return new MonarchType(applyParser(this._parser, fn), this._scope);
+    return new MonarchType(
+      pipeParser(this._parser, fn),
+      this._updater && pipeParser(this._updater, fn),
+    );
   }
 
   /**
@@ -78,12 +75,12 @@ export class MonarchType<TInput, TOutput, TScope extends Scope> {
    */
   public validate(fn: (input: TOutput) => boolean, message: string) {
     return new MonarchType(
-      applyParser(this._parser, (input) => {
+      pipeParser(this._parser, (input) => {
         const valid = fn(input);
         if (!valid) throw new MonarchParseError(message);
         return input;
       }),
-      this._scope,
+      this._updater,
     );
   }
 }
@@ -91,82 +88,53 @@ export class MonarchType<TInput, TOutput, TScope extends Scope> {
 export class MonarchPipe<
   TPipeIn extends AnyMonarchType,
   TPipeOut extends AnyMonarchType<InferTypeOutput<TPipeIn>, any>,
-  TScope extends Scope,
-> extends MonarchType<
-  InferTypeInput<TPipeIn>,
-  InferTypeOutput<TPipeOut>,
-  TScope
-> {
-  constructor(pipeIn: TPipeIn, pipeOut: TPipeOut, scope: TScope) {
-    super((input) => {
-      const parsedInput = pipeIn._parser(input);
-      return pipeOut._parser(parsedInput);
-    }, scope);
+> extends MonarchType<InferTypeInput<TPipeIn>, InferTypeOutput<TPipeOut>> {
+  constructor(pipeIn: TPipeIn, pipeOut: TPipeOut) {
+    super(
+      pipeParser(pipeIn._parser, pipeOut._parser),
+      pipeIn._updater && pipeParser(pipeIn._updater, pipeOut._parser),
+    );
   }
 }
 
-export class MonarchNullable<
-  T extends AnyMonarchType,
-  TScope extends Scope,
-> extends MonarchType<
+export class MonarchNullable<T extends AnyMonarchType> extends MonarchType<
   InferTypeInput<T> | null,
-  InferTypeOutput<T> | null,
-  TScope
+  InferTypeOutput<T> | null
 > {
   constructor(
     parser: Parser<InferTypeInput<T>, InferTypeOutput<T>>,
-    scope: TScope,
+    updater?: Parser<void, InferTypeOutput<T>>,
   ) {
     super((input) => {
       if (input === null) return null;
       return parser(input);
-    }, scope);
+    }, updater);
   }
 }
 
-export class MonarchOptional<
-  T extends AnyMonarchType,
-  TScope extends Scope,
-> extends MonarchType<
+export class MonarchOptional<T extends AnyMonarchType> extends MonarchType<
   InferTypeInput<T> | undefined,
-  InferTypeOutput<T> | undefined,
-  TScope
+  InferTypeOutput<T> | undefined
 > {
   constructor(
     parser: Parser<InferTypeInput<T>, InferTypeOutput<T>>,
-    scope: TScope,
+    updater?: Parser<void, InferTypeOutput<T>>,
   ) {
     super((input) => {
       if (input === undefined) return undefined;
       return parser(input);
-    }, scope);
+    }, updater);
   }
 }
 
-export class MonarchPhantom<
-  THide extends { input: boolean; output: boolean },
-  TScope extends Scope,
-> extends MonarchType<undefined, undefined, TScope> {
-  constructor(
-    public hide: THide,
-    scope: TScope,
-  ) {
-    super((input) => input, scope);
-  }
-}
-
-export class MonarchDefaulted<
-  T extends AnyMonarchType,
-  TScope extends Scope,
-> extends MonarchType<
+export class MonarchDefaulted<T extends AnyMonarchType> extends MonarchType<
   InferTypeInput<T> | undefined,
-  InferTypeOutput<T>,
-  TScope
+  InferTypeOutput<T>
 > {
   constructor(
     defaultInput: InferTypeInput<T> | (() => InferTypeInput<T>),
     parser: Parser<InferTypeInput<T>, InferTypeOutput<T>>,
-    scope: TScope,
+    updater?: Parser<void, InferTypeOutput<T>>,
   ) {
     super((input) => {
       if (input === undefined) {
@@ -176,7 +144,7 @@ export class MonarchDefaulted<
         return parser(defaultValue);
       }
       return parser(input);
-    }, scope);
+    }, updater);
   }
 
   private static isDefaultFunction<T>(val: unknown): val is () => T {
@@ -186,20 +154,5 @@ export class MonarchDefaulted<
 
 export type AnyMonarchType<TInput = any, TOutput = TInput> = MonarchType<
   TInput,
-  TOutput,
-  any
+  TOutput
 >;
-export type AnyMonarchSubType<TInput = any, TOutput = TInput> = MonarchType<
-  TInput,
-  TOutput,
-  { sub: true; root: any; relation: any }
->;
-export type AnyMonarchRootType<TInput = any, TOutput = TInput> = MonarchType<
-  TInput,
-  TOutput,
-  { sub: any; root: true; relation: any }
->;
-export type AnyMonarchRelationType<
-  TInput = any,
-  TOutput = TInput,
-> = MonarchType<TInput, TOutput, { sub: any; root: any; relation: true }>;
