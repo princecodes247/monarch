@@ -1,14 +1,13 @@
 import { MonarchParseError } from "../errors";
-import { type AnyMonarchSubType, MonarchType, Scopes } from "./type";
+import { type AnyMonarchType, MonarchType } from "./type";
 import type { InferTypeInput, InferTypeOutput } from "./type-helpers";
 
-export const array = <T extends AnyMonarchSubType>(type: T) =>
+export const array = <T extends AnyMonarchType>(type: T) =>
   new MonarchArray(type);
 
-export class MonarchArray<T extends AnyMonarchSubType> extends MonarchType<
+export class MonarchArray<T extends AnyMonarchType> extends MonarchType<
   InferTypeInput<T>[],
-  InferTypeOutput<T>[],
-  typeof Scopes.Default
+  InferTypeOutput<T>[]
 > {
   constructor(type: T) {
     super((input) => {
@@ -31,6 +30,6 @@ export class MonarchArray<T extends AnyMonarchSubType> extends MonarchType<
       throw new MonarchParseError(
         `expected 'array' received '${typeof input}'`,
       );
-    }, Scopes.Default);
+    });
   }
 }

@@ -4,7 +4,7 @@ import type {
   Collection as MongoCollection,
   WithoutId,
 } from "mongodb";
-import type { SchemaRelationSelect } from "../../schema/refs";
+import type { SchemaRelationSelect } from "../../relations/type-helpers";
 import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,

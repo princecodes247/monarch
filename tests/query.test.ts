@@ -1,7 +1,22 @@
 import { MongoClient, ObjectId } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { boolean, createDatabase, createSchema, number, string } from "../src";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+import {
+  boolean,
+  createDatabase,
+  createSchema,
+  number,
+  string,
+  type,
+} from "../src";
 import { mockUsers } from "./mock";
 
 const mongod = await MongoMemoryServer.create();
@@ -473,6 +488,197 @@ describe("Query methods Tests", () => {
       name: "jerry",
       age: 100,
       isAdmin: true,
+    });
+  });
+
+  it("updates with transform", async () => {
+    let nonce = 1;
+    const onUpdateTrap = vi.fn(() => nonce++);
+    const transformTrap = vi.fn((val: number) => String(val));
+    const schema = createSchema("users", {
+      name: string(),
+      nonce: number().onUpdate(onUpdateTrap).transform(transformTrap),
+    });
+    const db = createDatabase(client.db(), { users: schema });
+    const res = await db.collections.users
+      .insertOne({
+        name: "tom",
+        nonce: 0,
+      })
+      .exec();
+    expect(onUpdateTrap).toBeCalledTimes(0);
+    expect(transformTrap).toBeCalledTimes(1);
+    expect(res).toStrictEqual({ _id: res._id, name: "tom", nonce: "0" });
+
+    const updatedDoc = await db.collections.users
+      .findOneAndUpdate({ _id: res._id }, { $set: { name: "jerry" } })
+      .options({
+        returnDocument: "after",
+      })
+      .exec();
+    expect(onUpdateTrap).toBeCalledTimes(1);
+    expect(transformTrap).toBeCalledTimes(2);
+    expect(updatedDoc).toStrictEqual({
+      _id: res._id,
+      name: "jerry",
+      nonce: "1",
+    });
+  });
+
+  it("updates with validate", async () => {
+    let nonce = 1;
+    const onUpdateTrap = vi.fn(() => nonce++);
+    const schema = createSchema("users", {
+      name: string(),
+      nonce: number()
+        .onUpdate(onUpdateTrap)
+        .validate(() => true, ""),
+    });
+    const db = createDatabase(client.db(), { users: schema });
+    const res = await db.collections.users
+      .insertOne({
+        name: "tom",
+        nonce: 0,
+      })
+      .exec();
+    expect(onUpdateTrap).toBeCalledTimes(0);
+    expect(res).toStrictEqual({ _id: res._id, name: "tom", nonce: 0 });
+
+    const updatedDoc = await db.collections.users
+      .findOneAndUpdate({ _id: res._id }, { $set: { name: "jerry" } })
+      .options({
+        returnDocument: "after",
+      })
+      .exec();
+    expect(onUpdateTrap).toBeCalledTimes(1);
+    expect(updatedDoc).toStrictEqual({
+      _id: res._id,
+      name: "jerry",
+      nonce: 1,
+    });
+  });
+
+  it("updates with optional", async () => {
+    let nonce = 1;
+    const onUpdateTrap = vi.fn(() => nonce++);
+    const schema = createSchema("users", {
+      name: string(),
+      nonce: number().onUpdate(onUpdateTrap).optional(),
+    });
+    const db = createDatabase(client.db(), { users: schema });
+    const res = await db.collections.users
+      .insertOne({
+        name: "tom",
+      })
+      .exec();
+    expect(onUpdateTrap).toBeCalledTimes(0);
+    expect(res).toStrictEqual({ _id: res._id, name: "tom" });
+
+    const updatedDoc = await db.collections.users
+      .findOneAndUpdate({ _id: res._id }, { $set: { name: "jerry" } })
+      .options({
+        returnDocument: "after",
+      })
+      .exec();
+    expect(onUpdateTrap).toBeCalledTimes(1);
+    expect(updatedDoc).toStrictEqual({
+      _id: res._id,
+      name: "jerry",
+      nonce: 1,
+    });
+  });
+
+  it("updates with nullable", async () => {
+    let nonce = 1;
+    const onUpdateTrap = vi.fn(() => nonce++);
+    const schema = createSchema("users", {
+      name: string(),
+      nonce: number().onUpdate(onUpdateTrap).nullable(),
+    });
+    const db = createDatabase(client.db(), { users: schema });
+    const res = await db.collections.users
+      .insertOne({
+        name: "tom",
+        nonce: null,
+      })
+      .exec();
+    expect(onUpdateTrap).toBeCalledTimes(0);
+    expect(res).toStrictEqual({ _id: res._id, name: "tom", nonce: null });
+
+    const updatedDoc = await db.collections.users
+      .findOneAndUpdate({ _id: res._id }, { $set: { name: "jerry" } })
+      .options({
+        returnDocument: "after",
+      })
+      .exec();
+    expect(onUpdateTrap).toBeCalledTimes(1);
+    expect(updatedDoc).toStrictEqual({
+      _id: res._id,
+      name: "jerry",
+      nonce: 1,
+    });
+  });
+
+  it("updates with defaulted", async () => {
+    let nonce = 1;
+    const onUpdateTrap = vi.fn(() => nonce++);
+    const schema = createSchema("users", {
+      name: string(),
+      nonce: number().onUpdate(onUpdateTrap).default(0),
+    });
+    const db = createDatabase(client.db(), { users: schema });
+    const res = await db.collections.users
+      .insertOne({
+        name: "tom",
+      })
+      .exec();
+    expect(onUpdateTrap).toBeCalledTimes(0);
+    expect(res).toStrictEqual({ _id: res._id, name: "tom", nonce: 0 });
+
+    const updatedDoc = await db.collections.users
+      .findOneAndUpdate({ _id: res._id }, { $set: { name: "jerry" } })
+      .options({
+        returnDocument: "after",
+      })
+      .exec();
+    expect(onUpdateTrap).toBeCalledTimes(1);
+    expect(updatedDoc).toStrictEqual({
+      _id: res._id,
+      name: "jerry",
+      nonce: 1,
+    });
+  });
+
+  it("updates with pipe", async () => {
+    let nonce = 1;
+    const onUpdateTrap = vi.fn(() => nonce++);
+    const schema = createSchema("users", {
+      name: string(),
+      nonce: type((input: number) => String(input))
+        .onUpdate(onUpdateTrap)
+        .pipe(string()),
+    });
+    const db = createDatabase(client.db(), { users: schema });
+    const res = await db.collections.users
+      .insertOne({
+        name: "tom",
+        nonce: 0,
+      })
+      .exec();
+    expect(onUpdateTrap).toBeCalledTimes(0);
+    expect(res).toStrictEqual({ _id: res._id, name: "tom", nonce: "0" });
+
+    const updatedDoc = await db.collections.users
+      .findOneAndUpdate({ _id: res._id }, { $set: { name: "jerry" } })
+      .options({
+        returnDocument: "after",
+      })
+      .exec();
+    expect(onUpdateTrap).toBeCalledTimes(1);
+    expect(updatedDoc).toStrictEqual({
+      _id: res._id,
+      name: "jerry",
+      nonce: "1",
     });
   });
 });
