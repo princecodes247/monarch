@@ -1,6 +1,6 @@
 import type { AnySchema, AnySchemaWithoutRelations } from "../schema/schema";
 import type { InferSchemaData } from "../schema/type-helpers";
-import { type as monarchType } from "../types/type";
+import { type } from "../types/type";
 import { MonarchRelation } from "./base";
 import type { SchemaRelatableField } from "./type-helpers";
 
@@ -16,6 +16,6 @@ export class MonarchRef<
     public _field: TField,
     public _references: TReferences,
   ) {
-    super(monarchType(() => undefined));
+    super(type(() => undefined));
   }
 }
