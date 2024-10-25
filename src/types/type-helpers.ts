@@ -1,5 +1,5 @@
 import type { Pretty } from "../type-helpers";
-import type { AnyMonarchType, MonarchType } from "./type";
+import type { AnyMonarchType, MonarchPhantom, MonarchType } from "./type";
 
 export type InferTypeInput<T> = T extends MonarchType<infer U, any> ? U : never;
 export type InferTypeOutput<T> = T extends MonarchType<any, infer U>
@@ -14,13 +14,17 @@ export type InferTypeObjectInput<T extends Record<string, AnyMonarchType>> =
         : K]: InferTypeInput<T[K]>; // required keys
     } & {
       [K in keyof T as undefined extends InferTypeInput<T[K]>
-        ? K
+        ? InferTypeOutput<T[K]> extends MonarchPhantom
+          ? never
+          : K
         : never]?: InferTypeInput<T[K]>; // optional keys
     }
   >;
 export type InferTypeObjectOutput<T extends Record<string, AnyMonarchType>> =
   Pretty<{
-    [K in keyof T]: InferTypeOutput<T[K]>;
+    [K in keyof T as InferTypeOutput<T[K]> extends MonarchPhantom
+      ? never
+      : K]: InferTypeOutput<T[K]>;
   }>;
 
 export type InferTypeTupleInput<

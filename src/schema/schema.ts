@@ -3,7 +3,7 @@ import { detectProjection } from "../collection/utils/projection";
 import type { AnyMonarchRelation, MonarchRelation } from "../relations/base";
 import { type Relations, relations } from "../relations/relations";
 import type { Merge, Pretty, WithOptionalId } from "../type-helpers";
-import type { AnyMonarchType } from "../types/type";
+import { type AnyMonarchType, phantom } from "../types/type";
 import type { InferTypeOutput } from "../types/type-helpers";
 import type {
   CreateIndex,
@@ -88,7 +88,7 @@ export class Schema<
     // parse fields
     for (const [key, type] of Object.entries(Schema.types(this))) {
       const parsed = type._parser(input[key as keyof InferSchemaInput<this>]);
-      if (parsed === undefined) continue;
+      if (parsed === undefined || parsed === phantom) continue;
       data[key as keyof typeof data] = parsed;
     }
     // add and optionally override with relation types
@@ -96,7 +96,7 @@ export class Schema<
       const parsed = relation.type._parser(
         input[key as keyof InferSchemaInput<this>],
       );
-      if (parsed === undefined) continue;
+      if (parsed === undefined || parsed === phantom) continue;
       data[key as keyof typeof data] = parsed;
     }
     return data;
