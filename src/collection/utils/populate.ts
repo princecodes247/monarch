@@ -1,21 +1,22 @@
-import { Sort as MongoSort } from "mongodb";
+import type { Sort as MongoSort } from "mongodb";
 import { MonarchMany } from "../../relations/many";
 import { MonarchRef } from "../../relations/ref";
-import { PipelineStage } from "../types/pipeline-stage";
+import type { PipelineStage } from "../types/pipeline-stage";
 
+export const generatePopulatePipeline = (
+  relation: any,
+  relationKey: string,
+): PipelineStage<any>[] => {
+  if (!relation) return [];
+  const collectionName = relation._target?.name;
 
-export const generatePopulatePipeline = (relation: any, relationKey: string): PipelineStage<any>[] => {
+  if (!collectionName) return [];
+  const type = inferRelationType(relation);
 
-  if(!relation) return []
-  const collectionName = relation._target?.name
-  
-  if(!collectionName) return []
-  const type = inferRelationType(relation)
-  
   const foreignField = relation._field;
-  const fieldVariable = `monarch_${relationKey}_${foreignField}_var`
-  const fieldData = `monarch_${relationKey}_data`
-  const target = relation._references
+  const fieldVariable = `monarch_${relationKey}_${foreignField}_var`;
+  const fieldData = `monarch_${relationKey}_data`;
+  const target = relation._references;
   const pipeline: PipelineStage<any>[] = [];
 
   if (type === "many") {
@@ -54,29 +55,29 @@ export const generatePopulatePipeline = (relation: any, relationKey: string): Pi
 
     // Replace the original field with the populated data
     pipeline.push(
-      { $unset: relationKey }, 
+      { $unset: relationKey },
       { $set: { [relationKey]: `$${fieldData}` } }, // Set the populated data
-      { $unset: fieldData } // Clean up the temp fieldData
+      { $unset: fieldData }, // Clean up the temp fieldData
     );
   }
 
   return pipeline;
 };
 
-export const inferRelationType = (relation: any): 'many' | 'ref' | 'single' => {
-  if (relation instanceof MonarchMany) return 'many';
-  if (relation instanceof MonarchRef) return 'ref';
-  return 'single';
-}
+export const inferRelationType = (relation: any): "many" | "ref" | "single" => {
+  if (relation instanceof MonarchMany) return "many";
+  if (relation instanceof MonarchRef) return "ref";
+  return "single";
+};
 
 export const generatePopulationMetas = ({
   sort,
   skip,
-  limit
+  limit,
 }: {
-  sort?: Record<string, 1 | Meta | -1>,
-  skip?: number,
-  limit?: number
+  sort?: Record<string, 1 | Meta | -1>;
+  skip?: number;
+  limit?: number;
 }) => {
   const metas: PipelineStage<any>[] = [];
   if (sort) {
@@ -93,26 +94,22 @@ export const generatePopulationMetas = ({
 
 type Meta = { $meta: any };
 
-
 export const getSortDirection = (
-  order?: MongoSort
+  order?: MongoSort,
 ): Record<string, 1 | -1 | Meta> => {
- 
-
-
   // Handle Record<string, SortDirection>
   if (typeof order === "object" && order !== null) {
     const sortDirections: Record<string, 1 | -1 | Meta> = {};
 
     for (const key in order) {
       const value = order[key as keyof typeof order];
- 
+
       if (value === "asc" || value === "ascending" || value === 1) {
         sortDirections[key] = 1;
       } else if (value === "desc" || value === "descending" || value === -1) {
         sortDirections[key] = -1;
       } else {
-        sortDirections[key] = value as Meta
+        sortDirections[key] = value as Meta;
       }
     }
     return sortDirections;
@@ -120,4 +117,3 @@ export const getSortDirection = (
 
   return {};
 };
-

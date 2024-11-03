@@ -97,28 +97,30 @@ export class FindOneQuery<
 
   private async _execWithPopulate(): Promise<O | null> {
     try {
-    const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
-      // @ts-expect-error
-      { $match: this._filter },
-    ];
-    for (const [relationKey, shouldPopulate] of Object.entries(this._population)) {
-      if (!shouldPopulate) continue;
-      const relation = Schema.relations(this._schema)[relationKey]
-      pipeline.push(...generatePopulatePipeline(relation, relationKey))
-    }
-    pipeline.push({
-      $limit: 1
-    })
+      const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
+        // @ts-expect-error
+        { $match: this._filter },
+      ];
+      for (const [relationKey, shouldPopulate] of Object.entries(
+        this._population,
+      )) {
+        if (!shouldPopulate) continue;
+        const relation = Schema.relations(this._schema)[relationKey];
+        pipeline.push(...generatePopulatePipeline(relation, relationKey));
+      }
+      pipeline.push({
+        $limit: 1,
+      });
 
-    const result = await this._collection.aggregate(pipeline).toArray();
-    return result.length > 0
-      ? (Schema.fromData(
-          this._schema,
-          result[0] as InferSchemaData<T>,
-          this._projection,
-          null,
-        ) as O)
-      : null;
+      const result = await this._collection.aggregate(pipeline).toArray();
+      return result.length > 0
+        ? (Schema.fromData(
+            this._schema,
+            result[0] as InferSchemaData<T>,
+            this._projection,
+            null,
+          ) as O)
+        : null;
     } catch (error) {
       console.error("Error executing population query:", error);
       // throw new MonarchError("Error executing population query");

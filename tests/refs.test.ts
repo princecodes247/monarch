@@ -7,7 +7,7 @@ import {
   createSchema,
   date,
   objectId,
-  string
+  string,
 } from "../src";
 
 let mongod: MongoMemoryServer;
@@ -76,7 +76,7 @@ describe("Tests for refs population", () => {
       })
       .exec();
 
-      const user2 = await collections.users
+    const user2 = await collections.users
       .insertOne({
         name: "Alex",
         isAdmin: false,
@@ -101,7 +101,7 @@ describe("Tests for refs population", () => {
       })
       .populate({ author: true, contributors: true, editor: true })
       .exec();
-      // console.log({populatedPost})
+    // console.log({populatedPost})
 
     expect(populatedPost?.author).toStrictEqual(user);
     // expect(populatedPost?.contributors[0]?.name).toStrictEqual(user2.name);
@@ -156,7 +156,7 @@ describe("Tests for refs population", () => {
       .populate({ posts: true, tutor: true })
       .exec();
 
-      const populatedPosts = await collections.posts
+    const populatedPosts = await collections.posts
       .find()
       .populate({ contributors: true })
       .exec();
