@@ -443,3 +443,33 @@ await collections.notifications.insert().values({ notification: {
   },
 } }).exec();
 ```
+
+
+### Union
+
+The `union()` type allows you to define a field that can accept multiple different types. It's useful when a field can legitimately contain values of different types. Each type provided to `union()` acts as a possible variant for the field.
+
+```typescript - union()
+
+const MilfSchema = createSchema("milf", {
+  phoneOrEmail: union(string(), number()),
+});
+
+// Output Type : { 
+//   phoneOrEmail: string | number
+// }
+```
+
+
+### Mixed
+
+### Mixed
+
+The `mixed()` type allows you to define a field that can accept any type of value. This is useful when you need maximum flexibility for a field's contents. However, use it sparingly as it bypasses TypeScript's type checking.
+
+```typescript - mixed()
+
+const AnythingSchema = createSchema("help", {
+  anything: mixed(),
+});
+```
