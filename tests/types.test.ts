@@ -5,6 +5,7 @@ import {
   boolean,
   createSchema,
   literal,
+  mixed,
   number,
   object,
   record,
@@ -12,6 +13,7 @@ import {
   taggedUnion,
   tuple,
   type,
+  union,
 } from "../src";
 
 const numberString = () => type<number, `${number}`>((input) => `${input}`);
@@ -360,4 +362,53 @@ describe("Types", () => {
       color: { tag: "hsl", value: "000" },
     });
   });
+
+  test("union", () => {
+    const schema = createSchema("milf", {
+      emailOrPhone: union(string(), number()),
+    });
+
+    // @ts-expect-error
+    expect(() => Schema.toData(schema, { emailOrPhone: {} })).toThrowError(
+      "no matching variant found for union type",
+    );
+    // @ts-expect-error
+    expect(() => Schema.toData(schema, { emailOrPhone: [] })).toThrowError(
+      "no matching variant found for union type",
+    );
+    // @ts-expect-error
+    expect(() => Schema.toData(schema, { emailOrPhone: null })).toThrowError(
+      "no matching variant found for union type",
+    );
+
+    const data1 = Schema.toData(schema, { emailOrPhone: "test" });
+    expect(data1).toStrictEqual({ emailOrPhone: "test" });
+
+    const data2 = Schema.toData(schema, { emailOrPhone: 42 });
+    expect(data2).toStrictEqual({ emailOrPhone: 42 });
+  });
+});
+
+test("mixed", () => {
+  const schema = createSchema("test", {
+    anything: mixed(),
+  });
+
+  const data1 = Schema.toData(schema, { anything: "string" });
+  expect(data1).toStrictEqual({ anything: "string" });
+
+  const data2 = Schema.toData(schema, { anything: 42 });
+  expect(data2).toStrictEqual({ anything: 42 });
+
+  const data3 = Schema.toData(schema, { anything: true });
+  expect(data3).toStrictEqual({ anything: true });
+
+  const data4 = Schema.toData(schema, { anything: { nested: "object" } });
+  expect(data4).toStrictEqual({ anything: { nested: "object" } });
+
+  const data5 = Schema.toData(schema, { anything: [1, "2", false] });
+  expect(data5).toStrictEqual({ anything: [1, "2", false] });
+
+  const data6 = Schema.toData(schema, { anything: null });
+  expect(data6).toStrictEqual({ anything: null });
 });
