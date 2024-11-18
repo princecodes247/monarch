@@ -1,14 +1,13 @@
-import { array } from "../../types/array";
-import { objectId } from "../../types/objectId";
-import { pipeParser } from "../../types/type";
+import { MonarchParseError } from "../../errors";
+import { MonarchType, pipeParser } from "../../types/type";
 import {
   type AnySchema,
   type AnySchemaWithoutRelations,
   Schema,
 } from "../schema";
-import type { InferSchemaData, InferSchemaTypes } from "../type-helpers";
+import type { InferSchemaData, SchemaInputWithId } from "../type-helpers";
 import { MonarchRelation } from "./base";
-import type { SchemaInputWithId, SchemaRelatableField } from "./type-helpers";
+import type { SchemaRelatableField } from "./type-helpers";
 
 export class MonarchMany<
   TSchema extends AnySchema,
@@ -25,16 +24,31 @@ export class MonarchMany<
   ) {
     const targetTypes = Schema.types(_target);
     const schemaTypes = Schema.types(_schema);
-    let type = targetTypes[_field];
-    // parse relation input to implicit objectId field "_id"
-    if (!type && _field === "_id") {
-      type = objectId();
-    }
+    let parser = MonarchType.parser(targetTypes[_field]);
     // if field type is duplicated in current schema, validate first and pass the output to the target schema
     if (_field in schemaTypes) {
-      type = pipeParser(schemaTypes[_field], type);
+      parser = pipeParser(MonarchType.parser(schemaTypes[_field]), parser);
     }
-    const arrayType = array(type) as InferSchemaTypes<TTarget>[TField];
-    super(arrayType);
+    super((input) => {
+      if (Array.isArray(input)) {
+        const parsed = [] as InferSchemaData<TTarget>[TField][];
+        for (const [index, value] of input.entries()) {
+          try {
+            parsed[index] = parser(value);
+          } catch (error) {
+            if (error instanceof MonarchParseError) {
+              throw new MonarchParseError(
+                `element at index '${index}' ${error.message}'`,
+              );
+            }
+            throw error;
+          }
+        }
+        return parsed;
+      }
+      throw new MonarchParseError(
+        `expected 'array' received '${typeof input}'`,
+      );
+    });
   }
 }

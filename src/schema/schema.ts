@@ -1,6 +1,7 @@
 import type { Projection } from "../collection/types/query-options";
 import { detectProjection } from "../collection/utils/projection";
 import type { Merge, Pretty, WithOptionalId } from "../type-helpers";
+import { objectId } from "../types/objectId";
 import { type AnyMonarchType, MonarchType, phantom } from "../types/type";
 import type { InferTypeOutput } from "../types/type-helpers";
 import type { AnyMonarchRelation, MonarchRelation } from "./relations/base";
@@ -59,20 +60,23 @@ export type AnySchemaWithoutRelations = Schema<
 export class Schema<
   TName extends string,
   TTypes extends Record<string, AnyMonarchType>,
-  TRelations extends SchemaRelation<any> = {},
-  TOmit extends SchemaOmit<any, any> = {},
+  TRelations extends SchemaRelation<TTypes> = {},
+  TOmit extends SchemaOmit<TTypes, TRelations> = {},
   TVirtuals extends Record<string, Virtual<any, any, any>> = {},
 > {
   constructor(
     public name: TName,
-    public _types: TTypes,
+    private _types: TTypes,
     private _relations: TRelations,
     public options: {
       omit?: SchemaOmit<TTypes, TRelations>;
       virtuals?: SchemaVirtuals<TTypes, TRelations, TVirtuals>;
       indexes?: SchemaIndexes<TTypes, TRelations>;
     },
-  ) {}
+  ) {
+    // @ts-ignore
+    if (!_types._id) this._types._id = objectId().optional();
+  }
 
   public static types<T extends AnySchema>(schema: T): InferSchemaTypes<T> {
     return schema._types;
@@ -92,8 +96,6 @@ export class Schema<
   }
   private toData(input: InferSchemaInput<this>): InferSchemaData<this> {
     const data = {} as InferSchemaData<this>;
-    // @ts-ignore
-    if (input._id) data._id = input._id;
     // parse fields
     for (const [key, type] of Object.entries(Schema.types(this))) {
       const parser = MonarchType.parser(type);
@@ -103,8 +105,9 @@ export class Schema<
     }
     // add and optionally override with relation types
     for (const [key, relation] of Object.entries(Schema.relations(this))) {
-      const parser = MonarchType.parser(relation.type);
-      const parsed = parser(input[key as keyof InferSchemaInput<this>]);
+      const parsed = relation.parser(
+        input[key as keyof InferSchemaInput<this>],
+      );
       if (parsed === undefined || parsed === phantom) continue;
       data[key as keyof typeof data] = parsed;
     }
