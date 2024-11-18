@@ -1,4 +1,4 @@
-import { type MonarchPhantom, phantom, type } from "../../types/type";
+import { type MonarchPhantom, phantom } from "../../types/type";
 import type { AnySchema, AnySchemaWithoutRelations } from "../schema";
 import type { InferSchemaData } from "../type-helpers";
 import { MonarchRelation } from "./base";
@@ -16,6 +16,6 @@ export class MonarchRef<
     public _field: TField,
     public _references: TReferences,
   ) {
-    super(type(() => phantom));
+    super(() => phantom);
   }
 }

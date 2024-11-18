@@ -1,39 +1,47 @@
-import type {
-  AnyBulkWriteOperation,
-  BulkWriteOptions,
-  ChangeStream,
-  ChangeStreamDocument,
-  ChangeStreamOptions,
-  CountDocumentsOptions,
-  CountOptions,
-  CreateIndexesOptions,
-  Db,
-  DistinctOptions,
-  Document,
-  DropCollectionOptions,
-  DropIndexesOptions,
-  EstimatedDocumentCountOptions,
-  Filter,
-  Flatten,
-  Hint,
-  IndexDescription,
-  IndexDescriptionCompact,
-  IndexDescriptionInfo,
-  IndexInformationOptions,
-  IndexSpecification,
-  ListIndexesOptions,
-  ListSearchIndexesCursor,
-  ListSearchIndexesOptions,
-  Collection as MongoCollection,
-  OperationOptions,
-  RenameOptions,
-  SearchIndexDescription,
-  UpdateFilter,
-  WithoutId,
+import {
+  type AnyBulkWriteOperation,
+  type BulkWriteOptions,
+  type ChangeStream,
+  type ChangeStreamDocument,
+  type ChangeStreamOptions,
+  type CountDocumentsOptions,
+  type CountOptions,
+  type CreateIndexesOptions,
+  type Db,
+  type DistinctOptions,
+  type Document,
+  type DropCollectionOptions,
+  type DropIndexesOptions,
+  type EstimatedDocumentCountOptions,
+  type Filter,
+  type Flatten,
+  type Hint,
+  type IndexDescription,
+  type IndexDescriptionCompact,
+  type IndexDescriptionInfo,
+  type IndexInformationOptions,
+  type IndexSpecification,
+  type ListIndexesOptions,
+  type ListSearchIndexesCursor,
+  type ListSearchIndexesOptions,
+  type Collection as MongoCollection,
+  ObjectId,
+  type OperationOptions,
+  type RenameOptions,
+  type SearchIndexDescription,
+  type UpdateFilter,
+  type WithoutId,
 } from "mongodb";
 import { MonarchError } from "../errors";
-import { type AnySchema, makeIndexes } from "../schema/schema";
-import type { InferSchemaData, InferSchemaInput } from "../schema/type-helpers";
+import { type AnySchema, Schema, makeIndexes } from "../schema/schema";
+import type {
+  InferSchemaData,
+  InferSchemaInput,
+  SchemaInputWithId,
+} from "../schema/type-helpers";
+import type { Index } from "../type-helpers";
+import { MonarchObjectId } from "../types/objectId";
+import { MonarchType } from "../types/type";
 import { AggregationPipeline } from "./pipeline/aggregation";
 import { BulkWriteQuery } from "./query/bulk-write";
 import { DeleteManyQuery } from "./query/delete-many";
@@ -112,6 +120,19 @@ export class Collection<T extends AnySchema> implements CollectionProperties {
       this._collection,
       this._readyPromise,
       filter,
+    );
+  }
+
+  public findById(id: Index<SchemaInputWithId<T>, "_id">) {
+    const _idType = Schema.types(this._schema)._id;
+    const isObjectIdType = MonarchType.isInstanceOf(_idType, MonarchObjectId);
+
+    return new FindOneQuery(
+      this._schema,
+      this._collection,
+      this._readyPromise,
+      // @ts-ignore
+      { _id: isObjectIdType ? new ObjectId(id) : id },
     );
   }
 

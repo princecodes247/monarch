@@ -14,6 +14,7 @@ import {
   createDatabase,
   createSchema,
   number,
+  objectId,
   pipe,
   string,
   type,
@@ -30,9 +31,15 @@ const UserSchema = createSchema("users", {
   age: number().optional().default(10),
   isVerified: boolean().default(false),
 });
+const TodoSchema = createSchema("todos", {
+  _id: number(),
+  title: string(),
+  userId: objectId(),
+});
 
 const { collections } = createDatabase(client.db(), {
   users: UserSchema,
+  todos: TodoSchema,
 });
 
 describe("Query methods Tests", () => {
@@ -43,6 +50,8 @@ describe("Query methods Tests", () => {
   afterEach(async () => {
     await collections.users.dropIndexes();
     await collections.users.deleteMany({}).exec();
+    await collections.todos.dropIndexes();
+    await collections.todos.deleteMany({}).exec();
   });
 
   afterAll(async () => {
@@ -64,9 +73,23 @@ describe("Query methods Tests", () => {
     const newUser3 = await collections.users
       .insertOne({ _id: id3, ...mockUsers[0] })
       .exec();
-
     expect(newUser3).not.toBe(null);
-    expect(newUser3._id).toBe(id3);
+    expect(newUser3._id).toStrictEqual(id3);
+
+    // insert with existing string id
+    const id4 = new ObjectId();
+    const newUser4 = await collections.users
+      .insertOne({ _id: id4.toString(), ...mockUsers[0] })
+      .exec();
+    expect(newUser4).not.toBe(null);
+    expect(newUser4._id).toStrictEqual(id4);
+
+    // insert with invalid string id
+    await expect(async () => {
+      await collections.users
+        .insertOne({ _id: "not_an_object_id", ...mockUsers[0] })
+        .exec();
+    }).rejects.toThrow("expected valid ObjectId received");
 
     // Test edge case: Insert empty document
     const emptyUser = await collections.users.insertOne({}).exec();
@@ -138,6 +161,57 @@ describe("Query methods Tests", () => {
 
     const user = await collections.users.findOne({}).exec();
     expect(user).toStrictEqual(expect.objectContaining(mockUsers[0]));
+
+    const userId = new ObjectId();
+    const todoId = 1;
+    await collections.users.insertOne({ _id: userId, ...mockUsers[0] }).exec();
+    await collections.todos
+      .insertOne({ _id: todoId, title: "todo 1", userId })
+      .exec();
+
+    // find with object id
+    const user1 = await collections.users.findOne({ _id: userId }).exec();
+    expect(user1).toStrictEqual({ _id: userId, ...mockUsers[0] });
+
+    // find with string id
+    const user2 = await collections.users
+      //@ts-expect-error
+      .findOne({ _id: userId.toString() })
+      .exec();
+    expect(user2).toBe(null);
+
+    // find with non object id
+    const todo = await collections.todos.findOne({ _id: todoId }).exec();
+    expect(todo).toStrictEqual({ _id: todoId, title: "todo 1", userId });
+  });
+
+  it("finds one document by id", async () => {
+    const userId = new ObjectId();
+    const todoId = 1;
+    await collections.users.insertOne({ _id: userId, ...mockUsers[0] }).exec();
+    await collections.todos
+      .insertOne({ _id: todoId, title: "todo 1", userId })
+      .exec();
+
+    // find with object id
+    const user1 = await collections.users.findById(userId).exec();
+    expect(user1).toStrictEqual({ _id: userId, ...mockUsers[0] });
+
+    // find with string id
+    const user2 = await collections.users.findById(userId.toString()).exec();
+    expect(user2).toStrictEqual({ _id: userId, ...mockUsers[0] });
+
+    // find with invalid object id
+    await expect(async () => {
+      await collections.users.findById("not_an_object_id").exec();
+    }).rejects.toThrow();
+
+    // find with non object id
+    const todo1 = await collections.todos.findById(todoId).exec();
+    expect(todo1).toStrictEqual({ _id: todoId, title: "todo 1", userId });
+
+    const todo2 = await collections.todos.findById(todoId + 1).exec();
+    expect(todo2).toBe(null);
   });
 
   describe("Base Query methods", () => {

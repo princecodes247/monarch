@@ -57,7 +57,6 @@ describe("Tests for refs population", () => {
       editor: one(_UserSchema, "_id"),
       contributors: many(_UserSchema, "_id"),
     }));
-
     // Create database collections
     return createDatabase(client.db(), {
       users: UserSchema,

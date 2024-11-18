@@ -1,14 +1,8 @@
 import type { ObjectId } from "mongodb";
-import type { WithRequiredId } from "../../type-helpers";
 import type { MonarchPhantom } from "../../types/type";
-import type { InferTypeObjectInput } from "../../types/type-helpers";
 import type { AnySchema } from "../schema";
-import type { InferSchemaRelations, InferSchemaTypes } from "../type-helpers";
+import type { InferSchemaRelations, SchemaInputWithId } from "../type-helpers";
 import type { AnyMonarchRelation, MonarchRelation } from "./base";
-
-export type SchemaInputWithId<T extends AnySchema> = WithRequiredId<
-  InferTypeObjectInput<InferSchemaTypes<T>>
->;
 
 type ValidRelationFieldType = string | number | ObjectId;
 export type SchemaRelatableField<T extends AnySchema> = keyof {

@@ -6,6 +6,7 @@ import type {
   TrueKeys,
   WithOptionalId,
   WithRequiredId,
+  WithRequiredObjectId,
 } from "../type-helpers";
 import type { AnyMonarchType } from "../types/type";
 import type {
@@ -19,6 +20,10 @@ import type {
 import type { AnySchema, Schema } from "./schema";
 import type { InferVirtualOutput } from "./virtuals";
 
+export type SchemaInputWithId<T extends AnySchema> = WithRequiredId<
+  _InferTypeObjectInput<InferSchemaTypes<T>>
+>;
+
 export type InferSchemaInput<T extends AnySchema> = Pretty<
   WithOptionalId<
     Merge<
@@ -27,9 +32,9 @@ export type InferSchemaInput<T extends AnySchema> = Pretty<
     >
   >
 >;
-export type _InferSchemaData<T extends AnySchema> = WithRequiredId<
+export type _InferSchemaData<T extends AnySchema> = WithRequiredObjectId<
   Merge<
-    _InferTypeObjectOutput<T["_types"]>,
+    _InferTypeObjectOutput<InferSchemaTypes<T>>,
     InferRelationObjectOutput<InferSchemaRelations<T>>
   >
 >;
@@ -41,40 +46,40 @@ export type InferSchemaOutput<T extends AnySchema> = Pretty<
 >;
 
 export type InferSchemaTypes<T extends AnySchema> = T extends Schema<
-  any,
+  infer _TName,
   infer TTypes,
-  any,
-  any,
-  any
+  infer _TRelations,
+  infer _TOmit,
+  infer _TVirtuals
 >
   ? TTypes
   : never;
 export type InferSchemaRelations<T extends AnySchema> = T extends Schema<
-  any,
-  any,
+  infer _TName,
+  infer _TTypes,
   infer TRelations,
-  any,
-  any
+  infer _TOmit,
+  infer _TVirtuals
 >
   ? TRelations
   : never;
 export type InferSchemaOmit<T extends AnySchema> = T extends Schema<
-  any,
-  any,
-  any,
-  infer Omit,
-  any
+  infer _TName,
+  infer _TTypes,
+  infer _TRelations,
+  infer TOmit,
+  infer _TVirtuals
 >
-  ? TrueKeys<Omit>
+  ? TrueKeys<TOmit>
   : never;
 export type InferSchemaVirtuals<T extends AnySchema> = T extends Schema<
-  any,
-  any,
-  any,
-  any,
-  infer Virtuals
+  infer _TName,
+  infer _TTypes,
+  infer _TRelations,
+  infer _TOmit,
+  infer TVirtuals
 >
-  ? Virtuals
+  ? TVirtuals
   : never;
 
 export type CreateIndexesFields<T extends Record<string, AnyMonarchType>> = {
