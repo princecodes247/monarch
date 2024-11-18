@@ -1,5 +1,13 @@
 # monarch-orm
 
+## 0.4.0
+
+### Minor Changes
+
+- b454a36: Add type.extend() method to modify type parser and updater immutably while retaining type information
+- b810d21: add union and mixed types
+- b454a36: Expose standalone pipe(), nullable(), optional() and defaulted() types
+
 ## 0.3.0
 
 ### Minor Changes
