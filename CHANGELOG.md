@@ -1,5 +1,19 @@
 # monarch-orm
 
+## 0.5.0
+
+### Minor Changes
+
+- a835c5c: Add collection.findById() method
+
+### Patch Changes
+
+- a835c5c: Add implicit default \_id type to schema if none is provided: objectId().optional()
+- e3eda5f: - Improved error message formatting in MonarchMany, tuple and array for better clarity.
+  - Fix wrong variable in MonarchDate error.
+  - Updated the build script in package.json.
+  - Modified parameter and return types in the toObjectId function.
+
 ## 0.4.0
 
 ### Minor Changes
