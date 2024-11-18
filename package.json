@@ -1,6 +1,6 @@
 {
   "name": "monarch-orm",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Type safe Object Document Mapper (ODM) for MongoDB",
   "private": false,
   "main": "./dist/index.js",
@@ -24,7 +24,12 @@
     "watch": "vitest",
     "test": "vitest run"
   },
-  "keywords": ["mongodb", "odm", "orm", "typescript"],
+  "keywords": [
+    "mongodb",
+    "odm",
+    "orm",
+    "typescript"
+  ],
   "author": "Prince Gbalam <princecodes247@gmail.com>",
   "license": "MIT",
   "repository": {
