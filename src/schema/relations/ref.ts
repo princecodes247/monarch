@@ -1,6 +1,6 @@
-import type { AnySchema, AnySchemaWithoutRelations } from "../schema/schema";
-import type { InferSchemaData } from "../schema/type-helpers";
-import { type MonarchPhantom, phantom, type } from "../types/type";
+import { type MonarchPhantom, phantom, type } from "../../types/type";
+import type { AnySchema, AnySchemaWithoutRelations } from "../schema";
+import type { InferSchemaData } from "../type-helpers";
 import { MonarchRelation } from "./base";
 import type { SchemaRelatableField } from "./type-helpers";
 

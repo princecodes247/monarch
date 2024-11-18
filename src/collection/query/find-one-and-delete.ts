@@ -3,7 +3,7 @@ import type {
   FindOneAndDeleteOptions,
   Collection as MongoCollection,
 } from "mongodb";
-import type { SchemaRelationSelect } from "../../relations/type-helpers";
+import type { SchemaRelationSelect } from "../../schema/relations/type-helpers";
 import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,

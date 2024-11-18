@@ -15,42 +15,45 @@ export function pipeParser<Input, InterOutput, Output>(
 
 export const type = <TInput, TOutput = TInput>(
   parser: Parser<TInput, TOutput>,
-) => new MonarchType(parser);
+  updater?: Parser<void, TOutput>,
+) => new MonarchType(parser, updater);
+
+export type AnyMonarchType<TInput = any, TOutput = TInput> = MonarchType<
+  TInput,
+  TOutput
+>;
 
 export class MonarchType<TInput, TOutput> {
   constructor(
-    public _parser: Parser<TInput, TOutput>,
-    public readonly _updater?: Parser<void, TOutput>,
+    private _parser: Parser<TInput, TOutput>,
+    private _updater?: Parser<void, TOutput>,
   ) {}
 
+  public static parser<T extends AnyMonarchType>(type: T) {
+    return type._parser;
+  }
+
+  public static updater<T extends AnyMonarchType>(type: T) {
+    return type._updater;
+  }
+
   public nullable() {
-    return new MonarchNullable(
-      this._parser as Parser<InferTypeInput<this>, InferTypeOutput<this>>,
-      this._updater as Parser<void, InferTypeOutput<this>>,
-    );
+    return nullable(this);
   }
 
   public optional() {
-    return new MonarchOptional(
-      this._parser as Parser<InferTypeInput<this>, InferTypeOutput<this>>,
-      this._updater as Parser<void, InferTypeOutput<this>>,
-    );
+    return optional(this);
   }
 
   public default(defaultInput: TInput | (() => TInput)) {
-    return new MonarchDefaulted(
+    return defaulted(
+      this,
       defaultInput as InferTypeInput<this> | (() => InferTypeInput<this>),
-      this._parser as Parser<InferTypeInput<this>, InferTypeOutput<this>>,
-      this._updater as Parser<void, InferTypeOutput<this>>,
     );
   }
 
   public onUpdate(updateFn: () => TInput) {
-    return new MonarchType(this._parser, pipeParser(updateFn, this._parser));
-  }
-
-  public pipe<T extends AnyMonarchType<TOutput, any>>(type: T) {
-    return new MonarchPipe(this, type);
+    return type(this._parser, pipeParser(updateFn, this._parser));
   }
 
   /**
@@ -60,7 +63,7 @@ export class MonarchType<TInput, TOutput> {
    * @param fn function that returns a transformed input.
    */
   public transform<TTransformOutput>(fn: (input: TOutput) => TTransformOutput) {
-    return new MonarchType(
+    return type(
       pipeParser(this._parser, fn),
       this._updater && pipeParser(this._updater, fn),
     );
@@ -74,7 +77,7 @@ export class MonarchType<TInput, TOutput> {
    * @param message error message when validation fails.
    */
   public validate(fn: (input: TOutput) => boolean, message: string) {
-    return new MonarchType(
+    return type(
       pipeParser(this._parser, (input) => {
         const valid = fn(input);
         if (!valid) throw new MonarchParseError(message);
@@ -83,19 +86,38 @@ export class MonarchType<TInput, TOutput> {
       this._updater,
     );
   }
-}
 
-export class MonarchPipe<
-  TPipeIn extends AnyMonarchType,
-  TPipeOut extends AnyMonarchType<InferTypeOutput<TPipeIn>, any>,
-> extends MonarchType<InferTypeInput<TPipeIn>, InferTypeOutput<TPipeOut>> {
-  constructor(pipeIn: TPipeIn, pipeOut: TPipeOut) {
-    super(
-      pipeParser(pipeIn._parser, pipeOut._parser),
-      pipeIn._updater && pipeParser(pipeIn._updater, pipeOut._parser),
-    );
+  /**
+   * Extends the parser and updater of this type from that of the base type.
+   *
+   * Calling extend always mutates the type and changes it's parser and updater.
+   *
+   * @param base type to copy parser and updater from.
+   * @param options options to optionally modify the copied parser or replace the copied updater.
+   * @returns
+   */
+  public extend<T extends MonarchType<TInput, TOutput>>(
+    base: T,
+    options: {
+      preParse?: Parser<TInput, TInput>;
+      postParse?: Parser<TOutput, TOutput>;
+      onUpdate?: Parser<void, TInput>;
+    },
+  ) {
+    let parser = options.preParse
+      ? pipeParser(options.preParse, base._parser)
+      : base._parser;
+    if (options.postParse) parser = pipeParser(parser, options.postParse);
+    this._parser = parser;
+    this._updater = options.onUpdate
+      ? pipeParser(options.onUpdate, parser)
+      : base._updater;
+    return this;
   }
 }
+
+export const nullable = <T extends AnyMonarchType>(type: T) =>
+  new MonarchNullable<T>(MonarchType.parser(type), MonarchType.updater(type));
 
 export class MonarchNullable<T extends AnyMonarchType> extends MonarchType<
   InferTypeInput<T> | null,
@@ -112,6 +134,9 @@ export class MonarchNullable<T extends AnyMonarchType> extends MonarchType<
   }
 }
 
+export const optional = <T extends AnyMonarchType>(type: T) =>
+  new MonarchOptional<T>(MonarchType.parser(type), MonarchType.updater(type));
+
 export class MonarchOptional<T extends AnyMonarchType> extends MonarchType<
   InferTypeInput<T> | undefined,
   InferTypeOutput<T> | undefined
@@ -126,6 +151,16 @@ export class MonarchOptional<T extends AnyMonarchType> extends MonarchType<
     }, updater);
   }
 }
+
+export const defaulted = <T extends AnyMonarchType>(
+  type: T,
+  defaultInput: InferTypeInput<T> | (() => InferTypeInput<T>),
+) =>
+  new MonarchDefaulted<T>(
+    defaultInput,
+    MonarchType.parser(type),
+    MonarchType.updater(type),
+  );
 
 export class MonarchDefaulted<T extends AnyMonarchType> extends MonarchType<
   InferTypeInput<T> | undefined,
@@ -151,8 +186,3 @@ export class MonarchDefaulted<T extends AnyMonarchType> extends MonarchType<
     return typeof val === "function";
   }
 }
-
-export type AnyMonarchType<TInput = any, TOutput = TInput> = MonarchType<
-  TInput,
-  TOutput
->;

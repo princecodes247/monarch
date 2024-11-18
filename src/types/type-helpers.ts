@@ -6,26 +6,26 @@ export type InferTypeOutput<T> = T extends MonarchType<any, infer U>
   ? U
   : never;
 
-export type InferTypeObjectInput<T extends Record<string, AnyMonarchType>> =
-  Pretty<
-    {
-      [K in keyof T as undefined extends InferTypeInput<T[K]>
-        ? never
-        : K]: InferTypeInput<T[K]>; // required keys
-    } & {
-      [K in keyof T as undefined extends InferTypeInput<T[K]>
-        ? InferTypeOutput<T[K]> extends MonarchPhantom
-          ? never
-          : K
-        : never]?: InferTypeInput<T[K]>; // optional keys
-    }
-  >;
-export type InferTypeObjectOutput<T extends Record<string, AnyMonarchType>> =
-  Pretty<{
-    [K in keyof T as InferTypeOutput<T[K]> extends MonarchPhantom
+export type _InferTypeObjectInput<T extends Record<string, AnyMonarchType>> = {
+  [K in keyof T as undefined extends InferTypeInput<T[K]>
+    ? never
+    : K]: InferTypeInput<T[K]>; // required keys
+} & {
+  [K in keyof T as undefined extends InferTypeInput<T[K]>
+    ? InferTypeOutput<T[K]> extends MonarchPhantom
       ? never
-      : K]: InferTypeOutput<T[K]>;
-  }>;
+      : K
+    : never]?: InferTypeInput<T[K]>; // optional keys
+};
+export type InferTypeObjectInput<T extends Record<string, AnyMonarchType>> =
+  Pretty<_InferTypeObjectInput<T>>;
+export type _InferTypeObjectOutput<T extends Record<string, AnyMonarchType>> = {
+  [K in keyof T as InferTypeOutput<T[K]> extends MonarchPhantom
+    ? never
+    : K]: InferTypeOutput<T[K]>;
+};
+export type InferTypeObjectOutput<T extends Record<string, AnyMonarchType>> =
+  Pretty<_InferTypeObjectOutput<T>>;
 
 export type InferTypeTupleInput<
   T extends [AnyMonarchType, ...AnyMonarchType[]],

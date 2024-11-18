@@ -13,7 +13,8 @@ export class MonarchUnion<
     super((input) => {
       for (const [index, type] of variants.entries()) {
         try {
-          return type._parser(input);
+          const parser = MonarchType.parser(type);
+          return parser(input);
         } catch (error) {
           if (error instanceof MonarchParseError) {
             if (index === variants.length - 1) {

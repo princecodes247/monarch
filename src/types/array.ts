@@ -15,7 +15,8 @@ export class MonarchArray<T extends AnyMonarchType> extends MonarchType<
         const parsed = [] as InferTypeOutput<T>[];
         for (const [index, value] of input.entries()) {
           try {
-            parsed[index] = type._parser(value);
+            const parser = MonarchType.parser(type);
+            parsed[index] = parser(value);
           } catch (error) {
             if (error instanceof MonarchParseError) {
               throw new MonarchParseError(

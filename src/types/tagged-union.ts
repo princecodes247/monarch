@@ -38,8 +38,8 @@ export class MonarchTaggedUnion<
           throw new MonarchParseError(`unknown tag '${input.tag.toString()}'`);
         }
         try {
-          const parsed = type._parser(input.value);
-          return { tag: input.tag, value: parsed };
+          const parser = MonarchType.parser(type);
+          return { tag: input.tag, value: parser(input.value) };
         } catch (error) {
           if (error instanceof MonarchParseError) {
             throw new MonarchParseError(

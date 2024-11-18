@@ -14,6 +14,7 @@ import {
   createDatabase,
   createSchema,
   number,
+  pipe,
   string,
   type,
 } from "../src";
@@ -654,9 +655,10 @@ describe("Query methods Tests", () => {
     const onUpdateTrap = vi.fn(() => nonce++);
     const schema = createSchema("users", {
       name: string(),
-      nonce: type((input: number) => String(input))
-        .onUpdate(onUpdateTrap)
-        .pipe(string()),
+      nonce: pipe(
+        type((input: number) => String(input)),
+        string(),
+      ).onUpdate(onUpdateTrap),
     });
     const db = createDatabase(client.db(), { users: schema });
     const res = await db.collections.users

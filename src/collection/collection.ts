@@ -405,7 +405,7 @@ export class Collection<T extends AnySchema> implements CollectionProperties {
     return this._collection.drop(options);
   }
 
-  public aggregate<T extends Document = Document>() {
+  public aggregate() {
     return new AggregationPipeline(
       this._schema,
       this._collection,
