@@ -20,7 +20,7 @@ export class MonarchArray<T extends AnyMonarchType> extends MonarchType<
           } catch (error) {
             if (error instanceof MonarchParseError) {
               throw new MonarchParseError(
-                `element at index '${index}' ${error.message}'`,
+                `element at index '${index}' ${error.message}`,
               );
             }
             throw error;

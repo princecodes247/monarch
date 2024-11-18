@@ -7,11 +7,11 @@ import { ObjectId } from "mongodb";
  * @param id - The string to convert to ObjectId.
  * @returns A valid ObjectId or null if the input is invalid.
  */
-export const toObjectId = (id: string): ObjectId | null => {
+export const toObjectId = (id: string | ObjectId): ObjectId | undefined => {
   if (ObjectId.isValid(id)) {
     return new ObjectId(id);
   }
-  return null;
+  return undefined;
 };
 
 /**

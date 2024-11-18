@@ -38,7 +38,7 @@ export class MonarchMany<
           } catch (error) {
             if (error instanceof MonarchParseError) {
               throw new MonarchParseError(
-                `element at index '${index}' ${error.message}'`,
+                `element at index '${index}' ${error.message}`,
               );
             }
             throw error;

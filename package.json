@@ -14,7 +14,7 @@
     }
   },
   "scripts": {
-    "build": "npm run check && shx rm -rf dist && tsup src/index.ts --format esm,cjs --dts",
+    "build": "shx rm -rf dist && npm run check && tsup src/index.ts --format esm,cjs --dts",
     "release": "npm run build && changeset publish",
     "check": "npm run lint && npm run format && tsc --noEmit",
     "format": "biome format",
