@@ -22,7 +22,8 @@ export class MonarchTuple<
         const parsed = [] as InferTypeTupleOutput<T>;
         for (const [index, type] of types.entries()) {
           try {
-            parsed[index] = type._parser(input[index]);
+            const parser = MonarchType.parser(type);
+            parsed[index] = parser(input[index]);
           } catch (error) {
             if (error instanceof MonarchParseError) {
               throw new MonarchParseError(

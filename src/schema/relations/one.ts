@@ -1,11 +1,11 @@
+import { objectId } from "../../types/objectId";
+import { pipeParser } from "../../types/type";
 import {
   type AnySchema,
   type AnySchemaWithoutRelations,
   Schema,
-} from "../schema/schema";
-import type { InferSchemaData, InferSchemaTypes } from "../schema/type-helpers";
-import { objectId } from "../types/objectId";
-import { pipeParser } from "../types/type";
+} from "../schema";
+import type { InferSchemaData, InferSchemaTypes } from "../type-helpers";
 import { MonarchRelation } from "./base";
 import type { SchemaInputWithId, SchemaRelatableField } from "./type-helpers";
 

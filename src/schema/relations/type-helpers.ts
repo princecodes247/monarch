@@ -1,12 +1,9 @@
 import type { ObjectId } from "mongodb";
-import type { AnySchema } from "../schema/schema";
-import type {
-  InferSchemaRelations,
-  InferSchemaTypes,
-} from "../schema/type-helpers";
-import type { Pretty, WithRequiredId } from "../type-helpers";
-import type { MonarchPhantom } from "../types/type";
-import type { InferTypeObjectInput } from "../types/type-helpers";
+import type { WithRequiredId } from "../../type-helpers";
+import type { MonarchPhantom } from "../../types/type";
+import type { InferTypeObjectInput } from "../../types/type-helpers";
+import type { AnySchema } from "../schema";
+import type { InferSchemaRelations, InferSchemaTypes } from "../type-helpers";
 import type { AnyMonarchRelation, MonarchRelation } from "./base";
 
 export type SchemaInputWithId<T extends AnySchema> = WithRequiredId<
@@ -39,23 +36,21 @@ export type InferRelationOutput<T> = T extends MonarchRelation<
 
 export type InferRelationObjectInput<
   T extends Record<string, AnyMonarchRelation>,
-> = Pretty<
-  {
-    [K in keyof T as undefined extends InferRelationInput<T[K]>
+> = {
+  [K in keyof T as undefined extends InferRelationInput<T[K]>
+    ? never
+    : K]: InferRelationInput<T[K]>; // required keys
+} & {
+  [K in keyof T as undefined extends InferRelationInput<T[K]>
+    ? InferRelationOutput<T[K]> extends MonarchPhantom
       ? never
-      : K]: InferRelationInput<T[K]>; // required keys
-  } & {
-    [K in keyof T as undefined extends InferRelationInput<T[K]>
-      ? InferRelationOutput<T[K]> extends MonarchPhantom
-        ? never
-        : K
-      : never]?: InferRelationInput<T[K]>; // optional keys
-  }
->;
+      : K
+    : never]?: InferRelationInput<T[K]>; // optional keys
+};
 export type InferRelationObjectOutput<
   T extends Record<string, AnyMonarchRelation>,
-> = Pretty<{
+> = {
   [K in keyof T as InferRelationOutput<T[K]> extends MonarchPhantom
     ? never
     : K]: InferRelationOutput<T[K]>;
-}>;
+};

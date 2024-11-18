@@ -1,9 +1,5 @@
 import type { CreateIndexesOptions, IndexDirection, ObjectId } from "mongodb";
 import type {
-  InferRelationObjectInput,
-  InferRelationObjectOutput,
-} from "../relations/type-helpers";
-import type {
   IdFirst,
   Merge,
   Pretty,
@@ -13,30 +9,35 @@ import type {
 } from "../type-helpers";
 import type { AnyMonarchType } from "../types/type";
 import type {
-  InferTypeObjectInput,
-  InferTypeObjectOutput,
+  _InferTypeObjectInput,
+  _InferTypeObjectOutput,
 } from "../types/type-helpers";
+import type {
+  InferRelationObjectInput,
+  InferRelationObjectOutput,
+} from "./relations/type-helpers";
 import type { AnySchema, Schema } from "./schema";
 import type { InferVirtualOutput } from "./virtuals";
 
 export type InferSchemaInput<T extends AnySchema> = Pretty<
   WithOptionalId<
     Merge<
-      InferTypeObjectInput<InferSchemaTypes<T>>,
+      _InferTypeObjectInput<InferSchemaTypes<T>>,
       InferRelationObjectInput<InferSchemaRelations<T>>
     >
   >
 >;
-export type InferSchemaData<T extends AnySchema> = Pretty<
-  WithRequiredId<
-    Merge<
-      InferTypeObjectOutput<InferSchemaTypes<T>>,
-      InferRelationObjectOutput<InferSchemaRelations<T>>
-    >
+export type _InferSchemaData<T extends AnySchema> = WithRequiredId<
+  Merge<
+    _InferTypeObjectOutput<T["_types"]>,
+    InferRelationObjectOutput<InferSchemaRelations<T>>
   >
 >;
+export type InferSchemaData<T extends AnySchema> = Pretty<_InferSchemaData<T>>;
 export type InferSchemaOutput<T extends AnySchema> = Pretty<
-  IdFirst<Merge<InferSchemaData<T>, InferVirtualOutput<InferSchemaVirtuals<T>>>>
+  IdFirst<
+    Merge<_InferSchemaData<T>, InferVirtualOutput<InferSchemaVirtuals<T>>>
+  >
 >;
 
 export type InferSchemaTypes<T extends AnySchema> = T extends Schema<
@@ -77,7 +78,7 @@ export type InferSchemaVirtuals<T extends AnySchema> = T extends Schema<
   : never;
 
 export type CreateIndexesFields<T extends Record<string, AnyMonarchType>> = {
-  [K in IndexKeys<InferTypeObjectOutput<T>> | "_id"]?:
+  [K in IndexKeys<_InferTypeObjectOutput<T>> | "_id"]?:
     | 1
     | -1
     | Exclude<IndexDirection, number>;
@@ -90,7 +91,7 @@ export type CreateIndex<T extends Record<string, AnyMonarchType>> = (
   options?: CreateIndexesOptions,
 ) => SchemaIndex<T>;
 export type UniqueIndex<T extends Record<string, AnyMonarchType>> = (
-  field: IndexKeys<InferTypeObjectOutput<T>>,
+  field: IndexKeys<_InferTypeObjectOutput<T>>,
 ) => SchemaIndex<T>;
 
 type IndexKeys<T, Prefix extends string = ""> = T extends Array<infer U>

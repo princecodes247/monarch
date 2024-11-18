@@ -8,6 +8,7 @@ import {
   mixed,
   number,
   object,
+  pipe,
   record,
   string,
   taggedUnion,
@@ -106,15 +107,15 @@ describe("Types", () => {
     const innerValidateFnTrap = vi.fn(() => true);
 
     const schema1 = createSchema("test", {
-      count: string()
-        .validate(outerValidateFnTrap, "invalid count string")
-        .transform(Number.parseInt)
-        .pipe(
-          number()
-            .validate(innerValidateFnTrap, "invalid count number")
-            .transform((num) => num * 1000)
-            .transform((str) => `count-${str}`),
-        ),
+      count: pipe(
+        string()
+          .validate(outerValidateFnTrap, "invalid count string")
+          .transform(Number.parseInt),
+        number()
+          .validate(innerValidateFnTrap, "invalid count number")
+          .transform((num) => num * 1000)
+          .transform((str) => `count-${str}`),
+      ),
     });
     const data1 = Schema.toData(schema1, { count: "1" });
     expect(data1).toStrictEqual({ count: "count-1000" });
@@ -123,18 +124,18 @@ describe("Types", () => {
     outerValidateFnTrap.mockClear();
     innerValidateFnTrap.mockClear();
 
-    // outer default (before)
+    // pipe in default
     const schema2 = createSchema("test", {
-      count: string()
-        .validate(outerValidateFnTrap, "invalid count string")
-        .transform(Number.parseInt)
-        .default("2")
-        .pipe(
-          number()
-            .validate(innerValidateFnTrap, "invalid count number")
-            .transform((num) => num * 1000)
-            .transform((str) => `count-${str}`),
-        ),
+      count: pipe(
+        string()
+          .validate(outerValidateFnTrap, "invalid count string")
+          .transform(Number.parseInt)
+          .default("2"),
+        number()
+          .validate(innerValidateFnTrap, "invalid count number")
+          .transform((num) => num * 1000)
+          .transform((str) => `count-${str}`),
+      ),
     });
     const data2 = Schema.toData(schema2, {});
     expect(data2).toStrictEqual({ count: "count-2000" });
@@ -143,18 +144,17 @@ describe("Types", () => {
     outerValidateFnTrap.mockClear();
     innerValidateFnTrap.mockClear();
 
-    // outer default (after)
+    // pipe default
     const schema3 = createSchema("test", {
-      count: string()
-        .validate(outerValidateFnTrap, "invalid count string")
-        .transform(Number.parseInt)
-        .pipe(
-          number()
-            .validate(innerValidateFnTrap, "invalid count number")
-            .transform((num) => num * 1000)
-            .transform((str) => `count-${str}`),
-        )
-        .default("3"),
+      count: pipe(
+        string()
+          .validate(outerValidateFnTrap, "invalid count string")
+          .transform(Number.parseInt),
+        number()
+          .validate(innerValidateFnTrap, "invalid count number")
+          .transform((num) => num * 1000)
+          .transform((str) => `count-${str}`),
+      ).default("3"),
     });
     const data3 = Schema.toData(schema3, {});
     expect(data3).toStrictEqual({ count: "count-3000" });
@@ -163,19 +163,19 @@ describe("Types", () => {
     outerValidateFnTrap.mockClear();
     innerValidateFnTrap.mockClear();
 
-    // inner default
+    // pipe out default
     const schema4 = createSchema("test", {
-      count: string()
-        .validate(outerValidateFnTrap, "invalid count string")
-        .transform(Number.parseInt)
-        .optional()
-        .pipe(
-          number()
-            .validate(innerValidateFnTrap, "invalid count number")
-            .transform((num) => num * 1000)
-            .transform((str) => `count-${str}`)
-            .default(4),
-        ),
+      count: pipe(
+        string()
+          .validate(outerValidateFnTrap, "invalid count string")
+          .transform(Number.parseInt)
+          .optional(),
+        number()
+          .validate(innerValidateFnTrap, "invalid count number")
+          .transform((num) => num * 1000)
+          .transform((str) => `count-${str}`)
+          .default(4),
+      ),
     });
     const data4 = Schema.toData(schema4, {});
     expect(data4).toStrictEqual({ count: "count-4000" });

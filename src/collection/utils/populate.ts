@@ -1,6 +1,6 @@
 import type { Sort as MongoSort } from "mongodb";
-import { MonarchMany } from "../../relations/many";
-import { MonarchRef } from "../../relations/ref";
+import { MonarchMany } from "../../schema/relations/many";
+import { MonarchRef } from "../../schema/relations/ref";
 import type { PipelineStage } from "../types/pipeline-stage";
 
 export const generatePopulatePipeline = (

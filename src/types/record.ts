@@ -15,7 +15,8 @@ export class MonarchRecord<T extends AnyMonarchType> extends MonarchType<
         const parsed = {} as Record<string, InferTypeOutput<T>>;
         for (const [key, value] of Object.entries(input)) {
           try {
-            parsed[key] = type._parser(value);
+            const parser = MonarchType.parser(type);
+            parsed[key] = parser(value);
           } catch (error) {
             if (error instanceof MonarchParseError) {
               throw new MonarchParseError(`field '${key}' ${error.message}'`);

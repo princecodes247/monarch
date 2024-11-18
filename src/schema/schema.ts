@@ -1,10 +1,10 @@
 import type { Projection } from "../collection/types/query-options";
 import { detectProjection } from "../collection/utils/projection";
-import type { AnyMonarchRelation, MonarchRelation } from "../relations/base";
-import { type Relations, relations } from "../relations/relations";
 import type { Merge, Pretty, WithOptionalId } from "../type-helpers";
-import { type AnyMonarchType, phantom } from "../types/type";
+import { type AnyMonarchType, MonarchType, phantom } from "../types/type";
 import type { InferTypeOutput } from "../types/type-helpers";
+import type { AnyMonarchRelation, MonarchRelation } from "./relations/base";
+import { type Relations, relations } from "./relations/relations";
 import type {
   CreateIndex,
   InferSchemaData,
@@ -47,16 +47,25 @@ type SchemaIndexes<
   [k: string]: SchemaIndex<Merge<TTypes, TRelations>>;
 };
 
+export type AnySchema = Schema<any, any, any, any, any>;
+export type AnySchemaWithoutRelations = Schema<
+  any,
+  any,
+  { [k: string]: never },
+  any,
+  any
+>;
+
 export class Schema<
   TName extends string,
   TTypes extends Record<string, AnyMonarchType>,
-  TRelations extends SchemaRelation<TTypes> = {},
-  TOmit extends SchemaOmit<TTypes, TRelations> = {},
+  TRelations extends SchemaRelation<any> = {},
+  TOmit extends SchemaOmit<any, any> = {},
   TVirtuals extends Record<string, Virtual<any, any, any>> = {},
 > {
   constructor(
     public name: TName,
-    private _types: TTypes,
+    public _types: TTypes,
     private _relations: TRelations,
     public options: {
       omit?: SchemaOmit<TTypes, TRelations>;
@@ -87,15 +96,15 @@ export class Schema<
     if (input._id) data._id = input._id;
     // parse fields
     for (const [key, type] of Object.entries(Schema.types(this))) {
-      const parsed = type._parser(input[key as keyof InferSchemaInput<this>]);
+      const parser = MonarchType.parser(type);
+      const parsed = parser(input[key as keyof InferSchemaInput<this>]);
       if (parsed === undefined || parsed === phantom) continue;
       data[key as keyof typeof data] = parsed;
     }
     // add and optionally override with relation types
     for (const [key, relation] of Object.entries(Schema.relations(this))) {
-      const parsed = relation.type._parser(
-        input[key as keyof InferSchemaInput<this>],
-      );
+      const parser = MonarchType.parser(relation.type);
+      const parsed = parser(input[key as keyof InferSchemaInput<this>]);
       if (parsed === undefined || parsed === phantom) continue;
       data[key as keyof typeof data] = parsed;
     }
@@ -142,8 +151,9 @@ export class Schema<
     const updates = {} as Partial<InferSchemaOutput<this>>;
     // omit fields
     for (const [key, type] of Object.entries(Schema.types(this))) {
-      if (type._updater) {
-        updates[key as keyof InferSchemaOutput<this>] = type._updater();
+      const updater = MonarchType.updater(type);
+      if (updater) {
+        updates[key as keyof InferSchemaOutput<this>] = updater();
       }
     }
     return updates;
@@ -217,12 +227,3 @@ export function makeIndexes<
     unique: (field) => [{ [field as any]: 1 as const }, { unique: true }],
   });
 }
-
-export type AnySchema = Schema<any, any, any, any, any>;
-export type AnySchemaWithoutRelations = Schema<
-  any,
-  any,
-  { [k: string]: never },
-  any,
-  any
->;

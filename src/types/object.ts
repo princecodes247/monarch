@@ -27,7 +27,8 @@ export class MonarchObject<
           T[keyof T],
         ][]) {
           try {
-            parsed[key as keyof typeof parsed] = type._parser(
+            const parser = MonarchType.parser(type);
+            parsed[key as keyof typeof parsed] = parser(
               input[key as keyof typeof input],
             );
           } catch (error) {

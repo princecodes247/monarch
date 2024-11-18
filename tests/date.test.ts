@@ -12,10 +12,9 @@ import {
 import {
   createDatabase,
   createSchema,
-  createdAtDate,
+  createdAt,
   date,
-  dateString,
-  updatedAtDate,
+  updatedAt,
 } from "../src";
 
 const mongod = await MongoMemoryServer.create();
@@ -74,45 +73,9 @@ describe("test for date", () => {
     );
   });
 
-  it("inserts date string and finds it", async () => {
+  it("createdAt date", async () => {
     const UserSchema = createSchema("users", {
-      currentDate: dateString(),
-    });
-    const markedDate = new Date();
-    const { db, collections } = createDatabase(client.db(), {
-      users: UserSchema,
-    });
-
-    // collections query builder
-    const newUser = await collections.users
-      .insertOne({
-        currentDate: markedDate,
-      })
-      .exec();
-    expect(newUser).not.toBe(null);
-    expect(newUser).toStrictEqual(
-      expect.objectContaining({
-        currentDate: markedDate.toISOString(),
-      }),
-    );
-
-    // db query builder
-    const users = await db(UserSchema)
-      .find({ currentDate: markedDate.toISOString() })
-      .exec();
-    expect(users.length).toBeGreaterThanOrEqual(1);
-
-    const existingUser = users[0];
-    expect(existingUser).toStrictEqual(
-      expect.objectContaining({
-        currentDate: markedDate.toISOString(),
-      }),
-    );
-  });
-
-  it("createdAtDate", async () => {
-    const UserSchema = createSchema("users", {
-      createdAt: createdAtDate(),
+      createdAt: createdAt(),
     });
     const beforeInsert = new Date();
     const { db, collections } = createDatabase(client.db(), {
@@ -143,9 +106,9 @@ describe("test for date", () => {
     );
   });
 
-  it("updatedAtDate", async () => {
+  it("updatedAt date", async () => {
     const UserSchema = createSchema("users", {
-      updatedAt: updatedAtDate(),
+      updatedAt: updatedAt(),
     });
     const { db, collections } = createDatabase(client.db(), {
       users: UserSchema,

@@ -1,5 +1,5 @@
-import type { AnySchema, AnySchemaWithoutRelations } from "../schema/schema";
-import type { InferSchemaData } from "../schema/type-helpers";
+import type { AnySchema, AnySchemaWithoutRelations } from "../schema";
+import type { InferSchemaData } from "../type-helpers";
 import { MonarchMany } from "./many";
 import { MonarchOne } from "./one";
 import { MonarchRef } from "./ref";
