@@ -1,5 +1,7 @@
 import type { Sort as MongoSort } from "mongodb";
+import { MonarchRelation } from "../../schema/relations/base";
 import { MonarchMany } from "../../schema/relations/many";
+import { MonarchOne } from "../../schema/relations/one";
 import { MonarchRef } from "../../schema/relations/ref";
 import type { PipelineStage } from "../types/pipeline-stage";
 
@@ -8,11 +10,13 @@ export const generatePopulatePipeline = (
   relationKey: string,
 ): PipelineStage<any>[] => {
   if (!relation) return [];
-  const collectionName = relation._target?.name;
 
-  if (!collectionName) return [];
   const type = inferRelationType(relation);
+  if (!type) return [];
 
+  const collectionName =
+    relation?.type?._target?.name ?? relation._target?.name;
+  if (!collectionName) return [];
   const foreignField = relation._field;
   const fieldVariable = `monarch_${relationKey}_${foreignField}_var`;
   const fieldData = `monarch_${relationKey}_data`;
@@ -49,7 +53,7 @@ export const generatePopulatePipeline = (
     });
 
     // Unwind the populated field if it's a single relation
-    if (type === "single") {
+    if (type === "one") {
       pipeline.push({ $unwind: `$${fieldData}` });
     }
 
@@ -64,10 +68,13 @@ export const generatePopulatePipeline = (
   return pipeline;
 };
 
-export const inferRelationType = (relation: any): "many" | "ref" | "single" => {
-  if (relation instanceof MonarchMany) return "many";
-  if (relation instanceof MonarchRef) return "ref";
-  return "single";
+export const inferRelationType = (
+  relation: any,
+): "many" | "ref" | "one" | null => {
+  if (MonarchRelation.isInstanceOf(relation, MonarchMany)) return "many";
+  if (MonarchRelation.isInstanceOf(relation, MonarchRef)) return "ref";
+  if (MonarchRelation.isInstanceOf(relation, MonarchOne)) return "one";
+  return null;
 };
 
 export const generatePopulationMetas = ({
@@ -83,10 +90,10 @@ export const generatePopulationMetas = ({
   if (sort) {
     metas.push({ $sort: sort });
   }
-  if (skip !== undefined) {
+  if (skip) {
     metas.push({ $skip: skip });
   }
-  if (limit !== undefined) {
+  if (limit) {
     metas.push({ $limit: limit });
   }
   return metas;
