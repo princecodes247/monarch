@@ -111,6 +111,12 @@ export class FindOneQuery<
       pipeline.push({
         $limit: 1,
       });
+      if (Object.keys(this._projection).length > 0) {
+        pipeline.push({
+          // @ts-expect-error
+          $project: this._projection,
+        });
+      }
 
       const result = await this._collection.aggregate(pipeline).toArray();
       return result.length > 0

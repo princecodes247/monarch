@@ -130,6 +130,12 @@ export class FindQuery<
         const relation = Schema.relations(this._schema)[relationKey];
         pipeline.push(...generatePopulatePipeline(relation, relationKey));
       }
+      if (Object.keys(this._projection).length > 0) {
+        pipeline.push({
+          // @ts-expect-error
+          $project: this._projection,
+        });
+      }
       pipeline.push(
         ...generatePopulationMetas({
           limit: this._options.limit,
