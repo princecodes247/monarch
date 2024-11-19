@@ -100,6 +100,7 @@ export class FindOneQuery<
       const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
         // @ts-expect-error
         { $match: this._filter },
+        { $limit: 1 },
       ];
       for (const [relationKey, shouldPopulate] of Object.entries(
         this._population,
@@ -108,9 +109,6 @@ export class FindOneQuery<
         const relation = Schema.relations(this._schema)[relationKey];
         pipeline.push(...generatePopulatePipeline(relation, relationKey));
       }
-      pipeline.push({
-        $limit: 1,
-      });
       if (Object.keys(this._projection).length > 0) {
         pipeline.push({
           // @ts-expect-error

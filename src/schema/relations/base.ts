@@ -26,42 +26,47 @@ export abstract class MonarchRelation<TInput, TOutput> {
   }
 }
 
-export class MonarchNullableRelation<
-  T extends AnyMonarchRelation,
-> extends MonarchRelation<
-  InferRelationInput<T> | null,
-  InferRelationOutput<T> | null
-> {
-  constructor(private type: T) {
-    super((input) => {
-      if (input === null) return null;
-      return type.parser(input);
-    });
-  }
-
-  protected isInstanceOf(target: new (...args: any[]) => any) {
-    return (
-      this instanceof target || MonarchRelation.isInstanceOf(this.type, target)
-    );
-  }
-}
-
-export class MonarchOptionalRelation<
+abstract class BaseWrappedRelation<
   T extends AnyMonarchRelation,
 > extends MonarchRelation<
   InferRelationInput<T> | undefined,
   InferRelationOutput<T> | undefined
 > {
-  constructor(private type: T) {
-    super((input) => {
-      if (input === undefined) return undefined;
-      return type.parser(input);
-    });
+  constructor(
+    protected type: T,
+    parser: Parser<any, any>,
+  ) {
+    super(parser);
   }
 
   protected isInstanceOf(target: new (...args: any[]) => any) {
     return (
-      this instanceof target || MonarchRelation.isInstanceOf(this.type, target)
+      this instanceof target ||
+      (this.type != null && MonarchRelation.isInstanceOf(this.type, target))
     );
+  }
+}
+
+export class MonarchNullableRelation<
+  T extends AnyMonarchRelation,
+> extends BaseWrappedRelation<T> {
+  constructor(type: T) {
+    super(type, (input) => {
+      if (input === null) return null;
+      return type.parser(input);
+    });
+    this.type = type;
+  }
+}
+
+export class MonarchOptionalRelation<
+  T extends AnyMonarchRelation,
+> extends BaseWrappedRelation<T> {
+  constructor(type: T) {
+    super(type, (input) => {
+      if (input === undefined) return undefined;
+      return type.parser(input);
+    });
+    this.type = type;
   }
 }
