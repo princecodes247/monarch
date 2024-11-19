@@ -24,7 +24,16 @@
     "watch": "vitest",
     "test": "vitest run"
   },
-  "keywords": ["mongodb", "odm", "orm", "typescript"],
+  "keywords": [
+    "mongodb",
+    "odm",
+    "orm",
+    "typescript",
+    "mongo",
+    "type-safe",
+    "db",
+    "mongoose"
+  ],
   "author": "Prince Gbalam <princecodes247@gmail.com>",
   "license": "MIT",
   "repository": {
