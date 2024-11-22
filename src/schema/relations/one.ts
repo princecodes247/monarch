@@ -1,4 +1,4 @@
-import { MonarchType, pipeParser } from "../../types/type";
+import { MonarchType } from "../../types/type";
 import {
   type AnySchema,
   type AnySchemaWithoutRelations,
@@ -22,12 +22,7 @@ export class MonarchOne<
     public _field: TField,
   ) {
     const targetTypes = Schema.types(_target);
-    const schemaTypes = Schema.types(_schema);
-    let parser = MonarchType.parser(targetTypes[_field]);
-    // if field type is duplicated in current schema, validate first and pass the output to the target schema
-    if (_field in schemaTypes) {
-      parser = pipeParser(MonarchType.parser(schemaTypes[_field]), parser);
-    }
-    super(parser);
+    const targetParser = MonarchType.parser(targetTypes[_field]);
+    super(targetParser);
   }
 }

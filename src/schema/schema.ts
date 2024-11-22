@@ -97,14 +97,18 @@ export class Schema<
   private toData(input: InferSchemaInput<this>): InferSchemaData<this> {
     const data = {} as InferSchemaData<this>;
     // parse fields
-    for (const [key, type] of Object.entries(Schema.types(this))) {
+    const types = Schema.types(this);
+    for (const [key, type] of Object.entries(types)) {
       const parser = MonarchType.parser(type);
       const parsed = parser(input[key as keyof InferSchemaInput<this>]);
       if (parsed === undefined || parsed === phantom) continue;
       data[key as keyof typeof data] = parsed;
     }
     // add and optionally override with relation types
-    for (const [key, relation] of Object.entries(Schema.relations(this))) {
+    const relations = Schema.relations(this);
+    for (const [key, relation] of Object.entries(relations)) {
+      // skip parsing relation fields duplicated in the current schema
+      if (key in types) continue;
       const parsed = relation.parser(
         input[key as keyof InferSchemaInput<this>],
       );
