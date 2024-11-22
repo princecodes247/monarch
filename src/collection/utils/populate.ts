@@ -39,12 +39,17 @@ export const generatePopulatePipeline = (
       },
     });
   } else {
+    const sourceField =
+      relationDetails instanceof MonarchRef
+        ? relationDetails._references
+        : relationKey;
+
     // Lookup for "single" and "ref" relations
     pipeline.push({
       $lookup: {
         from: collectionName,
         let: {
-          [fieldVariable]: `$${relationDetails instanceof MonarchRef ? relationDetails._references : relationKey}`,
+          [fieldVariable]: `$${sourceField}`,
         },
         pipeline: [
           {
@@ -74,7 +79,6 @@ export const generatePopulatePipeline = (
         },
       });
       // pipeline.push({ $unwind: { path: `$${fieldData}`, preserveNullAndEmptyArrays: true } });
-
     }
 
     // Replace the original field with the populated data

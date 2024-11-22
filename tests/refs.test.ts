@@ -101,11 +101,11 @@ describe("Tests for refs population", () => {
       })
       .populate({ contributors: true, author: true })
       .exec();
-    // console.log({ populatedPost });
 
     expect(populatedPost?.author).toStrictEqual(user);
-    // if(populatedPost?.contributors)
-    // expect(populatedPost?.contributors[0]?.name).toStrictEqual(user2.name);
+    expect(populatedPost?.contributors).toBeDefined();
+    expect(populatedPost?.contributors).toHaveLength(1);
+    // expect(populatedPost?.contributors[0]).toStrictEqual(user2);
   });
 
   it("should populate 'posts' in find for multiple users", async () => {
@@ -151,13 +151,21 @@ describe("Tests for refs population", () => {
       })
       .exec();
 
+    // Test case for optional author
+    await collections.posts
+      .insertOne({
+        title: "No Author",
+        contents: "Lorem",
+        editor: user._id,
+        contributors: [],
+      })
+      .exec();
+
     // Fetch and populate posts for all users using find
     const populatedUsers = await collections.users
       .find()
       .populate({ posts: true, tutor: true })
       .exec();
-
-    // console.log({ populatedUsers });
 
     expect(populatedUsers.length).toBe(2);
     // expect(populatedUsers[0].posts.length).toBe(2);
