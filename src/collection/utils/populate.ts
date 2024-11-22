@@ -10,20 +10,16 @@ export const generatePopulatePipeline = (
   relationKey: string,
 ): PipelineStage<any>[] => {
   const relationDetails = MonarchRelation.getRelation(relation);
-  console.log({ relationDetails, relation });
   if (!relationDetails) return [];
 
-  if (
-    !(
-      relationDetails instanceof MonarchMany ||
-      relationDetails instanceof MonarchOne ||
-      relationDetails instanceof MonarchRef
-    )
-  )
-    return [];
+  const isSupportedRelation =
+    relationDetails instanceof MonarchMany ||
+    relationDetails instanceof MonarchOne ||
+    relationDetails instanceof MonarchRef;
+
+  if (!isSupportedRelation) return [];
 
   const collectionName = relationDetails._target.name;
-  console.log({ collectionName, relationDetails });
 
   if (!collectionName) return [];
 
@@ -65,7 +61,20 @@ export const generatePopulatePipeline = (
 
     // Unwind the populated field if it's a single relation
     if (relationDetails instanceof MonarchOne) {
-      pipeline.push({ $unwind: `$${fieldData}` });
+      pipeline.push({
+        $set: {
+          [fieldData]: {
+            $cond: {
+              if: { $gt: [{ $size: `$${fieldData}` }, 0] }, // Skip population if value is null
+              // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
+              then: { $arrayElemAt: [`$${fieldData}`, 0] }, // Unwind the first populated result
+              else: null, // Keep the original value
+            },
+          },
+        },
+      });
+      // pipeline.push({ $unwind: { path: `$${fieldData}`, preserveNullAndEmptyArrays: true } });
+
     }
 
     // Replace the original field with the populated data

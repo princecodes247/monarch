@@ -45,7 +45,7 @@ describe("Tests for refs population", () => {
     const _PostSchema = createSchema("posts", {
       title: string(),
       contents: string(),
-      author: objectId(),
+      author: objectId().optional(),
       contributors: array(objectId()).optional().default([]),
     });
 
@@ -54,7 +54,7 @@ describe("Tests for refs population", () => {
       posts: ref(_PostSchema, "author", "_id"),
     }));
     const PostSchema = _PostSchema.relations(({ one, many }) => ({
-      author: one(_UserSchema, "_id"),
+      author: one(_UserSchema, "_id").optional(),
       editor: one(_UserSchema, "_id"),
       contributors: many(_UserSchema, "_id").optional(),
     }));
@@ -99,11 +99,11 @@ describe("Tests for refs population", () => {
       .findOne({
         title: "Pilot",
       })
-      .populate({ contributors: true })
+      .populate({ contributors: true, author: true })
       .exec();
     // console.log({ populatedPost });
 
-    // expect(populatedPost?.author).toStrictEqual(user);
+    expect(populatedPost?.author).toStrictEqual(user);
     // if(populatedPost?.contributors)
     // expect(populatedPost?.contributors[0]?.name).toStrictEqual(user2.name);
   });
