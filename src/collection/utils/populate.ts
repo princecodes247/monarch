@@ -6,13 +6,13 @@ import {
 import { MonarchMany } from "../../schema/relations/many";
 import { MonarchOne } from "../../schema/relations/one";
 import { MonarchRef } from "../../schema/relations/ref";
-import type { PipelineStage } from "../types/pipeline-stage";
+import type { Limit, PipelineStage, Skip, Sort } from "../types/pipeline-stage";
 
-export function generatePopulatePipeline(
+export function addPopulatePipeline(
+  pipeline: PipelineStage<any>[],
   relationField: string,
   relation: AnyMonarchRelation,
-): PipelineStage<any>[] {
-  const pipeline: PipelineStage<any>[] = [];
+) {
   const type = MonarchRelation.getRelation(relation);
 
   if (type instanceof MonarchMany) {
@@ -103,30 +103,19 @@ export function generatePopulatePipeline(
       { $unset: fieldData }, // Clean up the temp fieldData
     );
   }
-
-  return pipeline;
 }
 
-export const generatePopulationMetas = ({
-  sort,
-  skip,
-  limit,
-}: {
-  sort?: Record<string, 1 | Meta | -1>;
-  skip?: number;
-  limit?: number;
-}) => {
-  const metas: PipelineStage<any>[] = [];
-  if (sort) {
-    metas.push({ $sort: sort });
-  }
-  if (skip) {
-    metas.push({ $skip: skip });
-  }
-  if (limit) {
-    metas.push({ $limit: limit });
-  }
-  return metas;
+export const addPopulationMetas = (
+  pipeline: PipelineStage<any>[],
+  options: {
+    sort?: Sort["$sort"];
+    skip?: Skip["$skip"];
+    limit?: Limit["$limit"];
+  },
+) => {
+  if (options.sort) pipeline.push({ $sort: options.sort });
+  if (options.skip) pipeline.push({ $skip: options.skip });
+  if (options.limit) pipeline.push({ $limit: options.limit });
 };
 
 type Meta = { $meta: any };

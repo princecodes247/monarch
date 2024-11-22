@@ -20,8 +20,8 @@ import type {
   WithProjection,
 } from "../types/query-options";
 import {
-  generatePopulatePipeline,
-  generatePopulationMetas,
+  addPopulatePipeline,
+  addPopulationMetas,
   getSortDirection,
 } from "../utils/populate";
 import {
@@ -126,23 +126,19 @@ export class FindQuery<
       const relations = Schema.relations(this._schema);
       for (const [field, select] of Object.entries(this._population)) {
         if (!select) continue;
-        pipeline.push(...generatePopulatePipeline(field, relations[field]));
+        addPopulatePipeline(pipeline, field, relations[field]);
       }
       if (Object.keys(this._projection).length > 0) {
-        pipeline.push({
-          // @ts-expect-error
-          $project: this._projection,
-        });
+        // @ts-expect-error
+        pipeline.push({ $project: this._projection });
       }
-      pipeline.push(
-        ...generatePopulationMetas({
-          limit: this._options.limit,
-          skip: this._options.skip,
-          sort: this._options.sort
-            ? getSortDirection(this._options.sort)
-            : undefined,
-        }),
-      );
+      addPopulationMetas(pipeline, {
+        limit: this._options.limit,
+        skip: this._options.skip,
+        sort: this._options.sort
+          ? getSortDirection(this._options.sort)
+          : undefined,
+      });
       const result = await this._collection.aggregate(pipeline).toArray();
       return result.length > 0
         ? result.map(

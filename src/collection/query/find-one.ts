@@ -17,7 +17,7 @@ import type {
   Projection,
   WithProjection,
 } from "../types/query-options";
-import { generatePopulatePipeline } from "../utils/populate";
+import { addPopulatePipeline } from "../utils/populate";
 import {
   addExtraInputsToProjection,
   makeProjection,
@@ -105,13 +105,11 @@ export class FindOneQuery<
       const relations = Schema.relations(this._schema);
       for (const [field, select] of Object.entries(this._population)) {
         if (!select) continue;
-        pipeline.push(...generatePopulatePipeline(field, relations[field]));
+        addPopulatePipeline(pipeline, field, relations[field]);
       }
       if (Object.keys(this._projection).length > 0) {
-        pipeline.push({
-          // @ts-expect-error
-          $project: this._projection,
-        });
+        // @ts-expect-error
+        pipeline.push({ $project: this._projection });
       }
 
       const result = await this._collection.aggregate(pipeline).toArray();
