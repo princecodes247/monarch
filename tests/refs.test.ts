@@ -54,7 +54,7 @@ describe("Tests for refs population", () => {
       posts: ref(_PostSchema, "author", "_id"),
     }));
     const PostSchema = _PostSchema.relations(({ one, many }) => ({
-      author: one(_UserSchema, "_id").optional(),
+      author: one(_UserSchema, "_id").optional().nullable(),
       editor: one(_UserSchema, "_id"),
       contributors: many(_UserSchema, "_id").optional(),
     }));

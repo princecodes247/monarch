@@ -36,7 +36,7 @@ export class MonarchNullableRelation<
     });
   }
   protected getRelation() {
-    return this.type;
+    return MonarchRelation.getRelation(this.type) || this.type;
   }
 }
 
@@ -54,6 +54,6 @@ export class MonarchOptionalRelation<
   }
 
   protected getRelation() {
-    return this.type;
+    return MonarchRelation.getRelation(this.type) || this.type;
   }
 }
