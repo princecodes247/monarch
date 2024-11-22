@@ -3,14 +3,17 @@ import type {
   FindOptions,
   Collection as MongoCollection,
 } from "mongodb";
-import type { SchemaRelationSelect } from "../../schema/relations/type-helpers";
+import type {
+  InferRelationPopulationObject,
+  SchemaRelationSelect,
+} from "../../schema/relations/type-helpers";
 import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
   InferSchemaOmit,
   InferSchemaOutput,
 } from "../../schema/type-helpers";
-import type { Pretty, TrueKeys } from "../../type-helpers";
+import type { Merge, Pretty, TrueKeys } from "../../type-helpers";
 import type { PipelineStage } from "../types/pipeline-stage";
 import type {
   BoolProjection,
@@ -26,8 +29,9 @@ import { Query } from "./base";
 
 export class FindOneQuery<
   T extends AnySchema,
-  O = WithProjection<"omit", InferSchemaOutput<T>, InferSchemaOmit<T>>,
-> extends Query<T, O | null> {
+  O = InferSchemaOutput<T>,
+  P extends ["omit" | "select", keyof any] = ["omit", InferSchemaOmit<T>],
+> extends Query<T, WithProjection<P[0], P[1], O> | null> {
   private _projection: Projection<InferSchemaOutput<T>>;
   private _population: SchemaRelationSelect<T> = {};
 
@@ -49,26 +53,23 @@ export class FindOneQuery<
 
   public omit<P extends BoolProjection<InferSchemaOutput<T>>>(projection: P) {
     this._projection = makeProjection("omit", projection);
-    return this as FindOneQuery<
-      T,
-      WithProjection<"omit", InferSchemaOutput<T>, TrueKeys<P>>
-    >;
+    return this as FindOneQuery<T, O, ["omit", TrueKeys<P>]>;
   }
 
   public select<P extends BoolProjection<InferSchemaOutput<T>>>(projection: P) {
     this._projection = makeProjection("select", projection);
-    return this as FindOneQuery<
-      T,
-      WithProjection<"select", InferSchemaOutput<T>, TrueKeys<P>>
-    >;
+    return this as FindOneQuery<T, O, ["select", TrueKeys<P>]>;
   }
 
   public populate<P extends Pretty<SchemaRelationSelect<T>>>(population: P) {
     Object.assign(this._population, population);
-    return this as FindOneQuery<T, InferSchemaOutput<T>>;
+    return this as FindOneQuery<
+      T,
+      Pretty<Merge<O, InferRelationPopulationObject<T, keyof P>>>
+    >;
   }
 
-  public async exec(): Promise<O | null> {
+  public async exec(): Promise<WithProjection<P[0], P[1], O> | null> {
     await this._readyPromise;
     if (Object.keys(this._population).length) {
       return this._execWithPopulate();
@@ -76,7 +77,11 @@ export class FindOneQuery<
     return this._execWithoutPopulate();
   }
 
-  private async _execWithoutPopulate(): Promise<O | null> {
+  private async _execWithoutPopulate(): Promise<WithProjection<
+    P[0],
+    P[1],
+    O
+  > | null> {
     const extra = addExtraInputsToProjection(
       this._projection,
       this._schema.options.virtuals,
@@ -95,7 +100,11 @@ export class FindOneQuery<
       : res;
   }
 
-  private async _execWithPopulate(): Promise<O | null> {
+  private async _execWithPopulate(): Promise<WithProjection<
+    P[0],
+    P[1],
+    O
+  > | null> {
     try {
       const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
         // @ts-expect-error

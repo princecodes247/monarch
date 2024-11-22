@@ -3,14 +3,17 @@ import type {
   FindOneAndDeleteOptions,
   Collection as MongoCollection,
 } from "mongodb";
-import type { SchemaRelationSelect } from "../../schema/relations/type-helpers";
+import type {
+  InferRelationPopulationObject,
+  SchemaRelationSelect,
+} from "../../schema/relations/type-helpers";
 import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
   InferSchemaOmit,
   InferSchemaOutput,
 } from "../../schema/type-helpers";
-import type { Pretty, TrueKeys } from "../../type-helpers";
+import type { Merge, Pretty, TrueKeys } from "../../type-helpers";
 import type {
   BoolProjection,
   Projection,
@@ -24,8 +27,9 @@ import { Query } from "./base";
 
 export class FindOneAndDeleteQuery<
   T extends AnySchema,
-  O = WithProjection<"omit", InferSchemaOutput<T>, InferSchemaOmit<T>>,
-> extends Query<T, O | null> {
+  O = InferSchemaOutput<T>,
+  P extends ["omit" | "select", keyof any] = ["omit", InferSchemaOmit<T>],
+> extends Query<T, WithProjection<P[0], P[1], O> | null> {
   private _projection: Projection<InferSchemaOutput<T>>;
   private _population: SchemaRelationSelect<T> = {};
 
@@ -47,26 +51,25 @@ export class FindOneAndDeleteQuery<
 
   public omit<P extends BoolProjection<InferSchemaOutput<T>>>(projection: P) {
     this._projection = makeProjection("omit", projection);
-    return this as FindOneAndDeleteQuery<
-      T,
-      WithProjection<"omit", InferSchemaOutput<T>, TrueKeys<P>>
-    >;
+    return this as FindOneAndDeleteQuery<T, O, ["omit", TrueKeys<P>]>;
   }
 
   public select<P extends BoolProjection<InferSchemaOutput<T>>>(projection: P) {
     this._projection = makeProjection("select", projection);
-    return this as FindOneAndDeleteQuery<
-      T,
-      WithProjection<"select", InferSchemaOutput<T>, TrueKeys<P>>
-    >;
+    return this as FindOneAndDeleteQuery<T, O, ["select", TrueKeys<P>]>;
   }
 
   public populate<P extends Pretty<SchemaRelationSelect<T>>>(population: P) {
     Object.assign(this._population, population);
-    return this as FindOneAndDeleteQuery<T, InferSchemaOutput<T>>;
+    return this as FindOneAndDeleteQuery<
+      T,
+      Pretty<
+        Merge<O, Pretty<Merge<O, InferRelationPopulationObject<T, keyof P>>>>
+      >
+    >;
   }
 
-  public async exec(): Promise<O | null> {
+  public async exec(): Promise<WithProjection<P[0], P[1], O> | null> {
     await this._readyPromise;
     const extra = addExtraInputsToProjection(
       this._projection,

@@ -7,16 +7,15 @@ import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
   InferSchemaInput,
-  InferSchemaOmit,
   InferSchemaOutput,
 } from "../../schema/type-helpers";
-import type { Projection, WithProjection } from "../types/query-options";
+import type { Projection } from "../types/query-options";
 import { makeProjection } from "../utils/projection";
 import { Query } from "./base";
 
 export class InsertOneQuery<
   T extends AnySchema,
-  O extends WithProjection<"omit", InferSchemaOutput<T>, InferSchemaOmit<T>>,
+  O = InferSchemaOutput<T>,
 > extends Query<T, O> {
   private _projection: Projection<InferSchemaOutput<T>>;
 

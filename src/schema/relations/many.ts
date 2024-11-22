@@ -17,6 +17,8 @@ export class MonarchMany<
   SchemaInputWithId<TTarget>[TField][],
   InferSchemaData<TTarget>[TField][]
 > {
+  private _tag = "many";
+
   constructor(
     public _schema: TSchema,
     public _target: TTarget,

@@ -105,7 +105,7 @@ describe("Tests for refs population", () => {
     expect(populatedPost?.author).toStrictEqual(user);
     expect(populatedPost?.contributors).toBeDefined();
     expect(populatedPost?.contributors).toHaveLength(1);
-    // expect(populatedPost?.contributors[0]).toStrictEqual(user2);
+    expect(populatedPost?.contributors[0]).toStrictEqual(user2);
   });
 
   it("should populate 'posts' in find for multiple users", async () => {
@@ -168,8 +168,8 @@ describe("Tests for refs population", () => {
       .exec();
 
     expect(populatedUsers.length).toBe(2);
-    // expect(populatedUsers[0].posts.length).toBe(2);
-    // expect(populatedUsers[1].posts.length).toBe(0);
-    // expect(populatedUsers[1].tutor).toStrictEqual(user);
+    expect(populatedUsers[0].posts.length).toBe(2);
+    expect(populatedUsers[1].posts.length).toBe(0);
+    expect(populatedUsers[1].tutor).toStrictEqual(user);
   });
 });

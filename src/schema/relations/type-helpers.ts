@@ -1,8 +1,21 @@
 import type { ObjectId } from "mongodb";
+import { Index } from "../../type-helpers";
 import type { MonarchPhantom } from "../../types/type";
 import type { AnySchema } from "../schema";
-import type { InferSchemaRelations, SchemaInputWithId } from "../type-helpers";
-import type { AnyMonarchRelation, MonarchRelation } from "./base";
+import type {
+  InferSchemaOutput,
+  InferSchemaRelations,
+  SchemaInputWithId,
+} from "../type-helpers";
+import type {
+  AnyMonarchRelation,
+  MonarchNullableRelation,
+  MonarchOptionalRelation,
+  MonarchRelation,
+} from "./base";
+import { MonarchMany } from "./many";
+import { MonarchOne } from "./one";
+import { MonarchRef } from "./ref";
 
 type ValidRelationFieldType = string | number | ObjectId;
 export type SchemaRelatableField<T extends AnySchema> = keyof {
@@ -47,4 +60,27 @@ export type InferRelationObjectOutput<
   [K in keyof T as InferRelationOutput<T[K]> extends MonarchPhantom
     ? never
     : K]: InferRelationOutput<T[K]>;
+};
+
+export type InferRelationPopulation<T> = T extends MonarchOne<
+  any,
+  infer TTarget,
+  any
+>
+  ? InferSchemaOutput<TTarget>
+  : T extends MonarchMany<any, infer TTarget, any>
+    ? InferSchemaOutput<TTarget>[]
+    : T extends MonarchRef<any, infer TTarget, any, any>
+      ? InferSchemaOutput<TTarget>[]
+      : T extends MonarchOptionalRelation<infer TRelation>
+        ? InferRelationPopulation<TRelation>
+        : T extends MonarchNullableRelation<infer TRelation>
+          ? InferRelationPopulation<TRelation>
+          : never;
+
+export type InferRelationPopulationObject<
+  T extends AnySchema,
+  Keys extends keyof any,
+> = {
+  [K in Keys]: InferRelationPopulation<Index<InferSchemaRelations<T>, K>>;
 };
