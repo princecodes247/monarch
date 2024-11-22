@@ -8,6 +8,12 @@ import { MonarchOne } from "../../schema/relations/one";
 import { MonarchRef } from "../../schema/relations/ref";
 import type { Limit, PipelineStage, Skip, Sort } from "../types/pipeline-stage";
 
+/**
+ * Adds population stages to an existing MongoDB pipeline for relation handling
+ * @param pipeline - The MongoDB pipeline array to modify
+ * @param relationField - The field name containing the relation
+ * @param relation - The Monarch relation configuration
+ */
 export function addPopulatePipeline(
   pipeline: PipelineStage<any>[],
   relationField: string,
@@ -24,6 +30,18 @@ export function addPopulatePipeline(
         localField: relationField,
         foreignField: foreignField,
         as: relationField,
+      },
+    });
+    pipeline.push({
+      $addFields: {
+        [relationField]: {
+          $cond: {
+            if: { $isArray: `$${relationField}` },
+            // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
+            then: `$${relationField}`,
+            else: [],
+          },
+        },
       },
     });
   }
@@ -44,7 +62,10 @@ export function addPopulatePipeline(
           {
             $match: {
               $expr: {
-                $eq: [`$${foreignField}`, `$$${fieldVariable}`],
+                $and: [
+                  { $ne: [`$$${fieldVariable}`, null] },
+                  { $eq: [`$${foreignField}`, `$$${fieldVariable}`] },
+                ],
               },
             },
           },
@@ -91,7 +112,14 @@ export function addPopulatePipeline(
             if: { $gt: [{ $size: `$${fieldData}` }, 0] }, // Skip population if value is null
             // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
             then: { $arrayElemAt: [`$${fieldData}`, 0] }, // Unwind the first populated result
-            else: null, // Keep the original value
+            else: {
+              $cond: {
+                if: { $eq: [`$${relationField}`, null] },
+                // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
+                then: null,
+                else: { $literal: { error: "Invalid reference" } },
+              },
+            },
           },
         },
       },

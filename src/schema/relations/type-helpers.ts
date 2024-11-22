@@ -1,5 +1,5 @@
 import type { ObjectId } from "mongodb";
-import { Index } from "../../type-helpers";
+import type { Index } from "../../type-helpers";
 import type { MonarchPhantom } from "../../types/type";
 import type { AnySchema } from "../schema";
 import type {
@@ -13,9 +13,9 @@ import type {
   MonarchOptionalRelation,
   MonarchRelation,
 } from "./base";
-import { MonarchMany } from "./many";
-import { MonarchOne } from "./one";
-import { MonarchRef } from "./ref";
+import type { MonarchMany } from "./many";
+import type { MonarchOne } from "./one";
+import type { MonarchRef } from "./ref";
 
 type ValidRelationFieldType = string | number | ObjectId;
 export type SchemaRelatableField<T extends AnySchema> = keyof {

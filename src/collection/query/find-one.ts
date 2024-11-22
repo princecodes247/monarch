@@ -105,35 +105,29 @@ export class FindOneQuery<
     P[1],
     O
   > | null> {
-    try {
-      const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
-        // @ts-expect-error
-        { $match: this._filter },
-        { $limit: 1 },
-      ];
-      const relations = Schema.relations(this._schema);
-      for (const [field, select] of Object.entries(this._population)) {
-        if (!select) continue;
-        addPopulatePipeline(pipeline, field, relations[field]);
-      }
-      if (Object.keys(this._projection).length > 0) {
-        // @ts-expect-error
-        pipeline.push({ $project: this._projection });
-      }
-
-      const result = await this._collection.aggregate(pipeline).toArray();
-      return result.length > 0
-        ? (Schema.fromData(
-            this._schema,
-            result[0] as InferSchemaData<T>,
-            this._projection,
-            null,
-          ) as O)
-        : null;
-    } catch (error) {
-      console.error("Error executing population query:", error);
-      // throw new MonarchError("Error executing population query");
-      return null;
+    const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
+      // @ts-expect-error
+      { $match: this._filter },
+      { $limit: 1 },
+    ];
+    const relations = Schema.relations(this._schema);
+    for (const [field, select] of Object.entries(this._population)) {
+      if (!select) continue;
+      addPopulatePipeline(pipeline, field, relations[field]);
     }
+    if (Object.keys(this._projection).length > 0) {
+      // @ts-expect-error
+      pipeline.push({ $project: this._projection });
+    }
+
+    const result = await this._collection.aggregate(pipeline).toArray();
+    return result.length > 0
+      ? (Schema.fromData(
+          this._schema,
+          result[0] as InferSchemaData<T>,
+          this._projection,
+          null,
+        ) as O)
+      : null;
   }
 }

@@ -1193,7 +1193,7 @@ export interface IsArray {
    * @version 3.2
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/isArray/#mongodb-expression-exp.-isArray
    */
-  $isArray: [Expression];
+  $isArray: [Expression] | string;
 }
 
 export interface Last {

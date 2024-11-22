@@ -123,43 +123,41 @@ export class FindQuery<
   }
 
   private async _execWithPopulate(): Promise<WithProjection<P[0], P[1], O>[]> {
-    try {
-      const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
-        // @ts-expect-error
-        { $match: this._filter },
-      ];
-      const relations = Schema.relations(this._schema);
-      for (const [field, select] of Object.entries(this._population)) {
-        if (!select) continue;
-        addPopulatePipeline(pipeline, field, relations[field]);
+    const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
+      // @ts-expect-error
+      { $match: this._filter },
+    ];
+    const relations = Schema.relations(this._schema);
+    for (const [field, select] of Object.entries(this._population)) {
+      if (!select) continue;
+      if (!relations[field]) {
+        console.warn(`Relation '${field}' not found in schema`);
+        continue;
       }
-      if (Object.keys(this._projection).length > 0) {
-        // @ts-expect-error
-        pipeline.push({ $project: this._projection });
-      }
-      addPopulationMetas(pipeline, {
-        limit: this._options.limit,
-        skip: this._options.skip,
-        sort: this._options.sort
-          ? getSortDirection(this._options.sort)
-          : undefined,
-      });
-      const result = await this._collection.aggregate(pipeline).toArray();
-      return result.length > 0
-        ? result.map(
-            (doc) =>
-              Schema.fromData(
-                this._schema,
-                doc as InferSchemaData<T>,
-                this._projection,
-                null,
-              ) as O,
-          )
-        : [];
-    } catch (error) {
-      console.error("Error executing population query:", error);
-      // throw new MonarchError("Error executing population query");
-      return [];
+      addPopulatePipeline(pipeline, field, relations[field]);
     }
+    if (Object.keys(this._projection).length > 0) {
+      // @ts-expect-error
+      pipeline.push({ $project: this._projection });
+    }
+    addPopulationMetas(pipeline, {
+      limit: this._options.limit,
+      skip: this._options.skip,
+      sort: this._options.sort
+        ? getSortDirection(this._options.sort)
+        : undefined,
+    });
+    const result = await this._collection.aggregate(pipeline).toArray();
+    return result.length > 0
+      ? result.map(
+          (doc) =>
+            Schema.fromData(
+              this._schema,
+              doc as InferSchemaData<T>,
+              this._projection,
+              null,
+            ) as O,
+        )
+      : [];
   }
 }
