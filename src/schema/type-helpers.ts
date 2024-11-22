@@ -27,8 +27,8 @@ export type SchemaInputWithId<T extends AnySchema> = WithRequiredId<
 export type InferSchemaInput<T extends AnySchema> = Pretty<
   WithOptionalId<
     Merge<
-      _InferTypeObjectInput<InferSchemaTypes<T>>,
-      InferRelationObjectInput<InferSchemaRelations<T>>
+      InferRelationObjectInput<InferSchemaRelations<T>>,
+      _InferTypeObjectInput<InferSchemaTypes<T>>
     >
   >
 >;
