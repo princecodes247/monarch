@@ -10,21 +10,29 @@ export const generatePopulatePipeline = (
   relationKey: string,
 ): PipelineStage<any>[] => {
   const relationDetails = MonarchRelation.getRelation(relation);
+  console.log({ relationDetails, relation });
   if (!relationDetails) return [];
 
-  const type = inferRelationType(relationDetails);
-  if (!type) return [];
+  if (
+    !(
+      relationDetails instanceof MonarchMany ||
+      relationDetails instanceof MonarchOne ||
+      relationDetails instanceof MonarchRef
+    )
+  )
+    return [];
 
   const collectionName = relationDetails._target.name;
+  console.log({ collectionName, relationDetails });
+
   if (!collectionName) return [];
 
   const foreignField = relationDetails._field;
   const fieldVariable = `monarch_${relationKey}_${foreignField}_var`;
   const fieldData = `monarch_${relationKey}_data`;
-  const target = relationDetails._references;
   const pipeline: PipelineStage<any>[] = [];
 
-  if (type === "many") {
+  if (relationDetails instanceof MonarchMany) {
     // Lookup for "many" relations
     pipeline.push({
       $lookup: {
@@ -39,7 +47,9 @@ export const generatePopulatePipeline = (
     pipeline.push({
       $lookup: {
         from: collectionName,
-        let: { [fieldVariable]: `$${type === "ref" ? target : relationKey}` },
+        let: {
+          [fieldVariable]: `$${relationDetails instanceof MonarchRef ? relationDetails._references : relationKey}`,
+        },
         pipeline: [
           {
             $match: {
@@ -54,7 +64,7 @@ export const generatePopulatePipeline = (
     });
 
     // Unwind the populated field if it's a single relation
-    if (type === "one") {
+    if (relationDetails instanceof MonarchOne) {
       pipeline.push({ $unwind: `$${fieldData}` });
     }
 
@@ -67,15 +77,6 @@ export const generatePopulatePipeline = (
   }
 
   return pipeline;
-};
-
-export const inferRelationType = (
-  relation: any,
-): "many" | "ref" | "one" | null => {
-  if (relation instanceof MonarchOne) return "one";
-  if (relation instanceof MonarchRef) return "ref";
-  if (relation instanceof MonarchMany) return "many";
-  return null;
 };
 
 export const generatePopulationMetas = ({
