@@ -1,5 +1,11 @@
 # monarch-orm
 
+## 0.5.2
+
+### Patch Changes
+
+- d21ff0f: fix reference chaining bug
+
 ## 0.5.1
 
 ### Patch Changes
