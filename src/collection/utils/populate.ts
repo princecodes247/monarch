@@ -1,44 +1,89 @@
 import type { Sort as MongoSort } from "mongodb";
-import { MonarchRelation } from "../../schema/relations/base";
+import {
+  type AnyMonarchRelation,
+  MonarchRelation,
+} from "../../schema/relations/base";
 import { MonarchMany } from "../../schema/relations/many";
 import { MonarchOne } from "../../schema/relations/one";
 import { MonarchRef } from "../../schema/relations/ref";
-import type { PipelineStage } from "../types/pipeline-stage";
+import type { Limit, PipelineStage, Skip, Sort } from "../types/pipeline-stage";
 
-export const generatePopulatePipeline = (
-  relation: any,
-  relationKey: string,
-): PipelineStage<any>[] => {
-  if (!relation) return [];
+/**
+ * Adds population stages to an existing MongoDB pipeline for relation handling
+ * @param pipeline - The MongoDB pipeline array to modify
+ * @param relationField - The field name containing the relation
+ * @param relation - The Monarch relation configuration
+ */
+export function addPopulatePipeline(
+  pipeline: PipelineStage<any>[],
+  relationField: string,
+  relation: AnyMonarchRelation,
+) {
+  const type = MonarchRelation.getRelation(relation);
 
-  const type = inferRelationType(relation);
-  if (!type) return [];
-
-  const collectionName =
-    relation?.type?._target?.name ?? relation._target?.name;
-  if (!collectionName) return [];
-  const foreignField = relation._field;
-  const fieldVariable = `monarch_${relationKey}_${foreignField}_var`;
-  const fieldData = `monarch_${relationKey}_data`;
-  const target = relation._references;
-  const pipeline: PipelineStage<any>[] = [];
-
-  if (type === "many") {
-    // Lookup for "many" relations
+  if (type instanceof MonarchMany) {
+    const collectionName = type._target.name;
+    const foreignField = type._field;
     pipeline.push({
       $lookup: {
         from: collectionName,
-        localField: relationKey,
-        foreignField: "_id",
-        as: relationKey,
+        localField: relationField,
+        foreignField: foreignField,
+        as: relationField,
       },
     });
-  } else {
-    // Lookup for "single" and "ref" relations
+    pipeline.push({
+      $addFields: {
+        [relationField]: {
+          $cond: {
+            if: { $isArray: `$${relationField}` },
+            // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
+            then: `$${relationField}`,
+            else: [],
+          },
+        },
+      },
+    });
+  }
+
+  if (type instanceof MonarchRef) {
+    const collectionName = type._target.name;
+    const foreignField = type._field;
+    const sourceField = type._references;
+    const fieldVariable = `monarch_${relationField}_${foreignField}_var`;
     pipeline.push({
       $lookup: {
         from: collectionName,
-        let: { [fieldVariable]: `$${target ?? relationKey}` },
+        let: {
+          [fieldVariable]: `$${sourceField}`,
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $ne: [`$$${fieldVariable}`, null] },
+                  { $eq: [`$${foreignField}`, `$$${fieldVariable}`] },
+                ],
+              },
+            },
+          },
+        ],
+        as: relationField,
+      },
+    });
+  }
+
+  if (type instanceof MonarchOne) {
+    const collectionName = type._target.name;
+    const foreignField = type._field;
+    const fieldVariable = `monarch_${relationField}_${foreignField}_var`;
+    pipeline.push({
+      $lookup: {
+        from: collectionName,
+        let: {
+          [fieldVariable]: `$${relationField}`,
+        },
         pipeline: [
           {
             $match: {
@@ -47,56 +92,47 @@ export const generatePopulatePipeline = (
               },
             },
           },
+          {
+            $limit: 1,
+          },
         ],
-        as: fieldData,
+        as: relationField,
       },
     });
-
     // Unwind the populated field if it's a single relation
-    if (type === "one") {
-      pipeline.push({ $unwind: `$${fieldData}` });
-    }
-
-    // Replace the original field with the populated data
-    pipeline.push(
-      { $unset: relationKey },
-      { $set: { [relationKey]: `$${fieldData}` } }, // Set the populated data
-      { $unset: fieldData }, // Clean up the temp fieldData
-    );
+    pipeline.push({
+      $set: {
+        [relationField]: {
+          $cond: {
+            if: { $gt: [{ $size: `$${relationField}` }, 0] }, // Skip population if value is null
+            // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
+            then: { $arrayElemAt: [`$${relationField}`, 0] }, // Unwind the first populated result
+            else: {
+              $cond: {
+                if: { $eq: [`$${relationField}`, null] },
+                // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
+                then: null,
+                else: { $literal: { error: "Invalid reference" } },
+              },
+            },
+          },
+        },
+      },
+    });
   }
+}
 
-  return pipeline;
-};
-
-export const inferRelationType = (
-  relation: any,
-): "many" | "ref" | "one" | null => {
-  if (MonarchRelation.isInstanceOf(relation, MonarchMany)) return "many";
-  if (MonarchRelation.isInstanceOf(relation, MonarchRef)) return "ref";
-  if (MonarchRelation.isInstanceOf(relation, MonarchOne)) return "one";
-  return null;
-};
-
-export const generatePopulationMetas = ({
-  sort,
-  skip,
-  limit,
-}: {
-  sort?: Record<string, 1 | Meta | -1>;
-  skip?: number;
-  limit?: number;
-}) => {
-  const metas: PipelineStage<any>[] = [];
-  if (sort) {
-    metas.push({ $sort: sort });
-  }
-  if (skip) {
-    metas.push({ $skip: skip });
-  }
-  if (limit) {
-    metas.push({ $limit: limit });
-  }
-  return metas;
+export const addPopulationMetas = (
+  pipeline: PipelineStage<any>[],
+  options: {
+    sort?: Sort["$sort"];
+    skip?: Skip["$skip"];
+    limit?: Limit["$limit"];
+  },
+) => {
+  if (options.sort) pipeline.push({ $sort: options.sort });
+  if (options.skip) pipeline.push({ $skip: options.skip });
+  if (options.limit) pipeline.push({ $limit: options.limit });
 };
 
 type Meta = { $meta: any };

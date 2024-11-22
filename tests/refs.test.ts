@@ -45,7 +45,7 @@ describe("Tests for refs population", () => {
     const _PostSchema = createSchema("posts", {
       title: string(),
       contents: string(),
-      author: objectId(),
+      author: objectId().optional(),
       contributors: array(objectId()).optional().default([]),
     });
 
@@ -54,7 +54,7 @@ describe("Tests for refs population", () => {
       posts: ref(_PostSchema, "author", "_id"),
     }));
     const PostSchema = _PostSchema.relations(({ one, many }) => ({
-      author: one(_UserSchema, "_id"),
+      author: one(_UserSchema, "_id").optional().nullable(),
       editor: one(_UserSchema, "_id"),
       contributors: many(_UserSchema, "_id").optional(),
     }));
@@ -99,13 +99,13 @@ describe("Tests for refs population", () => {
       .findOne({
         title: "Pilot",
       })
-      .populate({ contributors: true })
+      .populate({ contributors: true, author: true })
       .exec();
-    // console.log({ populatedPost });
 
-    // expect(populatedPost?.author).toStrictEqual(user);
-    // if(populatedPost?.contributors)
-    // expect(populatedPost?.contributors[0]?.name).toStrictEqual(user2.name);
+    expect(populatedPost?.author).toStrictEqual(user);
+    expect(populatedPost?.contributors).toBeDefined();
+    expect(populatedPost?.contributors).toHaveLength(1);
+    expect(populatedPost?.contributors[0]).toStrictEqual(user2);
   });
 
   it("should populate 'posts' in find for multiple users", async () => {
@@ -151,17 +151,25 @@ describe("Tests for refs population", () => {
       })
       .exec();
 
+    // Test case for optional author
+    await collections.posts
+      .insertOne({
+        title: "No Author",
+        contents: "Lorem",
+        editor: user._id,
+        contributors: [],
+      })
+      .exec();
+
     // Fetch and populate posts for all users using find
     const populatedUsers = await collections.users
       .find()
       .populate({ posts: true, tutor: true })
       .exec();
 
-    // console.log({ populatedUsers });
-
     expect(populatedUsers.length).toBe(2);
-    // expect(populatedUsers[0].posts.length).toBe(2);
-    // expect(populatedUsers[1].posts.length).toBe(0);
-    // expect(populatedUsers[1].tutor).toStrictEqual(user);
+    expect(populatedUsers[0].posts.length).toBe(2);
+    expect(populatedUsers[1].posts.length).toBe(0);
+    expect(populatedUsers[1].tutor).toStrictEqual(user);
   });
 });

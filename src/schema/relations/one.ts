@@ -16,6 +16,8 @@ export class MonarchOne<
   SchemaInputWithId<TTarget>[TField],
   InferSchemaData<TTarget>[TField]
 > {
+  private _tag = "one";
+
   constructor(
     public _schema: TSchema,
     public _target: TTarget,

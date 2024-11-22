@@ -8,16 +8,16 @@ export type BoolProjection<T> = {
 };
 export type WithProjection<
   Type extends "omit" | "select",
+  Keys extends keyof any,
   T,
-  P extends keyof any,
-> = [P] extends [never]
+> = [Keys] extends [never]
   ? T
   : Type extends "omit"
     ? {
-        [K in keyof T as K extends P ? never : K]: T[K];
+        [K in keyof T as K extends Keys ? never : K]: T[K];
       }
     : {
-        [K in keyof T as K extends P | "_id" ? K : never]: T[K];
+        [K in keyof T as K extends Keys | "_id" ? K : never]: T[K];
       };
 
 export type Sort<T> =

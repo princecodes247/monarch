@@ -10,6 +10,8 @@ export class MonarchRef<
   TField extends SchemaRelatableField<TTarget>,
   TReferences extends keyof InferSchemaData<TSchema>,
 > extends MonarchRelation<undefined, MonarchPhantom> {
+  private _tag = "ref";
+
   constructor(
     public _schema: TSchema,
     public _target: TTarget,
