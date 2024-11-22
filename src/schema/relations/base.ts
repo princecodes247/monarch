@@ -6,10 +6,8 @@ export type AnyMonarchRelation = MonarchRelation<any, any>;
 export abstract class MonarchRelation<TInput, TOutput> {
   constructor(public parser: Parser<TInput, TOutput>) {}
 
-  public static getRelation<T extends AnyMonarchRelation>(
-    relation: T,
-  ): T | AnyMonarchRelation {
-    return relation?.getRelation();
+  public static getRelation(relation: AnyMonarchRelation) {
+    return relation.getRelation();
   }
 
   protected getRelation(): AnyMonarchRelation {
@@ -38,7 +36,7 @@ export class MonarchNullableRelation<
     });
   }
   protected getRelation() {
-    return MonarchRelation.getRelation(this.type) || this;
+    return this.type;
   }
 }
 
@@ -56,6 +54,6 @@ export class MonarchOptionalRelation<
   }
 
   protected getRelation() {
-    return MonarchRelation.getRelation(this.type) || this;
+    return this.type;
   }
 }

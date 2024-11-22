@@ -1,50 +1,39 @@
 import type { Sort as MongoSort } from "mongodb";
-import { MonarchRelation } from "../../schema/relations/base";
+import {
+  type AnyMonarchRelation,
+  MonarchRelation,
+} from "../../schema/relations/base";
 import { MonarchMany } from "../../schema/relations/many";
 import { MonarchOne } from "../../schema/relations/one";
 import { MonarchRef } from "../../schema/relations/ref";
 import type { PipelineStage } from "../types/pipeline-stage";
 
-export const generatePopulatePipeline = (
-  relation: any,
-  relationKey: string,
-): PipelineStage<any>[] => {
-  const relationDetails = MonarchRelation.getRelation(relation);
-  if (!relationDetails) return [];
-
-  const isSupportedRelation =
-    relationDetails instanceof MonarchMany ||
-    relationDetails instanceof MonarchOne ||
-    relationDetails instanceof MonarchRef;
-
-  if (!isSupportedRelation) return [];
-
-  const collectionName = relationDetails._target.name;
-
-  if (!collectionName) return [];
-
-  const foreignField = relationDetails._field;
-  const fieldVariable = `monarch_${relationKey}_${foreignField}_var`;
-  const fieldData = `monarch_${relationKey}_data`;
+export function generatePopulatePipeline(
+  relationField: string,
+  relation: AnyMonarchRelation,
+): PipelineStage<any>[] {
   const pipeline: PipelineStage<any>[] = [];
+  const type = MonarchRelation.getRelation(relation);
 
-  if (relationDetails instanceof MonarchMany) {
-    // Lookup for "many" relations
+  if (type instanceof MonarchMany) {
+    const collectionName = type._target.name;
+    const foreignField = type._field;
     pipeline.push({
       $lookup: {
         from: collectionName,
-        localField: relationKey,
-        foreignField: "_id",
-        as: relationKey,
+        localField: relationField,
+        foreignField: foreignField,
+        as: relationField,
       },
     });
-  } else {
-    const sourceField =
-      relationDetails instanceof MonarchRef
-        ? relationDetails._references
-        : relationKey;
+  }
 
-    // Lookup for "single" and "ref" relations
+  if (type instanceof MonarchRef) {
+    const collectionName = type._target.name;
+    const foreignField = type._field;
+    const sourceField = type._references;
+    const fieldVariable = `monarch_${relationField}_${foreignField}_var`;
+    const fieldData = `monarch_${relationField}_data`;
     pipeline.push({
       $lookup: {
         from: collectionName,
@@ -63,34 +52,60 @@ export const generatePopulatePipeline = (
         as: fieldData,
       },
     });
-
-    // Unwind the populated field if it's a single relation
-    if (relationDetails instanceof MonarchOne) {
-      pipeline.push({
-        $set: {
-          [fieldData]: {
-            $cond: {
-              if: { $gt: [{ $size: `$${fieldData}` }, 0] }, // Skip population if value is null
-              // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
-              then: { $arrayElemAt: [`$${fieldData}`, 0] }, // Unwind the first populated result
-              else: null, // Keep the original value
-            },
-          },
-        },
-      });
-      // pipeline.push({ $unwind: { path: `$${fieldData}`, preserveNullAndEmptyArrays: true } });
-    }
-
     // Replace the original field with the populated data
     pipeline.push(
-      { $unset: relationKey },
-      { $set: { [relationKey]: `$${fieldData}` } }, // Set the populated data
+      { $unset: relationField },
+      { $set: { [relationField]: `$${fieldData}` } }, // Set the populated data
+      { $unset: fieldData }, // Clean up the temp fieldData
+    );
+  }
+
+  if (type instanceof MonarchOne) {
+    const collectionName = type._target.name;
+    const foreignField = type._field;
+    const fieldVariable = `monarch_${relationField}_${foreignField}_var`;
+    const fieldData = `monarch_${relationField}_data`;
+    pipeline.push({
+      $lookup: {
+        from: collectionName,
+        let: {
+          [fieldVariable]: `$${relationField}`,
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: [`$${foreignField}`, `$$${fieldVariable}`],
+              },
+            },
+          },
+        ],
+        as: fieldData,
+      },
+    });
+    // Unwind the populated field if it's a single relation
+    pipeline.push({
+      $set: {
+        [fieldData]: {
+          $cond: {
+            if: { $gt: [{ $size: `$${fieldData}` }, 0] }, // Skip population if value is null
+            // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
+            then: { $arrayElemAt: [`$${fieldData}`, 0] }, // Unwind the first populated result
+            else: null, // Keep the original value
+          },
+        },
+      },
+    });
+    // Replace the original field with the populated data
+    pipeline.push(
+      { $unset: relationField },
+      { $set: { [relationField]: `$${fieldData}` } }, // Set the populated data
       { $unset: fieldData }, // Clean up the temp fieldData
     );
   }
 
   return pipeline;
-};
+}
 
 export const generatePopulationMetas = ({
   sort,

@@ -123,12 +123,10 @@ export class FindQuery<
         // @ts-expect-error
         { $match: this._filter },
       ];
-      for (const [relationKey, shouldPopulate] of Object.entries(
-        this._population,
-      )) {
-        if (!shouldPopulate) continue;
-        const relation = Schema.relations(this._schema)[relationKey];
-        pipeline.push(...generatePopulatePipeline(relation, relationKey));
+      const relations = Schema.relations(this._schema);
+      for (const [field, select] of Object.entries(this._population)) {
+        if (!select) continue;
+        pipeline.push(...generatePopulatePipeline(field, relations[field]));
       }
       if (Object.keys(this._projection).length > 0) {
         pipeline.push({
