@@ -62,6 +62,13 @@ export class FindOneQuery<
   }
 
   public populate<P extends Pretty<SchemaRelationSelect<T>>>(population: P) {
+    const relations = Schema.relations(this._schema);
+    const invalidFields = Object.keys(population).filter(
+      (field) => !(field in relations),
+    );
+    if (invalidFields.length > 0) {
+      throw new Error(`Invalid relation fields: ${invalidFields.join(", ")}`);
+    }
     Object.assign(this._population, population);
     return this as FindOneQuery<
       T,

@@ -51,7 +51,6 @@ export function addPopulatePipeline(
     const foreignField = type._field;
     const sourceField = type._references;
     const fieldVariable = `monarch_${relationField}_${foreignField}_var`;
-    const fieldData = `monarch_${relationField}_data`;
     pipeline.push({
       $lookup: {
         from: collectionName,
@@ -70,22 +69,15 @@ export function addPopulatePipeline(
             },
           },
         ],
-        as: fieldData,
+        as: relationField,
       },
     });
-    // Replace the original field with the populated data
-    pipeline.push(
-      { $unset: relationField },
-      { $set: { [relationField]: `$${fieldData}` } }, // Set the populated data
-      { $unset: fieldData }, // Clean up the temp fieldData
-    );
   }
 
   if (type instanceof MonarchOne) {
     const collectionName = type._target.name;
     const foreignField = type._field;
     const fieldVariable = `monarch_${relationField}_${foreignField}_var`;
-    const fieldData = `monarch_${relationField}_data`;
     pipeline.push({
       $lookup: {
         from: collectionName,
@@ -100,18 +92,21 @@ export function addPopulatePipeline(
               },
             },
           },
+          {
+            $limit: 1,
+          },
         ],
-        as: fieldData,
+        as: relationField,
       },
     });
     // Unwind the populated field if it's a single relation
     pipeline.push({
       $set: {
-        [fieldData]: {
+        [relationField]: {
           $cond: {
-            if: { $gt: [{ $size: `$${fieldData}` }, 0] }, // Skip population if value is null
+            if: { $gt: [{ $size: `$${relationField}` }, 0] }, // Skip population if value is null
             // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
-            then: { $arrayElemAt: [`$${fieldData}`, 0] }, // Unwind the first populated result
+            then: { $arrayElemAt: [`$${relationField}`, 0] }, // Unwind the first populated result
             else: {
               $cond: {
                 if: { $eq: [`$${relationField}`, null] },
@@ -124,12 +119,6 @@ export function addPopulatePipeline(
         },
       },
     });
-    // Replace the original field with the populated data
-    pipeline.push(
-      { $unset: relationField },
-      { $set: { [relationField]: `$${fieldData}` } }, // Set the populated data
-      { $unset: fieldData }, // Clean up the temp fieldData
-    );
   }
 }
 
