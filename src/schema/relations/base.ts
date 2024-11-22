@@ -6,15 +6,14 @@ export type AnyMonarchRelation = MonarchRelation<any, any>;
 export abstract class MonarchRelation<TInput, TOutput> {
   constructor(public parser: Parser<TInput, TOutput>) {}
 
-  public static isInstanceOf<T extends AnyMonarchRelation>(
-    type: T,
-    target: new (...args: any[]) => any,
-  ) {
-    return type.isInstanceOf(target);
+  public static getRelation<T extends AnyMonarchRelation>(
+    relation: T,
+  ): T | AnyMonarchRelation {
+    return relation?.getRelation();
   }
 
-  protected isInstanceOf(target: new (...args: any[]) => any) {
-    return this instanceof target;
+  protected getRelation(): AnyMonarchRelation {
+    return this;
   }
 
   public nullable() {
@@ -26,47 +25,37 @@ export abstract class MonarchRelation<TInput, TOutput> {
   }
 }
 
-abstract class BaseWrappedRelation<
+export class MonarchNullableRelation<
   T extends AnyMonarchRelation,
 > extends MonarchRelation<
   InferRelationInput<T> | undefined,
   InferRelationOutput<T> | undefined
 > {
-  constructor(
-    protected type: T,
-    parser: Parser<any, any>,
-  ) {
-    super(parser);
-  }
-
-  protected isInstanceOf(target: new (...args: any[]) => any) {
-    return (
-      this instanceof target ||
-      (this.type != null && MonarchRelation.isInstanceOf(this.type, target))
-    );
-  }
-}
-
-export class MonarchNullableRelation<
-  T extends AnyMonarchRelation,
-> extends BaseWrappedRelation<T> {
-  constructor(type: T) {
-    super(type, (input) => {
+  constructor(protected type: T) {
+    super((input) => {
       if (input === null) return null;
       return type.parser(input);
     });
-    this.type = type;
+  }
+  protected getRelation() {
+    return MonarchRelation.getRelation(this.type) || this;
   }
 }
 
 export class MonarchOptionalRelation<
   T extends AnyMonarchRelation,
-> extends BaseWrappedRelation<T> {
-  constructor(type: T) {
-    super(type, (input) => {
+> extends MonarchRelation<
+  InferRelationInput<T> | undefined,
+  InferRelationOutput<T> | undefined
+> {
+  constructor(protected type: T) {
+    super((input) => {
       if (input === undefined) return undefined;
       return type.parser(input);
     });
-    this.type = type;
+  }
+
+  protected getRelation() {
+    return MonarchRelation.getRelation(this.type) || this;
   }
 }

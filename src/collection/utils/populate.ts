@@ -9,18 +9,19 @@ export const generatePopulatePipeline = (
   relation: any,
   relationKey: string,
 ): PipelineStage<any>[] => {
-  if (!relation) return [];
+  const relationDetails = MonarchRelation.getRelation(relation);
+  if (!relationDetails) return [];
 
-  const type = inferRelationType(relation);
+  const type = inferRelationType(relationDetails);
   if (!type) return [];
 
-  const collectionName =
-    relation?.type?._target?.name ?? relation._target?.name;
+  const collectionName = relationDetails._target.name;
   if (!collectionName) return [];
-  const foreignField = relation._field;
+
+  const foreignField = relationDetails._field;
   const fieldVariable = `monarch_${relationKey}_${foreignField}_var`;
   const fieldData = `monarch_${relationKey}_data`;
-  const target = relation._references;
+  const target = relationDetails._references;
   const pipeline: PipelineStage<any>[] = [];
 
   if (type === "many") {
@@ -38,7 +39,7 @@ export const generatePopulatePipeline = (
     pipeline.push({
       $lookup: {
         from: collectionName,
-        let: { [fieldVariable]: `$${target ?? relationKey}` },
+        let: { [fieldVariable]: `$${type === "ref" ? target : relationKey}` },
         pipeline: [
           {
             $match: {
@@ -71,9 +72,9 @@ export const generatePopulatePipeline = (
 export const inferRelationType = (
   relation: any,
 ): "many" | "ref" | "one" | null => {
-  if (MonarchRelation.isInstanceOf(relation, MonarchMany)) return "many";
-  if (MonarchRelation.isInstanceOf(relation, MonarchRef)) return "ref";
-  if (MonarchRelation.isInstanceOf(relation, MonarchOne)) return "one";
+  if (relation instanceof MonarchOne) return "one";
+  if (relation instanceof MonarchRef) return "ref";
+  if (relation instanceof MonarchMany) return "many";
   return null;
 };
 
