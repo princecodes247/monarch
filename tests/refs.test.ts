@@ -55,7 +55,7 @@ describe("Tests for refs population", () => {
     }));
     const PostSchema = _PostSchema.relations(({ one, many }) => ({
       author: one(_UserSchema, "_id").optional().nullable(),
-      editor: one(_UserSchema, "_id"),
+      editor: one(_UserSchema, "_id").optional().nullable(),
       contributors: many(_UserSchema, "_id").optional(),
     }));
     // Create database collections
@@ -171,5 +171,119 @@ describe("Tests for refs population", () => {
     expect(populatedUsers[0].posts.length).toBe(2);
     expect(populatedUsers[1].posts.length).toBe(0);
     expect(populatedUsers[1].tutor).toStrictEqual(user);
+  });
+
+  describe("Monarch Population Options", () => {
+    it("should populate with limit and skip options", async () => {
+      const { collections } = setupSchemasAndCollections();
+
+      // Create a user and posts
+      const user = await collections.users
+        .insertOne({
+          name: "Test User",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 1",
+          contents: "Content 1",
+          author: user._id,
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 2",
+          contents: "Content 2",
+          author: user._id,
+        })
+        .exec();
+
+      // Fetch and populate posts with limit and skip
+      const populatedUser = await collections.users
+        .find()
+        //@ts-expect-error -- Fix types
+        .populate({ posts: { limit: 1, skip: 0 } })
+        .exec();
+
+      expect(populatedUser.length).toBe(1);
+      expect(populatedUser[0].posts.length).toBe(1);
+      expect(populatedUser[0].posts[0].title).toBe("Post 1");
+    });
+
+    it("should populate with omit option", async () => {
+      const { collections } = setupSchemasAndCollections();
+      // Create a user and posts
+      const user = await collections.users
+        .insertOne({
+          name: "Test User 2",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 3",
+          contents: "Content 3",
+          author: user._id,
+        })
+        .exec();
+
+      // Fetch and populate posts with select and omit options
+      const populatedUser = await collections.users
+        .find()
+        .populate({
+          //@ts-expect-error -- Fix types
+          posts: {
+            omit: { title: 1 },
+          },
+        })
+        .exec();
+
+      expect(populatedUser.length).toBe(1);
+      expect(populatedUser[0].posts.length).toBe(1);
+      expect(populatedUser[0].posts[0]).toHaveProperty("contents");
+      expect(populatedUser[0].posts[0]).not.toHaveProperty("title");
+    });
+
+    it("should populate with select option", async () => {
+      const { collections } = setupSchemasAndCollections();
+      // Create a user and posts
+      const user = await collections.users
+        .insertOne({
+          name: "Test User 2",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 3",
+          contents: "Content 3",
+          author: user._id,
+        })
+        .exec();
+
+      // Fetch and populate posts with select and omit options
+      const populatedUser = await collections.users
+        .find()
+        .populate({
+          //@ts-expect-error -- Fix types
+          posts: {
+            select: { title: 1 },
+          },
+        })
+        .exec();
+
+      expect(populatedUser.length).toBe(1);
+      expect(populatedUser[0].posts.length).toBe(1);
+      expect(populatedUser[0].posts[0]).toHaveProperty("title");
+      expect(populatedUser[0].posts[0]).not.toHaveProperty("contents");
+    });
   });
 });

@@ -8,6 +8,14 @@ import { MonarchOne } from "../../schema/relations/one";
 import { MonarchRef } from "../../schema/relations/ref";
 import type { Limit, PipelineStage, Skip, Sort } from "../types/pipeline-stage";
 
+type PopulationOptions =
+  | true
+  | {
+      limit: number;
+      skip: number;
+      select?: Record<string, 1 | 0>;
+      omit?: Record<string, 1 | 0>;
+    };
 /**
  * Adds population stages to an existing MongoDB pipeline for relation handling
  * @param pipeline - The MongoDB pipeline array to modify
@@ -18,7 +26,9 @@ export function addPopulatePipeline(
   pipeline: PipelineStage<any>[],
   relationField: string,
   relation: AnyMonarchRelation,
+  options?: PopulationOptions,
 ) {
+  console.log({ options });
   const type = MonarchRelation.getRelation(relation);
 
   if (type instanceof MonarchMany) {
@@ -30,6 +40,7 @@ export function addPopulatePipeline(
         localField: relationField,
         foreignField: foreignField,
         as: relationField,
+        pipeline: buildPipelineOptions(options),
       },
     });
     pipeline.push({
@@ -68,6 +79,7 @@ export function addPopulatePipeline(
               },
             },
           },
+          ...buildPipelineOptions(options),
         ],
         as: relationField,
       },
@@ -92,6 +104,8 @@ export function addPopulatePipeline(
               },
             },
           },
+          ...buildPipelineOptions(options),
+
           {
             $limit: 1,
           },
@@ -121,6 +135,33 @@ export function addPopulatePipeline(
     });
   }
 }
+
+const buildPipelineOptions = (options?: PopulationOptions) => {
+  const optionsPipeline = [];
+  if (options && typeof options !== "boolean") {
+    if (options.skip !== undefined) {
+      optionsPipeline.push({ $skip: options.skip });
+    }
+    if (options.limit !== undefined) {
+      optionsPipeline.push({ $limit: options.limit });
+    }
+    if (options.select) {
+      optionsPipeline.push({ $project: options.select });
+    }
+    if (options.omit) {
+      const projection = Object.keys(options.omit).reduce(
+        (acc, key) => {
+          acc[key] = 0;
+          return acc;
+        },
+        {} as Record<string, 0>,
+      );
+      optionsPipeline.push({ $project: projection });
+    }
+  }
+
+  return optionsPipeline;
+};
 
 export const addPopulationMetas = (
   pipeline: PipelineStage<any>[],

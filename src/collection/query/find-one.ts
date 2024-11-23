@@ -118,9 +118,9 @@ export class FindOneQuery<
       { $limit: 1 },
     ];
     const relations = Schema.relations(this._schema);
-    for (const [field, select] of Object.entries(this._population)) {
-      if (!select) continue;
-      addPopulatePipeline(pipeline, field, relations[field]);
+    for (const [field, options] of Object.entries(this._population)) {
+      if (!options) continue;
+      addPopulatePipeline(pipeline, field, relations[field], options);
     }
     if (Object.keys(this._projection).length > 0) {
       // @ts-expect-error

@@ -128,13 +128,13 @@ export class FindQuery<
       { $match: this._filter },
     ];
     const relations = Schema.relations(this._schema);
-    for (const [field, select] of Object.entries(this._population)) {
-      if (!select) continue;
+    for (const [field, options] of Object.entries(this._population)) {
+      if (!options) continue;
       if (!relations[field]) {
         console.warn(`Relation '${field}' not found in schema`);
         continue;
       }
-      addPopulatePipeline(pipeline, field, relations[field]);
+      addPopulatePipeline(pipeline, field, relations[field], options);
     }
     if (Object.keys(this._projection).length > 0) {
       // @ts-expect-error
