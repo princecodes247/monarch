@@ -6,15 +6,16 @@ import {
 import { MonarchMany } from "../../schema/relations/many";
 import { MonarchOne } from "../../schema/relations/one";
 import { MonarchRef } from "../../schema/relations/ref";
-import type { Limit, PipelineStage, Skip, Sort } from "../types/pipeline-stage";
+import type { Limit, PipelineStage, Skip } from "../types/pipeline-stage";
 
 type PopulationOptions =
   | true
   | {
-      limit: number;
-      skip: number;
+      limit?: number;
+      skip?: number;
       select?: Record<string, 1 | 0>;
       omit?: Record<string, 1 | 0>;
+      sort?: Record<string, 1 | -1>;
     };
 /**
  * Adds population stages to an existing MongoDB pipeline for relation handling
@@ -28,7 +29,6 @@ export function addPopulatePipeline(
   relation: AnyMonarchRelation,
   options?: PopulationOptions,
 ) {
-  console.log({ options });
   const type = MonarchRelation.getRelation(relation);
 
   if (type instanceof MonarchMany) {
@@ -105,10 +105,6 @@ export function addPopulatePipeline(
             },
           },
           ...buildPipelineOptions(options),
-
-          {
-            $limit: 1,
-          },
         ],
         as: relationField,
       },
@@ -136,28 +132,29 @@ export function addPopulatePipeline(
   }
 }
 
-const buildPipelineOptions = (options?: PopulationOptions) => {
+const buildPipelineOptions = (
+  options?: PopulationOptions,
+  isMonarchOne = false,
+) => {
   const optionsPipeline = [];
   if (options && typeof options !== "boolean") {
-    if (options.skip !== undefined) {
-      optionsPipeline.push({ $skip: options.skip });
-    }
-    if (options.limit !== undefined) {
-      optionsPipeline.push({ $limit: options.limit });
-    }
-    if (options.select) {
-      optionsPipeline.push({ $project: options.select });
-    }
-    if (options.omit) {
-      const projection = Object.keys(options.omit).reduce(
+    if (options.select || options.omit) {
+      const projection = Object.keys(
+        options.select || options.omit || {},
+      ).reduce(
         (acc, key) => {
-          acc[key] = 0;
+          acc[key] = options.select ? 1 : 0;
           return acc;
         },
-        {} as Record<string, 0>,
+        {} as Record<string, 1 | 0>,
       );
       optionsPipeline.push({ $project: projection });
     }
+    addPopulationMetas(optionsPipeline, {
+      limit: isMonarchOne ? 1 : options.limit,
+      skip: !isMonarchOne ? options.skip : undefined,
+      sort: options.sort,
+    });
   }
 
   return optionsPipeline;
@@ -166,12 +163,12 @@ const buildPipelineOptions = (options?: PopulationOptions) => {
 export const addPopulationMetas = (
   pipeline: PipelineStage<any>[],
   options: {
-    sort?: Sort["$sort"];
+    sort?: MongoSort;
     skip?: Skip["$skip"];
     limit?: Limit["$limit"];
   },
 ) => {
-  if (options.sort) pipeline.push({ $sort: options.sort });
+  if (options.sort) pipeline.push({ $sort: getSortDirection(options.sort) });
   if (options.skip) pipeline.push({ $skip: options.skip });
   if (options.limit) pipeline.push({ $limit: options.limit });
 };
@@ -182,9 +179,8 @@ export const getSortDirection = (
   order?: MongoSort,
 ): Record<string, 1 | -1 | Meta> => {
   // Handle Record<string, SortDirection>
+  const sortDirections: Record<string, 1 | -1 | Meta> = {};
   if (typeof order === "object" && order !== null) {
-    const sortDirections: Record<string, 1 | -1 | Meta> = {};
-
     for (const key in order) {
       const value = order[key as keyof typeof order];
 
@@ -197,6 +193,24 @@ export const getSortDirection = (
       }
     }
     return sortDirections;
+  }
+  if (typeof order === "string") {
+    sortDirections[order] = 1;
+    return sortDirections;
+  }
+  if (Array.isArray(order)) {
+    for (const ord of order) {
+      sortDirections[ord] = 1; // Default to ascending for each string in the array
+    }
+    return sortDirections;
+  }
+  if (order === 1) {
+    // Handle case where order is explicitly set to 1
+    return { $meta: 1 }; // or any other appropriate handling
+  }
+  if (order === -1) {
+    // Handle case where order is explicitly set to -1
+    return { $meta: -1 }; // or any other appropriate handling
   }
 
   return {};

@@ -22,11 +22,7 @@ import type {
   Sort,
   WithProjection,
 } from "../types/query-options";
-import {
-  addPopulatePipeline,
-  addPopulationMetas,
-  getSortDirection,
-} from "../utils/populate";
+import { addPopulatePipeline, addPopulationMetas } from "../utils/populate";
 import {
   addExtraInputsToProjection,
   makeProjection,
@@ -143,9 +139,7 @@ export class FindQuery<
     addPopulationMetas(pipeline, {
       limit: this._options.limit,
       skip: this._options.skip,
-      sort: this._options.sort
-        ? getSortDirection(this._options.sort)
-        : undefined,
+      sort: this._options.sort,
     });
     const result = await this._collection.aggregate(pipeline).toArray();
     return result.length > 0

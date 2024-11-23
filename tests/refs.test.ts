@@ -285,5 +285,129 @@ describe("Tests for refs population", () => {
       expect(populatedUser[0].posts[0]).toHaveProperty("title");
       expect(populatedUser[0].posts[0]).not.toHaveProperty("contents");
     });
+
+    it("should populate with sort option", async () => {
+      const { collections } = setupSchemasAndCollections();
+      // Create a user and posts
+      const user = await collections.users
+        .insertOne({
+          name: "Test User 5",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 6",
+          contents: "Content 6",
+          author: user._id,
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 7",
+          contents: "Content 7",
+          author: user._id,
+        })
+        .exec();
+
+      // Fetch and populate posts with sort option
+      const populatedUser = await collections.users
+        .find()
+        .populate({
+          //@ts-expect-error -- Fix types
+          posts: {
+            sort: { title: -1 }, // Sort by createdAt in descending order
+          },
+        })
+        .exec();
+
+      expect(populatedUser.length).toBe(1);
+      expect(populatedUser[0].posts.length).toBe(2);
+      expect(populatedUser[0].posts[0]).toHaveProperty("title", "Post 7");
+      expect(populatedUser[0].posts[1]).toHaveProperty("title", "Post 6");
+    });
+
+    it("should throw an error for invalid option values", async () => {
+      const { collections } = setupSchemasAndCollections();
+      const user = await collections.users
+        .insertOne({
+          name: "Test User 3",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 4",
+          contents: "Content 4",
+          author: user._id,
+        })
+        .exec();
+
+     
+    });
+
+    it("should throw an error when mixing incompatible options", async () => {
+      const { collections } = setupSchemasAndCollections();
+      const user = await collections.users
+        .insertOne({
+          name: "Test User 4",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 5",
+          contents: "Content 5",
+          author: user._id,
+        })
+        .exec();
+
+        collections.users
+          .find()
+          .populate({
+            //@ts-expect-error -- Fix types
+            posts: {
+              select: { title: 1 },
+              omit: { contents: 1 },
+            },
+          })
+          .exec()
+    });
+
+    it("should throw an error for malformed option objects", async () => {
+      const { collections } = setupSchemasAndCollections();
+      const user = await collections.users
+        .insertOne({
+          name: "Test User 5",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 6",
+          contents: "Content 6",
+          author: user._id,
+        })
+        .exec();
+      const users = await collections.users
+        .find()
+        .populate({
+          //@ts-expect-error -- Fix types
+          posts: {
+            select: "invalidString",
+          },
+        })
+        .exec();
+      console.log({ users: users[0].posts });
+    });
   });
 });
