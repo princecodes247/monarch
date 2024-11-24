@@ -111,7 +111,7 @@ export type InferRelationPopulation<
       InferSchemaOutput<TTarget>,
       O,
       InferSchemaOmit<TTarget>
-    >
+    > | null
   : T extends MonarchMany<any, infer TTarget, any>
     ? WithRelationPopulation<
         InferSchemaOutput<TTarget>,

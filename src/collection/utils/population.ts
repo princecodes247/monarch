@@ -30,10 +30,11 @@ export function addPopulationPipeline(
   relation: RelationType,
   projection: Projection<any>,
   options: RelationPopulationOptions<any>,
-) {
+): { fieldVariable: string } {
   const collectionName = relation._target.name;
   const foreignField = relation._field;
   const fieldVariable = generateFieldVariable(relationField, foreignField);
+
   if (relation instanceof MonarchMany) {
     pipeline.push({
       $lookup: {
@@ -113,22 +114,20 @@ export function addPopulationPipeline(
             if: { $gt: [{ $size: `$${fieldVariable}` }, 0] }, // Skip population if value is null
             // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
             then: { $arrayElemAt: [`$${fieldVariable}`, 0] }, // Unwind the first populated result
-            else: {
-              $cond: {
-                if: { $eq: [`$${fieldVariable}`, null] },
-                // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
-                then: null,
-                else: { $literal: { error: "Invalid reference" } },
-              },
-            },
+            else: null,
           },
         },
       },
     });
   }
+
+  return { fieldVariable };
 }
 
-function generateFieldVariable(relationField: string, foreignField: string): string {
+function generateFieldVariable(
+  relationField: string,
+  foreignField: string,
+): string {
   return `mn_${relationField}_${foreignField}`;
 }
 
@@ -187,8 +186,8 @@ export function getSortDirection(
   } else if (typeof order === "string") {
     sortDirections[order] = 1;
   } else if (order === 1 || order === -1) {
-      // Handle case where order is explicitly set to 1 or -1
-      sortDirections._id = order;
+    // Handle case where order is explicitly set to 1 or -1
+    sortDirections._id = order;
   }
   if (Object.keys(sortDirections).length) {
     return sortDirections;

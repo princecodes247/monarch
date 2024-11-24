@@ -18,6 +18,7 @@ import type {
   InferSchemaOutput,
 } from "../../schema/type-helpers";
 import type { Merge, Pretty, TrueKeys } from "../../type-helpers";
+import { mapOneOrArray } from "../../utils";
 import type { PipelineStage } from "../types/pipeline-stage";
 import type {
   BoolProjection,
@@ -129,6 +130,10 @@ export class FindQuery<
       // @ts-ignore
       { $match: this._filter },
     ];
+    const extra = addExtraInputsToProjection(
+      this._projection,
+      this._schema.options.virtuals,
+    );
     if (Object.keys(this._projection).length) {
       // @ts-ignore
       pipeline.push({ $project: this._projection });
@@ -139,6 +144,7 @@ export class FindQuery<
       string,
       {
         relation: RelationType;
+        fieldVariable: string;
         projection: Projection<any>;
         extra: string[] | null;
       }
@@ -158,8 +164,14 @@ export class FindQuery<
         projection,
         relation._target.options.virtuals,
       );
-      populations[field] = { relation, projection, extra };
-      addPopulationPipeline(pipeline, field, relation, projection, _options);
+      const { fieldVariable } = addPopulationPipeline(
+        pipeline,
+        field,
+        relation,
+        projection,
+        _options,
+      );
+      populations[field] = { relation, fieldVariable, projection, extra };
     }
 
     addPipelineMetas(pipeline, {
@@ -171,19 +183,25 @@ export class FindQuery<
     const res = await this._collection
       .aggregate(pipeline)
       .map((doc) => {
+        console.log(doc);
         const populatedDoc = Schema.fromData(
           this._schema,
           doc as InferSchemaData<T>,
           this._projection,
-          null,
+          extra,
         );
         for (const [key, population] of Object.entries(populations)) {
           //@ts-ignore
-          populatedDoc[key] = Schema.fromData(
-            population.relation._target,
-            doc[key],
-            population.projection,
-            population.extra,
+          populatedDoc[key] = mapOneOrArray(
+            doc[population.fieldVariable],
+            (doc) => {
+              return Schema.fromData(
+                population.relation._target,
+                doc,
+                population.projection,
+                population.extra,
+              );
+            },
           );
         }
         return populatedDoc as O;

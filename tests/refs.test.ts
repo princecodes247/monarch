@@ -9,6 +9,7 @@ import {
   date,
   objectId,
   string,
+  virtual,
 } from "../src";
 
 let mongod: MongoMemoryServer;
@@ -48,7 +49,15 @@ describe("Tests for refs population", () => {
       author: objectId().optional(),
       contributors: array(objectId()).optional().default([]),
       secret: string().default(() => "secret"),
-    }).omit({ secret: true });
+    })
+      .omit({ secret: true })
+      .virtuals({
+        contributorsCount: virtual(
+          "contributors",
+          ({ contributors }) => contributors?.length ?? 0,
+        ),
+        secretSize: virtual("secret", ({ secret }) => secret.length),
+      });
 
     const UserSchema = _UserSchema.relations(({ one, ref }) => ({
       tutor: one(_UserSchema, "_id").optional(),
@@ -359,6 +368,60 @@ describe("Tests for refs population", () => {
       expect(populatedUser[0].posts.length).toBe(2);
       expect(populatedUser[0].posts[0]).toHaveProperty("title", "Post 7");
       expect(populatedUser[0].posts[1]).toHaveProperty("title", "Post 6");
+    });
+
+    it("should access original population fields in virtuals", async () => {
+      const { collections } = setupSchemasAndCollections();
+      // Create a user and posts
+      const user1 = await collections.users
+        .insertOne({
+          name: "Test User 1",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      const user2 = await collections.users
+        .insertOne({
+          name: "Test User 2",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 6",
+          contents: "Content 6",
+          contributors: [user1._id, user2._id],
+          secret: "12345",
+        })
+        .exec();
+
+      // Fetch and populate posts with sort option
+      const populatedPost = await collections.posts
+        .find()
+        .populate({
+          contributors: {
+            select: { name: true },
+          },
+        })
+        .exec();
+
+      expect(populatedPost.length).toBe(1);
+      expect(populatedPost[0].contributorsCount).toBe(2);
+      expect(populatedPost[0].contributors.length).toBe(2);
+      expect(populatedPost[0].contributors[0]).toStrictEqual({
+        _id: user1._id,
+        name: user1.name,
+      });
+      expect(populatedPost[0].contributors[1]).toStrictEqual({
+        _id: user2._id,
+        name: user2.name,
+      });
+      expect(populatedPost[0].secretSize).toBe(5);
+      // should remove extra inputs for virtuals
+      expect(populatedPost[0]).not.toHaveProperty("secret");
     });
   });
 });

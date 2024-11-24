@@ -207,7 +207,7 @@ export class Schema<
       TName,
       TTypes,
       Pretty<Merge<TRelations, T>>,
-      SchemaOmit<TTypes, Merge<TRelations, T>>,
+      TOmit,
       TVirtuals
     >;
     schema._relations = {
