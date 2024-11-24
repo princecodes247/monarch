@@ -4,17 +4,13 @@ import type {
   Collection as MongoCollection,
   WithoutId,
 } from "mongodb";
-import type {
-  InferRelationPopulationObject,
-  SchemaRelationSelect,
-} from "../../schema/relations/type-helpers";
 import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
   InferSchemaOmit,
   InferSchemaOutput,
 } from "../../schema/type-helpers";
-import type { Merge, Pretty, TrueKeys } from "../../type-helpers";
+import type { TrueKeys } from "../../type-helpers";
 import type {
   BoolProjection,
   Projection,
@@ -32,7 +28,6 @@ export class FindOneAndReplaceQuery<
   P extends ["omit" | "select", keyof any] = ["omit", InferSchemaOmit<T>],
 > extends Query<T, WithProjection<P[0], P[1], O> | null> {
   private _projection: Projection<InferSchemaOutput<T>>;
-  private _population: SchemaRelationSelect<T> = {};
 
   constructor(
     protected _schema: T,
@@ -59,16 +54,6 @@ export class FindOneAndReplaceQuery<
   public select<P extends BoolProjection<InferSchemaOutput<T>>>(projection: P) {
     this._projection = makeProjection("select", projection);
     return this as FindOneAndReplaceQuery<T, O, ["select", TrueKeys<P>]>;
-  }
-
-  public populate<P extends Pretty<SchemaRelationSelect<T>>>(population: P) {
-    Object.assign(this._population, population);
-    return this as FindOneAndReplaceQuery<
-      T,
-      Pretty<
-        Merge<O, Pretty<Merge<O, InferRelationPopulationObject<T, keyof P>>>>
-      >
-    >;
   }
 
   public async exec(): Promise<WithProjection<P[0], P[1], O> | null> {

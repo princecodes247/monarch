@@ -1,35 +1,46 @@
 import type { Sort as MongoSort } from "mongodb";
-import {
-  type AnyMonarchRelation,
-  MonarchRelation,
-} from "../../schema/relations/base";
 import { MonarchMany } from "../../schema/relations/many";
 import { MonarchOne } from "../../schema/relations/one";
 import { MonarchRef } from "../../schema/relations/ref";
-import type { Limit, PipelineStage, Skip, Sort } from "../types/pipeline-stage";
+import type {
+  RelationPopulationOptions,
+  RelationType,
+} from "../../schema/relations/type-helpers";
+import type { Meta } from "../types/expressions";
+import type {
+  Limit,
+  Lookup,
+  PipelineStage,
+  Skip,
+  Sort,
+} from "../types/pipeline-stage";
+import type { Projection } from "../types/query-options";
 
 /**
  * Adds population stages to an existing MongoDB pipeline for relation handling
  * @param pipeline - The MongoDB pipeline array to modify
  * @param relationField - The field name containing the relation
  * @param relation - The Monarch relation configuration
+ * @param projection - The population projection with schema fallback
+ * @param options - The population options
  */
-export function addPopulatePipeline(
+export function addPopulationPipeline(
   pipeline: PipelineStage<any>[],
   relationField: string,
-  relation: AnyMonarchRelation,
+  relation: RelationType,
+  projection: Projection<any>,
+  options: RelationPopulationOptions<any>,
 ) {
-  const type = MonarchRelation.getRelation(relation);
-
-  if (type instanceof MonarchMany) {
-    const collectionName = type._target.name;
-    const foreignField = type._field;
+  if (relation instanceof MonarchMany) {
+    const collectionName = relation._target.name;
+    const foreignField = relation._field;
     pipeline.push({
       $lookup: {
         from: collectionName,
         localField: relationField,
         foreignField: foreignField,
         as: relationField,
+        pipeline: buildPipelineOptions(projection, options),
       },
     });
     pipeline.push({
@@ -46,10 +57,10 @@ export function addPopulatePipeline(
     });
   }
 
-  if (type instanceof MonarchRef) {
-    const collectionName = type._target.name;
-    const foreignField = type._field;
-    const sourceField = type._references;
+  if (relation instanceof MonarchRef) {
+    const collectionName = relation._target.name;
+    const foreignField = relation._field;
+    const sourceField = relation._references;
     const fieldVariable = `monarch_${relationField}_${foreignField}_var`;
     pipeline.push({
       $lookup: {
@@ -68,15 +79,16 @@ export function addPopulatePipeline(
               },
             },
           },
+          ...buildPipelineOptions(projection, options),
         ],
         as: relationField,
       },
     });
   }
 
-  if (type instanceof MonarchOne) {
-    const collectionName = type._target.name;
-    const foreignField = type._field;
+  if (relation instanceof MonarchOne) {
+    const collectionName = relation._target.name;
+    const foreignField = relation._field;
     const fieldVariable = `monarch_${relationField}_${foreignField}_var`;
     pipeline.push({
       $lookup: {
@@ -92,9 +104,7 @@ export function addPopulatePipeline(
               },
             },
           },
-          {
-            $limit: 1,
-          },
+          ...buildPipelineOptions(projection, { limit: 1 }),
         ],
         as: relationField,
       },
@@ -122,28 +132,47 @@ export function addPopulatePipeline(
   }
 }
 
-export const addPopulationMetas = (
+function buildPipelineOptions(
+  projection: Projection<any>,
+  options: RelationPopulationOptions<any>,
+) {
+  const pipeline: Lookup<any>["$lookup"]["pipeline"] = [];
+  if (Object.keys(projection).length) {
+    // @ts-ignore
+    pipeline.push({ $project: projection });
+  }
+  addPipelineMetas(pipeline, {
+    limit: options.limit,
+    skip: options.skip,
+    sort: options.sort,
+  });
+  return pipeline;
+}
+
+export function addPipelineMetas(
   pipeline: PipelineStage<any>[],
   options: {
     sort?: Sort["$sort"];
     skip?: Skip["$skip"];
     limit?: Limit["$limit"];
   },
-) => {
+) {
   if (options.sort) pipeline.push({ $sort: options.sort });
   if (options.skip) pipeline.push({ $skip: options.skip });
   if (options.limit) pipeline.push({ $limit: options.limit });
-};
+}
 
-type Meta = { $meta: any };
-
-export const getSortDirection = (
+// TODO: handle all MongoSort variants
+export function getSortDirection(
   order?: MongoSort,
-): Record<string, 1 | -1 | Meta> => {
+): Record<string, 1 | -1 | Meta> | undefined {
   // Handle Record<string, SortDirection>
-  if (typeof order === "object" && order !== null) {
-    const sortDirections: Record<string, 1 | -1 | Meta> = {};
-
+  const sortDirections: Record<string, 1 | -1 | Meta> = {};
+  if (Array.isArray(order)) {
+    for (const ord of order) {
+      sortDirections[ord as string] = 1; // Default to ascending for each string in the array
+    }
+  } else if (typeof order === "object" && order !== null) {
     for (const key in order) {
       const value = order[key as keyof typeof order];
 
@@ -155,8 +184,17 @@ export const getSortDirection = (
         sortDirections[key] = value as Meta;
       }
     }
+  } else if (typeof order === "string") {
+    sortDirections[order] = 1;
+  } else if (order === 1) {
+    // Handle case where order is explicitly set to 1
+    sortDirections.$meta = 1; // or any other appropriate handling
+  } else if (order === -1) {
+    // Handle case where order is explicitly set to -1
+    sortDirections.$meta = -1; // or any other appropriate handling
+  }
+  if (Object.keys(sortDirections).length) {
     return sortDirections;
   }
-
-  return {};
-};
+  return undefined;
+}

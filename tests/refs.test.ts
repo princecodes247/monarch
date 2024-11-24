@@ -47,7 +47,8 @@ describe("Tests for refs population", () => {
       contents: string(),
       author: objectId().optional(),
       contributors: array(objectId()).optional().default([]),
-    });
+      secret: string().default(() => "secret"),
+    }).omit({ secret: true });
 
     const UserSchema = _UserSchema.relations(({ one, ref }) => ({
       tutor: one(_UserSchema, "_id").optional(),
@@ -55,7 +56,7 @@ describe("Tests for refs population", () => {
     }));
     const PostSchema = _PostSchema.relations(({ one, many }) => ({
       author: one(_UserSchema, "_id").optional().nullable(),
-      editor: one(_UserSchema, "_id"),
+      editor: one(_UserSchema, "_id").optional().nullable(),
       contributors: many(_UserSchema, "_id").optional(),
     }));
     // Create database collections
@@ -171,5 +172,193 @@ describe("Tests for refs population", () => {
     expect(populatedUsers[0].posts.length).toBe(2);
     expect(populatedUsers[1].posts.length).toBe(0);
     expect(populatedUsers[1].tutor).toStrictEqual(user);
+  });
+
+  describe("Monarch Population Options", () => {
+    it("should populate with limit and skip options", async () => {
+      const { collections } = setupSchemasAndCollections();
+
+      // Create a user and posts
+      const user = await collections.users
+        .insertOne({
+          name: "Test User",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 1",
+          contents: "Content 1",
+          author: user._id,
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 2",
+          contents: "Content 2",
+          author: user._id,
+        })
+        .exec();
+
+      // Fetch and populate posts with limit and skip
+      const populatedUser = await collections.users
+        .find()
+        .populate({ posts: { limit: 1, skip: 0 } })
+        .exec();
+
+      expect(populatedUser.length).toBe(1);
+      expect(populatedUser[0].posts.length).toBe(1);
+      expect(populatedUser[0].posts[0].title).toBe("Post 1");
+    });
+
+    it("should populate with default omit option", async () => {
+      const { collections } = setupSchemasAndCollections();
+      // Create a user and posts
+      const user = await collections.users
+        .insertOne({
+          name: "Test User 2",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 3",
+          contents: "Content 3",
+          author: user._id,
+        })
+        .exec();
+
+      // Fetch and populate posts with select and omit options
+      const populatedUser = await collections.users
+        .find()
+        .populate({
+          posts: true,
+        })
+        .exec();
+
+      expect(populatedUser.length).toBe(1);
+      expect(populatedUser[0].posts.length).toBe(1);
+      expect(populatedUser[0].posts[0]).toHaveProperty("contents");
+      expect(populatedUser[0].posts[0]).not.toHaveProperty("secret");
+    });
+
+    it("should populate with omit option", async () => {
+      const { collections } = setupSchemasAndCollections();
+      // Create a user and posts
+      const user = await collections.users
+        .insertOne({
+          name: "Test User 2",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 3",
+          contents: "Content 3",
+          author: user._id,
+        })
+        .exec();
+
+      // Fetch and populate posts with select and omit options
+      const populatedUser = await collections.users
+        .find()
+        .populate({
+          posts: {
+            omit: { title: true },
+          },
+        })
+        .exec();
+
+      expect(populatedUser.length).toBe(1);
+      expect(populatedUser[0].posts.length).toBe(1);
+      expect(populatedUser[0].posts[0]).toHaveProperty("secret");
+      expect(populatedUser[0].posts[0]).not.toHaveProperty("title");
+    });
+
+    it("should populate with select option", async () => {
+      const { collections } = setupSchemasAndCollections();
+      // Create a user and posts
+      const user = await collections.users
+        .insertOne({
+          name: "Test User 2",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 3",
+          contents: "Content 3",
+          author: user._id,
+        })
+        .exec();
+
+      // Fetch and populate posts with select and omit options
+      const populatedUser = await collections.users
+        .find()
+        .populate({
+          posts: {
+            select: { title: true },
+          },
+        })
+        .exec();
+
+      expect(populatedUser.length).toBe(1);
+      expect(populatedUser[0].posts.length).toBe(1);
+      expect(populatedUser[0].posts[0]).toHaveProperty("title");
+      expect(populatedUser[0].posts[0]).not.toHaveProperty("contents");
+      expect(populatedUser[0].posts[0]).not.toHaveProperty("secret");
+    });
+
+    it("should populate with sort option", async () => {
+      const { collections } = setupSchemasAndCollections();
+      // Create a user and posts
+      const user = await collections.users
+        .insertOne({
+          name: "Test User 5",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 6",
+          contents: "Content 6",
+          author: user._id,
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 7",
+          contents: "Content 7",
+          author: user._id,
+        })
+        .exec();
+
+      // Fetch and populate posts with sort option
+      const populatedUser = await collections.users
+        .find()
+        .populate({
+          posts: {
+            sort: { title: -1 },
+          },
+        })
+        .exec();
+
+      expect(populatedUser.length).toBe(1);
+      expect(populatedUser[0].posts.length).toBe(2);
+      expect(populatedUser[0].posts[0]).toHaveProperty("title", "Post 7");
+      expect(populatedUser[0].posts[1]).toHaveProperty("title", "Post 6");
+    });
   });
 });
