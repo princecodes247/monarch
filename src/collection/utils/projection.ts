@@ -1,4 +1,4 @@
-import { RelationPopulationOptions } from "../../schema/relations/type-helpers";
+import type { RelationPopulationOptions } from "../../schema/relations/type-helpers";
 import type { Virtual } from "../../schema/virtuals";
 import type { BoolProjection, Projection } from "../types/query-options";
 

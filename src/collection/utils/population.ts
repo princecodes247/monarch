@@ -2,11 +2,11 @@ import type { Sort as MongoSort } from "mongodb";
 import { MonarchMany } from "../../schema/relations/many";
 import { MonarchOne } from "../../schema/relations/one";
 import { MonarchRef } from "../../schema/relations/ref";
-import {
+import type {
   RelationPopulationOptions,
   RelationType,
 } from "../../schema/relations/type-helpers";
-import { Meta } from "../types/expressions";
+import type { Meta } from "../types/expressions";
 import type {
   Limit,
   Lookup,
@@ -14,7 +14,7 @@ import type {
   Skip,
   Sort,
 } from "../types/pipeline-stage";
-import { Projection } from "../types/query-options";
+import type { Projection } from "../types/query-options";
 
 /**
  * Adds population stages to an existing MongoDB pipeline for relation handling
@@ -188,10 +188,10 @@ export function getSortDirection(
     sortDirections[order] = 1;
   } else if (order === 1) {
     // Handle case where order is explicitly set to 1
-    sortDirections["$meta"] = 1; // or any other appropriate handling
+    sortDirections.$meta = 1; // or any other appropriate handling
   } else if (order === -1) {
     // Handle case where order is explicitly set to -1
-    sortDirections["$meta"] = -1; // or any other appropriate handling
+    sortDirections.$meta = -1; // or any other appropriate handling
   }
   if (Object.keys(sortDirections).length) {
     return sortDirections;

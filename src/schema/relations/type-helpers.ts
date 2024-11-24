@@ -1,6 +1,6 @@
 import type { ObjectId } from "mongodb";
-import { Limit, Skip, Sort } from "../../collection/types/pipeline-stage";
-import {
+import type { Limit, Skip, Sort } from "../../collection/types/pipeline-stage";
+import type {
   BoolProjection,
   WithProjection,
 } from "../../collection/types/query-options";
