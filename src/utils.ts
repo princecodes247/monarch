@@ -53,9 +53,6 @@ export function mapOneOrArray<T extends Record<string, any>, U>(
   input: T | T[],
   fn: (input: T) => U,
 ) {
-  if (Array.isArray(input)) {
-    return input.map(fn);
-  } else {
-    return fn(input);
-  }
+  if (Array.isArray(input)) return input.map(fn);
+  return fn(input);
 }
