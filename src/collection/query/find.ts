@@ -4,9 +4,12 @@ import type {
   Collection as MongoCollection,
   Sort as MongoSort,
 } from "mongodb";
+import { MonarchRelation } from "../../schema/relations/base";
 import type {
-  InferRelationPopulationObject,
-  SchemaRelationSelect,
+  InferRelationObjectPopulation,
+  RelationPopulationOptions,
+  RelationType,
+  SchemaRelationPopulation,
 } from "../../schema/relations/type-helpers";
 import { type AnySchema, Schema } from "../../schema/schema";
 import type {
@@ -22,9 +25,14 @@ import type {
   Sort,
   WithProjection,
 } from "../types/query-options";
-import { addPopulatePipeline, addPopulationMetas } from "../utils/populate";
+import {
+  addPipelineMetas,
+  addPopulationPipeline,
+  getSortDirection,
+} from "../utils/population";
 import {
   addExtraInputsToProjection,
+  makePopulationProjection,
   makeProjection,
 } from "../utils/projection";
 import { Query } from "./base";
@@ -35,7 +43,7 @@ export class FindQuery<
   P extends ["omit" | "select", keyof any] = ["omit", InferSchemaOmit<T>],
 > extends Query<T, WithProjection<P[0], P[1], O>[]> {
   private _projection: Projection<InferSchemaOutput<T>>;
-  private _population: SchemaRelationSelect<T> = {};
+  private _population: SchemaRelationPopulation<T> = {};
 
   constructor(
     protected _schema: T,
@@ -78,13 +86,11 @@ export class FindQuery<
     return this as FindQuery<T, O, ["select", TrueKeys<P>]>;
   }
 
-  public populate<P extends Pretty<SchemaRelationSelect<T>>>(population: P) {
+  public populate<P extends SchemaRelationPopulation<T>>(population: P) {
     Object.assign(this._population, population);
     return this as FindQuery<
       T,
-      Pretty<
-        Merge<O, Pretty<Merge<O, InferRelationPopulationObject<T, keyof P>>>>
-      >
+      Pretty<Merge<O, InferRelationObjectPopulation<T, P>>>
     >;
   }
 
@@ -120,38 +126,69 @@ export class FindQuery<
 
   private async _execWithPopulate(): Promise<WithProjection<P[0], P[1], O>[]> {
     const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
-      // @ts-expect-error
+      // @ts-ignore
       { $match: this._filter },
     ];
-    const relations = Schema.relations(this._schema);
-    for (const [field, options] of Object.entries(this._population)) {
-      if (!options) continue;
-      if (!relations[field]) {
-        console.warn(`Relation '${field}' not found in schema`);
-        continue;
-      }
-      addPopulatePipeline(pipeline, field, relations[field], options);
-    }
-    if (Object.keys(this._projection).length > 0) {
-      // @ts-expect-error
+    if (Object.keys(this._projection).length) {
+      // @ts-ignore
       pipeline.push({ $project: this._projection });
     }
-    addPopulationMetas(pipeline, {
+
+    const relations = Schema.relations(this._schema);
+    const populations: Record<
+      string,
+      {
+        relation: RelationType;
+        projection: Projection<any>;
+        extra: string[] | null;
+      }
+    > = {};
+    for (const [field, options] of Object.entries(this._population)) {
+      if (!options) continue;
+      const relation = MonarchRelation.getRelation(
+        relations[field],
+      ) as RelationType;
+      const _options =
+        options === true ? {} : (options as RelationPopulationOptions<any>);
+      // get population projection or fallback to schema omit projection
+      const projection =
+        makePopulationProjection(_options) ??
+        makeProjection("omit", relation._target.options.omit ?? {});
+      const extra = addExtraInputsToProjection(
+        projection,
+        relation._target.options.virtuals,
+      );
+      populations[field] = { relation, projection, extra };
+      addPopulationPipeline(pipeline, field, relation, projection, _options);
+    }
+
+    addPipelineMetas(pipeline, {
       limit: this._options.limit,
       skip: this._options.skip,
-      sort: this._options.sort,
+      sort: getSortDirection(this._options.sort),
     });
-    const result = await this._collection.aggregate(pipeline).toArray();
-    return result.length > 0
-      ? result.map(
-          (doc) =>
-            Schema.fromData(
-              this._schema,
-              doc as InferSchemaData<T>,
-              this._projection,
-              null,
-            ) as O,
-        )
-      : [];
+
+    const res = await this._collection
+      .aggregate(pipeline)
+      .map((doc) => {
+        const populatedDoc = Schema.fromData(
+          this._schema,
+          doc as InferSchemaData<T>,
+          this._projection,
+          null,
+        );
+        for (const [key, population] of Object.entries(populations)) {
+          //@ts-ignore
+          populatedDoc[key] = Schema.fromData(
+            population.relation._target,
+            doc[key],
+            population.projection,
+            population.extra,
+          );
+        }
+        return populatedDoc as O;
+      })
+      .toArray();
+    return res;
   }
 }

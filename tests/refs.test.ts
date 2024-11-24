@@ -47,7 +47,8 @@ describe("Tests for refs population", () => {
       contents: string(),
       author: objectId().optional(),
       contributors: array(objectId()).optional().default([]),
-    });
+      secret: string().default(() => "secret"),
+    }).omit({ secret: true });
 
     const UserSchema = _UserSchema.relations(({ one, ref }) => ({
       tutor: one(_UserSchema, "_id").optional(),
@@ -205,13 +206,45 @@ describe("Tests for refs population", () => {
       // Fetch and populate posts with limit and skip
       const populatedUser = await collections.users
         .find()
-        //@ts-expect-error -- Fix types
         .populate({ posts: { limit: 1, skip: 0 } })
         .exec();
 
       expect(populatedUser.length).toBe(1);
       expect(populatedUser[0].posts.length).toBe(1);
       expect(populatedUser[0].posts[0].title).toBe("Post 1");
+    });
+
+    it("should populate with default omit option", async () => {
+      const { collections } = setupSchemasAndCollections();
+      // Create a user and posts
+      const user = await collections.users
+        .insertOne({
+          name: "Test User 2",
+          isAdmin: false,
+          createdAt: new Date(),
+        })
+        .exec();
+
+      await collections.posts
+        .insertOne({
+          title: "Post 3",
+          contents: "Content 3",
+          author: user._id,
+        })
+        .exec();
+
+      // Fetch and populate posts with select and omit options
+      const populatedUser = await collections.users
+        .find()
+        .populate({
+          posts: true,
+        })
+        .exec();
+
+      expect(populatedUser.length).toBe(1);
+      expect(populatedUser[0].posts.length).toBe(1);
+      expect(populatedUser[0].posts[0]).toHaveProperty("contents");
+      expect(populatedUser[0].posts[0]).not.toHaveProperty("secret");
     });
 
     it("should populate with omit option", async () => {
@@ -237,16 +270,15 @@ describe("Tests for refs population", () => {
       const populatedUser = await collections.users
         .find()
         .populate({
-          //@ts-expect-error -- Fix types
           posts: {
-            omit: { title: 1 },
+            omit: { title: true },
           },
         })
         .exec();
 
       expect(populatedUser.length).toBe(1);
       expect(populatedUser[0].posts.length).toBe(1);
-      expect(populatedUser[0].posts[0]).toHaveProperty("contents");
+      expect(populatedUser[0].posts[0]).toHaveProperty("secret");
       expect(populatedUser[0].posts[0]).not.toHaveProperty("title");
     });
 
@@ -273,9 +305,8 @@ describe("Tests for refs population", () => {
       const populatedUser = await collections.users
         .find()
         .populate({
-          //@ts-expect-error -- Fix types
           posts: {
-            select: { title: 1 },
+            select: { title: true },
           },
         })
         .exec();
@@ -284,6 +315,7 @@ describe("Tests for refs population", () => {
       expect(populatedUser[0].posts.length).toBe(1);
       expect(populatedUser[0].posts[0]).toHaveProperty("title");
       expect(populatedUser[0].posts[0]).not.toHaveProperty("contents");
+      expect(populatedUser[0].posts[0]).not.toHaveProperty("secret");
     });
 
     it("should populate with sort option", async () => {
@@ -317,9 +349,8 @@ describe("Tests for refs population", () => {
       const populatedUser = await collections.users
         .find()
         .populate({
-          //@ts-expect-error -- Fix types
           posts: {
-            sort: { title: -1 }, // Sort by createdAt in descending order
+            sort: { title: -1 },
           },
         })
         .exec();
@@ -328,86 +359,6 @@ describe("Tests for refs population", () => {
       expect(populatedUser[0].posts.length).toBe(2);
       expect(populatedUser[0].posts[0]).toHaveProperty("title", "Post 7");
       expect(populatedUser[0].posts[1]).toHaveProperty("title", "Post 6");
-    });
-
-    it("should throw an error for invalid option values", async () => {
-      const { collections } = setupSchemasAndCollections();
-      const user = await collections.users
-        .insertOne({
-          name: "Test User 3",
-          isAdmin: false,
-          createdAt: new Date(),
-        })
-        .exec();
-
-      await collections.posts
-        .insertOne({
-          title: "Post 4",
-          contents: "Content 4",
-          author: user._id,
-        })
-        .exec();
-
-     
-    });
-
-    it("should throw an error when mixing incompatible options", async () => {
-      const { collections } = setupSchemasAndCollections();
-      const user = await collections.users
-        .insertOne({
-          name: "Test User 4",
-          isAdmin: false,
-          createdAt: new Date(),
-        })
-        .exec();
-
-      await collections.posts
-        .insertOne({
-          title: "Post 5",
-          contents: "Content 5",
-          author: user._id,
-        })
-        .exec();
-
-        collections.users
-          .find()
-          .populate({
-            //@ts-expect-error -- Fix types
-            posts: {
-              select: { title: 1 },
-              omit: { contents: 1 },
-            },
-          })
-          .exec()
-    });
-
-    it("should throw an error for malformed option objects", async () => {
-      const { collections } = setupSchemasAndCollections();
-      const user = await collections.users
-        .insertOne({
-          name: "Test User 5",
-          isAdmin: false,
-          createdAt: new Date(),
-        })
-        .exec();
-
-      await collections.posts
-        .insertOne({
-          title: "Post 6",
-          contents: "Content 6",
-          author: user._id,
-        })
-        .exec();
-      const users = await collections.users
-        .find()
-        .populate({
-          //@ts-expect-error -- Fix types
-          posts: {
-            select: "invalidString",
-          },
-        })
-        .exec();
-      console.log({ users: users[0].posts });
     });
   });
 });

@@ -7,16 +7,18 @@ import { type AnySchema, Schema } from "../../schema/schema";
 import type {
   InferSchemaData,
   InferSchemaInput,
+  InferSchemaOmit,
   InferSchemaOutput,
 } from "../../schema/type-helpers";
-import type { Projection } from "../types/query-options";
+import type { Projection, WithProjection } from "../types/query-options";
 import { makeProjection } from "../utils/projection";
 import { Query } from "./base";
 
 export class InsertOneQuery<
   T extends AnySchema,
   O = InferSchemaOutput<T>,
-> extends Query<T, O> {
+  P extends ["omit" | "select", keyof any] = ["omit", InferSchemaOmit<T>],
+> extends Query<T, WithProjection<P[0], P[1], O>> {
   private _projection: Projection<InferSchemaOutput<T>>;
 
   constructor(
@@ -35,7 +37,7 @@ export class InsertOneQuery<
     return this;
   }
 
-  public async exec(): Promise<O> {
+  public async exec(): Promise<WithProjection<P[0], P[1], O>> {
     await this._readyPromise;
     const data = Schema.toData(this._schema, this._data);
     const res = await this._collection.insertOne(

@@ -1,3 +1,4 @@
+import { RelationPopulationOptions } from "../../schema/relations/type-helpers";
 import type { Virtual } from "../../schema/virtuals";
 import type { BoolProjection, Projection } from "../types/query-options";
 
@@ -10,6 +11,14 @@ export function makeProjection<T>(
     if (projection[key]) _projection[key] = type === "omit" ? 0 : 1;
   }
   return _projection;
+}
+
+export function makePopulationProjection<T>(
+  options: RelationPopulationOptions<T>,
+) {
+  if (options.omit) return makeProjection("omit", options.omit);
+  if (options.select) return makeProjection("select", options.select);
+  return null;
 }
 
 export function detectProjection<T>(projection: Projection<T>) {

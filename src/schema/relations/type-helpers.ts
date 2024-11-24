@@ -1,8 +1,14 @@
 import type { ObjectId } from "mongodb";
-import type { Index } from "../../type-helpers";
+import { Limit, Skip, Sort } from "../../collection/types/pipeline-stage";
+import {
+  BoolProjection,
+  WithProjection,
+} from "../../collection/types/query-options";
+import type { ExtractIfArray, Index } from "../../type-helpers";
 import type { MonarchPhantom } from "../../types/type";
 import type { AnySchema } from "../schema";
 import type {
+  InferSchemaOmit,
   InferSchemaOutput,
   InferSchemaRelations,
   SchemaInputWithId,
@@ -17,6 +23,11 @@ import type { MonarchMany } from "./many";
 import type { MonarchOne } from "./one";
 import type { MonarchRef } from "./ref";
 
+export type RelationType =
+  | MonarchOne<any, any, any>
+  | MonarchMany<any, any, any>
+  | MonarchRef<any, any, any, any>;
+
 type ValidRelationFieldType = string | number | ObjectId;
 export type SchemaRelatableField<T extends AnySchema> = keyof {
   [K in keyof SchemaInputWithId<T> as NonNullable<
@@ -26,9 +37,30 @@ export type SchemaRelatableField<T extends AnySchema> = keyof {
     : never]: unknown;
 };
 
-export type SchemaRelationSelect<T extends AnySchema> = {
-  // TODO: support relation filters and projections
-  [K in keyof InferSchemaRelations<T>]?: true;
+type RelationOmitOrSelect<T> =
+  | {
+      omit?: BoolProjection<T>;
+      select?: never;
+    }
+  | {
+      omit?: never;
+      select?: BoolProjection<T>;
+    };
+export type RelationPopulationOptions<T> = {
+  limit?: Limit["$limit"];
+  skip?: Skip["$skip"];
+  sort?: Sort["$sort"];
+} & RelationOmitOrSelect<T>;
+type _RelationPopulationOptions<T extends AnyMonarchRelation> =
+  T extends MonarchOne<any, any, any>
+    ? RelationOmitOrSelect<InferRelationPopulation<T, true>>
+    : RelationPopulationOptions<
+        ExtractIfArray<InferRelationPopulation<T, true>>
+      >;
+export type SchemaRelationPopulation<T extends AnySchema> = {
+  [K in keyof InferSchemaRelations<T>]?:
+    | _RelationPopulationOptions<InferSchemaRelations<T>[K]>
+    | true;
 };
 
 export type InferRelationInput<T> = T extends MonarchRelation<infer TInput, any>
@@ -62,25 +94,48 @@ export type InferRelationObjectOutput<
     : K]: InferRelationOutput<T[K]>;
 };
 
-export type InferRelationPopulation<T> = T extends MonarchOne<
-  any,
-  infer TTarget,
-  any
->
-  ? InferSchemaOutput<TTarget>
+type WithRelationPopulation<
+  T,
+  O extends RelationPopulationOptions<any> | true | undefined,
+  DO extends keyof any,
+> = O extends { omit: BoolProjection<any> }
+  ? WithProjection<"omit", keyof O["omit"], T>
+  : O extends { select: BoolProjection<any> }
+    ? WithProjection<"select", keyof O["select"], T>
+    : WithProjection<"omit", DO, T>;
+export type InferRelationPopulation<
+  T,
+  O extends RelationPopulationOptions<any> | true | undefined,
+> = T extends MonarchOne<any, infer TTarget, any>
+  ? WithRelationPopulation<
+      InferSchemaOutput<TTarget>,
+      O,
+      InferSchemaOmit<TTarget>
+    >
   : T extends MonarchMany<any, infer TTarget, any>
-    ? InferSchemaOutput<TTarget>[]
+    ? WithRelationPopulation<
+        InferSchemaOutput<TTarget>,
+        O,
+        InferSchemaOmit<TTarget>
+      >[]
     : T extends MonarchRef<any, infer TTarget, any, any>
-      ? InferSchemaOutput<TTarget>[]
+      ? WithRelationPopulation<
+          InferSchemaOutput<TTarget>,
+          O,
+          InferSchemaOmit<TTarget>
+        >[]
       : T extends MonarchOptionalRelation<infer TRelation>
-        ? InferRelationPopulation<TRelation>
+        ? InferRelationPopulation<TRelation, O>
         : T extends MonarchNullableRelation<infer TRelation>
-          ? InferRelationPopulation<TRelation>
+          ? InferRelationPopulation<TRelation, O>
           : never;
 
-export type InferRelationPopulationObject<
+export type InferRelationObjectPopulation<
   T extends AnySchema,
-  Keys extends keyof any,
+  P extends SchemaRelationPopulation<any>,
 > = {
-  [K in Keys]: InferRelationPopulation<Index<InferSchemaRelations<T>, K>>;
+  [K in keyof P]: InferRelationPopulation<
+    Index<InferSchemaRelations<T>, K>,
+    P[K]
+  >;
 };

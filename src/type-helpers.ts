@@ -3,6 +3,7 @@ import type { ObjectId } from "mongodb";
 export type Merge<First, Second> = Omit<First, keyof Second> & Second;
 export type Pretty<T> = { [K in keyof T]: T[K] } & {};
 export type Index<T, K> = K extends keyof T ? T[K] : never;
+export type ExtractIfArray<T> = T extends (infer U)[] ? U : T;
 export type TrueKeys<T> = keyof {
   [K in keyof T as T[K] extends true ? K : never]: T[K];
 };
