@@ -75,6 +75,37 @@ describe("Tests for refs population", () => {
     });
   };
 
+  it("should populate relation", async () => {
+    const { collections } = setupSchemasAndCollections();
+
+    const user = await collections.users
+      .insertOne({
+        name: "Bob",
+        isAdmin: false,
+        createdAt: new Date(),
+      })
+      .exec();
+
+    const user2 = await collections.users
+      .insertOne({
+        name: "Alex",
+        isAdmin: false,
+        tutor: user._id,
+        createdAt: new Date(),
+      })
+      .exec();
+
+    const populatedUser2 = await collections.users
+      .findById(user2._id)
+      .populate({ tutor: true })
+      .exec();
+
+    expect(populatedUser2).toStrictEqual({
+      ...user2,
+      tutor: user,
+    });
+  });
+
   it("should populate 'author' and 'contributors' in findOne", async () => {
     const { collections } = setupSchemasAndCollections();
 

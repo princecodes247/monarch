@@ -190,7 +190,7 @@ export class FindQuery<
           extra,
         );
         for (const [key, population] of Object.entries(populations)) {
-          //@ts-ignore
+          // @ts-ignore
           populatedDoc[key] = mapOneOrArray(
             doc[population.fieldVariable],
             (doc) => {
@@ -202,6 +202,8 @@ export class FindQuery<
               );
             },
           );
+          // @ts-ignore
+          delete populatedDoc[population.fieldVariable];
         }
         return populatedDoc as O;
       })
