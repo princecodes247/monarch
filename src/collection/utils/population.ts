@@ -30,26 +30,28 @@ export function addPopulationPipeline(
   relation: RelationType,
   projection: Projection<any>,
   options: RelationPopulationOptions<any>,
-) {
+): { fieldVariable: string } {
+  const collectionName = relation._target.name;
+  const foreignField = relation._field;
+  const fieldVariable = generateFieldVariable(relationField, foreignField);
+
   if (relation instanceof MonarchMany) {
-    const collectionName = relation._target.name;
-    const foreignField = relation._field;
     pipeline.push({
       $lookup: {
         from: collectionName,
         localField: relationField,
         foreignField: foreignField,
-        as: relationField,
+        as: fieldVariable,
         pipeline: buildPipelineOptions(projection, options),
       },
     });
     pipeline.push({
       $addFields: {
-        [relationField]: {
+        [fieldVariable]: {
           $cond: {
-            if: { $isArray: `$${relationField}` },
+            if: { $isArray: `$${fieldVariable}` },
             // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
-            then: `$${relationField}`,
+            then: `$${fieldVariable}`,
             else: [],
           },
         },
@@ -58,10 +60,8 @@ export function addPopulationPipeline(
   }
 
   if (relation instanceof MonarchRef) {
-    const collectionName = relation._target.name;
-    const foreignField = relation._field;
     const sourceField = relation._references;
-    const fieldVariable = `monarch_${relationField}_${foreignField}_var`;
+
     pipeline.push({
       $lookup: {
         from: collectionName,
@@ -81,15 +81,12 @@ export function addPopulationPipeline(
           },
           ...buildPipelineOptions(projection, options),
         ],
-        as: relationField,
+        as: fieldVariable,
       },
     });
   }
 
   if (relation instanceof MonarchOne) {
-    const collectionName = relation._target.name;
-    const foreignField = relation._field;
-    const fieldVariable = `monarch_${relationField}_${foreignField}_var`;
     pipeline.push({
       $lookup: {
         from: collectionName,
@@ -106,30 +103,32 @@ export function addPopulationPipeline(
           },
           ...buildPipelineOptions(projection, { limit: 1 }),
         ],
-        as: relationField,
+        as: fieldVariable,
       },
     });
     // Unwind the populated field if it's a single relation
     pipeline.push({
       $set: {
-        [relationField]: {
+        [fieldVariable]: {
           $cond: {
-            if: { $gt: [{ $size: `$${relationField}` }, 0] }, // Skip population if value is null
+            if: { $gt: [{ $size: `$${fieldVariable}` }, 0] }, // Skip population if value is null
             // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
-            then: { $arrayElemAt: [`$${relationField}`, 0] }, // Unwind the first populated result
-            else: {
-              $cond: {
-                if: { $eq: [`$${relationField}`, null] },
-                // biome-ignore lint/suspicious/noThenProperty: this is MongoDB syntax
-                then: null,
-                else: { $literal: { error: "Invalid reference" } },
-              },
-            },
+            then: { $arrayElemAt: [`$${fieldVariable}`, 0] }, // Unwind the first populated result
+            else: null,
           },
         },
       },
     });
   }
+
+  return { fieldVariable };
+}
+
+function generateFieldVariable(
+  relationField: string,
+  foreignField: string,
+): string {
+  return `mn_${relationField}_${foreignField}`;
 }
 
 function buildPipelineOptions(
@@ -186,12 +185,9 @@ export function getSortDirection(
     }
   } else if (typeof order === "string") {
     sortDirections[order] = 1;
-  } else if (order === 1) {
-    // Handle case where order is explicitly set to 1
-    sortDirections.$meta = 1; // or any other appropriate handling
-  } else if (order === -1) {
-    // Handle case where order is explicitly set to -1
-    sortDirections.$meta = -1; // or any other appropriate handling
+  } else if (order === 1 || order === -1) {
+    // Handle case where order is explicitly set to 1 or -1
+    sortDirections._id = order;
   }
   if (Object.keys(sortDirections).length) {
     return sortDirections;
