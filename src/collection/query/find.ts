@@ -1,4 +1,5 @@
 import type {
+  AbstractCursor,
   Filter,
   FindOptions,
   Collection as MongoCollection,
@@ -96,6 +97,12 @@ export class FindQuery<
   }
 
   public async exec(): Promise<WithProjection<P[0], P[1], O>[]> {
+    return (await this.cursor()).toArray();
+  }
+
+  public async cursor(): Promise<
+    AbstractCursor<WithProjection<P[0], P[1], O>>
+  > {
     await this._readyPromise;
     if (Object.keys(this._population).length) {
       return this._execWithPopulate();
@@ -103,14 +110,14 @@ export class FindQuery<
     return this._execWithoutPopulate();
   }
 
-  private async _execWithoutPopulate(): Promise<
-    WithProjection<P[0], P[1], O>[]
+  private _execWithoutPopulate(): AbstractCursor<
+    WithProjection<P[0], P[1], O>
   > {
     const extra = addExtraInputsToProjection(
       this._projection,
       this._schema.options.virtuals,
     );
-    const res = await this._collection
+    const res = this._collection
       .find(this._filter, { ...this._options, projection: this._projection })
       .map(
         (doc) =>
@@ -120,12 +127,11 @@ export class FindQuery<
             this._projection,
             extra,
           ) as O,
-      )
-      .toArray();
+      );
     return res;
   }
 
-  private async _execWithPopulate(): Promise<WithProjection<P[0], P[1], O>[]> {
+  private _execWithPopulate(): AbstractCursor<WithProjection<P[0], P[1], O>> {
     const pipeline: PipelineStage<InferSchemaOutput<T>>[] = [
       // @ts-ignore
       { $match: this._filter },
@@ -180,34 +186,31 @@ export class FindQuery<
       sort: getSortDirection(this._options.sort),
     });
 
-    const res = await this._collection
-      .aggregate(pipeline)
-      .map((doc) => {
-        const populatedDoc = Schema.fromData(
-          this._schema,
-          doc as InferSchemaData<T>,
-          this._projection,
-          extra,
+    const res = this._collection.aggregate(pipeline).map((doc) => {
+      const populatedDoc = Schema.fromData(
+        this._schema,
+        doc as InferSchemaData<T>,
+        this._projection,
+        extra,
+      );
+      for (const [key, population] of Object.entries(populations)) {
+        // @ts-ignore
+        populatedDoc[key] = mapOneOrArray(
+          doc[population.fieldVariable],
+          (doc) => {
+            return Schema.fromData(
+              population.relation._target,
+              doc,
+              population.projection,
+              population.extra,
+            );
+          },
         );
-        for (const [key, population] of Object.entries(populations)) {
-          // @ts-ignore
-          populatedDoc[key] = mapOneOrArray(
-            doc[population.fieldVariable],
-            (doc) => {
-              return Schema.fromData(
-                population.relation._target,
-                doc,
-                population.projection,
-                population.extra,
-              );
-            },
-          );
-          // @ts-ignore
-          delete populatedDoc[population.fieldVariable];
-        }
-        return populatedDoc as O;
-      })
-      .toArray();
+        // @ts-ignore
+        delete populatedDoc[population.fieldVariable];
+      }
+      return populatedDoc as O;
+    });
     return res;
   }
 }
