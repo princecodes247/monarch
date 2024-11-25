@@ -183,7 +183,6 @@ export class FindQuery<
     const res = await this._collection
       .aggregate(pipeline)
       .map((doc) => {
-        console.log(doc);
         const populatedDoc = Schema.fromData(
           this._schema,
           doc as InferSchemaData<T>,
