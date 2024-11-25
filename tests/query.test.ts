@@ -156,6 +156,22 @@ describe("Query methods Tests", () => {
     expect(users.length).toBeGreaterThanOrEqual(3);
   });
 
+  it("finds documents with cursor", async () => {
+    await collections.users.insertMany(mockUsers).exec();
+
+    const users1 = await collections.users.find().cursor();
+    expect(await users1.next()).toMatchObject(mockUsers[0]);
+    expect(await users1.next()).toMatchObject(mockUsers[1]);
+    expect(await users1.next()).toMatchObject(mockUsers[2]);
+    expect(await users1.next()).toBe(null);
+
+    const users2 = await collections.users.find().cursor();
+    let i = 0;
+    for await (const user of users2) {
+      expect(user).toMatchObject(mockUsers[i++]);
+    }
+  });
+
   it("finds one document", async () => {
     await collections.users.insertOne(mockUsers[0]).exec();
 
