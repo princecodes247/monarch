@@ -14,6 +14,7 @@ import {
   createSchema,
   createdAt,
   date,
+  dateString,
   updatedAt,
 } from "../src";
 
@@ -42,6 +43,7 @@ describe("test for date", () => {
   it("inserts date object and finds it", async () => {
     const UserSchema = createSchema("users", {
       currentDate: date(),
+      currentDateString: dateString(),
     });
     const markedDate = new Date();
     const { db, collections } = createDatabase(client.db(), {
@@ -50,25 +52,31 @@ describe("test for date", () => {
 
     // collections query builder
     const newUser = await collections.users
-      .insertOne({ currentDate: markedDate })
+      .insertOne({ currentDate: markedDate, currentDateString: markedDate })
       .exec();
     expect(newUser).not.toBe(null);
     expect(newUser).toStrictEqual(
       expect.objectContaining({
-        currentDate: markedDate.toISOString(),
+        currentDate: markedDate,
+        currentDateString: markedDate.toISOString(),
       }),
     );
 
     // db query builder
     const users = await db(UserSchema)
-      .find({ currentDate: markedDate.toISOString() })
+      .find({ 
+        currentDate: markedDate,
+        currentDateString: markedDate.toISOString(),
+       })
       .exec();
+
     expect(users.length).toBeGreaterThanOrEqual(1);
 
     const existingUser = users[0];
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
-        currentDate: markedDate.toISOString(),
+        currentDate: markedDate,
+        currentDateString: markedDate.toISOString(),
       }),
     );
   });
