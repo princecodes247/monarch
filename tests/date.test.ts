@@ -64,10 +64,10 @@ describe("test for date", () => {
 
     // db query builder
     const users = await db(UserSchema)
-      .find({ 
+      .find({
         currentDate: markedDate,
         currentDateString: markedDate.toISOString(),
-       })
+      })
       .exec();
 
     expect(users.length).toBeGreaterThanOrEqual(1);

@@ -30,7 +30,7 @@ export const updatedAt = () => {
     .default(() => new Date());
 };
 
-export const dateString = () =>  new MonarchDateString();
+export const dateString = () => new MonarchDateString();
 
 export class MonarchDateString extends MonarchType<Date, string> {
   constructor() {
@@ -49,4 +49,3 @@ export class MonarchDateString extends MonarchType<Date, string> {
     });
   }
 }
-

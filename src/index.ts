@@ -24,6 +24,5 @@ export {
   generateObjectId,
   isValidObjectId,
   objectIdToString,
-  toObjectId
+  toObjectId,
 } from "./utils";
-
