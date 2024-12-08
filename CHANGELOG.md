@@ -1,5 +1,11 @@
 # monarch-orm
 
+## 0.6.1
+
+### Patch Changes
+
+- 0f518de: Improve direct date support
+
 ## 0.6.0
 
 ### Minor Changes
