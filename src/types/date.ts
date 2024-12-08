@@ -32,10 +32,13 @@ export const updatedAt = () => {
 
 export const dateString = () => new MonarchDateString();
 
-export class MonarchDateString extends MonarchType<Date, string> {
+export class MonarchDateString extends MonarchType<string, Date> {
   constructor() {
     super((input) => {
-      if (input instanceof Date) return input.toISOString();
+      if (typeof input === "string") {
+        const date = new Date(input);
+        if (!Number.isNaN(date.getTime())) return date;
+      }
       throw new MonarchParseError(`expected 'Date' received '${typeof input}'`);
     });
   }
@@ -43,7 +46,8 @@ export class MonarchDateString extends MonarchType<Date, string> {
   public after(afterDate: Date) {
     return dateString().extend(this, {
       preParse: (input) => {
-        if (input > afterDate) return input;
+        const date = new Date(input);
+        if (date > afterDate) return input;
         throw new MonarchParseError(`date must be after ${afterDate}`);
       },
     });

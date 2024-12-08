@@ -52,13 +52,16 @@ describe("test for date", () => {
 
     // collections query builder
     const newUser = await collections.users
-      .insertOne({ currentDate: markedDate, currentDateString: markedDate })
+      .insertOne({
+        currentDate: markedDate,
+        currentDateString: markedDate.toISOString(),
+      })
       .exec();
     expect(newUser).not.toBe(null);
     expect(newUser).toStrictEqual(
       expect.objectContaining({
         currentDate: markedDate,
-        currentDateString: markedDate.toISOString(),
+        currentDateString: markedDate,
       }),
     );
 
@@ -66,7 +69,7 @@ describe("test for date", () => {
     const users = await db(UserSchema)
       .find({
         currentDate: markedDate,
-        currentDateString: markedDate.toISOString(),
+        currentDateString: markedDate,
       })
       .exec();
 
@@ -76,7 +79,7 @@ describe("test for date", () => {
     expect(existingUser).toStrictEqual(
       expect.objectContaining({
         currentDate: markedDate,
-        currentDateString: markedDate.toISOString(),
+        currentDateString: markedDate,
       }),
     );
   });
