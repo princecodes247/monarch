@@ -35,11 +35,12 @@ export const dateString = () => new MonarchDateString();
 export class MonarchDateString extends MonarchType<string, Date> {
   constructor() {
     super((input) => {
-      if (typeof input === "string") {
-        const date = new Date(input);
-        if (!Number.isNaN(date.getTime())) return date;
+      if (typeof input === "string" && !Number.isNaN(Date.parse(input))) {
+        return new Date(input);
       }
-      throw new MonarchParseError(`expected 'Date' received '${typeof input}'`);
+      throw new MonarchParseError(
+        `expected 'ISO Date string' received '${typeof input}'`,
+      );
     });
   }
 
