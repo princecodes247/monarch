@@ -39,35 +39,4 @@ export class InsertManyQuery<T extends AnySchema> extends Query<
     );
     return res;
   }
-
-  // biome-ignore lint/suspicious/noThenProperty: We need automatic promise resolution
-  then<TResult1 = InsertManyResult<InferSchemaData<T>>, TResult2 = never>(
-    onfulfilled?:
-      | ((
-          value: InsertManyResult<InferSchemaData<T>>,
-        ) => TResult1 | PromiseLike<TResult1>)
-      | undefined
-      | null,
-    onrejected?:
-      | ((reason: any) => TResult2 | PromiseLike<TResult2>)
-      | undefined
-      | null,
-  ): Promise<TResult1 | TResult2> {
-    return this.exec().then(onfulfilled, onrejected);
-  }
-
-  catch<TResult = never>(
-    onrejected?:
-      | ((reason: any) => TResult | PromiseLike<TResult>)
-      | undefined
-      | null,
-  ): Promise<InsertManyResult<InferSchemaData<T>> | TResult> {
-    return this.exec().catch(onrejected);
-  }
-
-  finally(
-    onfinally?: (() => void) | undefined | null,
-  ): Promise<InsertManyResult<InferSchemaData<T>>> {
-    return this.exec().finally(onfinally);
-  }
 }

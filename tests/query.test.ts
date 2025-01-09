@@ -92,7 +92,7 @@ describe("Query methods Tests", () => {
     }).rejects.toThrow("expected valid ObjectId received");
 
     // Test edge case: Insert empty document
-    const emptyUser = await collections.users.insertOne({}).exec();
+    const emptyUser = await collections.users.insertOne({});
 
     expect(emptyUser).not.toBe(null);
     expect(emptyUser.age).toBe(10); // Should use default value
@@ -214,7 +214,7 @@ describe("Query methods Tests", () => {
     expect(user1).toStrictEqual({ _id: userId, ...mockUsers[0] });
 
     // find with string id
-    const user2 = await collections.users.findById(userId.toString()).exec();
+    const user2 = await collections.users.findById(userId.toString());
     expect(user2).toStrictEqual({ _id: userId, ...mockUsers[0] });
 
     // find with invalid object id

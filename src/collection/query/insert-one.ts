@@ -54,35 +54,4 @@ export class InsertOneQuery<
       Object.keys(this._projection),
     ) as O;
   }
-
-  // biome-ignore lint/suspicious/noThenProperty: We need automatic promise resolution
-  then<TResult1 = WithProjection<P[0], P[1], O>, TResult2 = never>(
-    onfulfilled?:
-      | ((
-          value: WithProjection<P[0], P[1], O>,
-        ) => TResult1 | PromiseLike<TResult1>)
-      | undefined
-      | null,
-    onrejected?:
-      | ((reason: any) => TResult2 | PromiseLike<TResult2>)
-      | undefined
-      | null,
-  ): Promise<TResult1 | TResult2> {
-    return this.exec().then(onfulfilled, onrejected);
-  }
-
-  catch<TResult = never>(
-    onrejected?:
-      | ((reason: any) => TResult | PromiseLike<TResult>)
-      | undefined
-      | null,
-  ): Promise<WithProjection<P[0], P[1], O> | TResult> {
-    return this.exec().catch(onrejected);
-  }
-
-  finally(
-    onfinally?: (() => void) | undefined | null,
-  ): Promise<WithProjection<P[0], P[1], O>> {
-    return this.exec().finally(onfinally);
-  }
 }
