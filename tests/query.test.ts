@@ -61,19 +61,17 @@ describe("Query methods Tests", () => {
 
   it("inserts one document", async () => {
     const newUser1 = await collections.users.insertOne(mockUsers[0]).exec();
-
-    expect(newUser1).not.toBe(null);
+    expect(newUser1).toMatchObject(mockUsers[0]);
 
     const newUser2 = await collections.users.insertOne(mockUsers[0]).exec();
-
-    expect(newUser2).not.toBe(null);
+    expect(newUser2).toMatchObject(mockUsers[0]);
 
     // insert with existing id
     const id3 = new ObjectId();
     const newUser3 = await collections.users
       .insertOne({ _id: id3, ...mockUsers[0] })
       .exec();
-    expect(newUser3).not.toBe(null);
+    expect(newUser3).toMatchObject(mockUsers[0]);
     expect(newUser3._id).toStrictEqual(id3);
 
     // insert with existing string id
@@ -81,8 +79,12 @@ describe("Query methods Tests", () => {
     const newUser4 = await collections.users
       .insertOne({ _id: id4.toString(), ...mockUsers[0] })
       .exec();
-    expect(newUser4).not.toBe(null);
+    expect(newUser4).toMatchObject(mockUsers[0]);
     expect(newUser4._id).toStrictEqual(id4);
+
+    // Use promise resolution
+    const newUser5 = await collections.users.insertOne(mockUsers[0]);
+    expect(newUser5).toMatchObject(mockUsers[0]);
 
     // insert with invalid string id
     await expect(async () => {
@@ -100,8 +102,7 @@ describe("Query methods Tests", () => {
     // TODO: Write Test edge case: Insert document with null values
 
     //   const nullUser = await collections.users
-    //   .insert()
-    //   .values({
+    //   .insertOne({
     //     name: null,
     //     email: null,
     //     age: null,
@@ -293,12 +294,9 @@ describe("Query methods Tests", () => {
 
     it("query sort", async () => {
       await collections.users.insertMany(mockUsers).exec();
-      const users = await collections.users
-        .find()
-        .sort({
-          age: -1,
-        })
-        .exec();
+      const users = await collections.users.find().sort({
+        age: -1,
+      });
       expect(users[0].age).toBe(25);
       expect(users[1].age).toBe(20);
       expect(users[2].age).toBe(17);

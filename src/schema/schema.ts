@@ -195,6 +195,24 @@ export class Schema<
     return schema;
   }
 
+  /**
+   * Defines the indexes for the schema.
+   *
+   * This method allows you to specify indexes that should be created for the schema.
+   *
+   * @param {SchemaIndexes<TTypes, TRelations>} indexes - A function that defines the indexes to be created.
+   *
+   * @returns {this} The current schema instance for method chaining.
+   *
+   * @example
+   * const userSchema = createSchema("users", {
+   *   name: string(),
+   *   age: number(),
+   * }).indexes(({ createIndex, unique }) => ({
+   *   username: unique("username"),
+   *   fullname: createIndex({ firstname: 1, surname: 1 }, { unique: true }),
+   * }));
+   */
   indexes(indexes: SchemaIndexes<TTypes, TRelations>) {
     this.options.indexes = indexes;
     return this;
