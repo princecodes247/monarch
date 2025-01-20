@@ -1,5 +1,11 @@
 # monarch-orm
 
+## 0.6.2
+
+### Patch Changes
+
+- 015bc8d: implement automatic promise resolution
+
 ## 0.6.1
 
 ### Patch Changes
